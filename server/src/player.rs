@@ -11,6 +11,12 @@ pub enum RacePlayerState {
 
 pub struct RacePlayer {
     profile_name: String,
-    tcpstream: TcpStream,
+    tcpstream: Option<TcpStream>,
     state: RacePlayerState,
+}
+
+impl Default for RacePlayer {
+    fn default() -> Self {
+        Self { profile_name: String::from("player"), tcpstream: None, state: RacePlayerState::RaceFree }
+    }
 }
