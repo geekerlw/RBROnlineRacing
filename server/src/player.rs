@@ -1,4 +1,5 @@
 use tokio::net::TcpStream;
+use uuid::Uuid;
 
 pub enum RacePlayerState {
     RaceFree,
@@ -10,13 +11,30 @@ pub enum RacePlayerState {
 }
 
 pub struct RacePlayer {
-    profile_name: String,
+    pub profile_name: String,
+    pub user_token: Uuid,
     tcpstream: Option<TcpStream>,
-    state: RacePlayerState,
+    pub state: RacePlayerState,
 }
 
 impl Default for RacePlayer {
     fn default() -> Self {
-        Self { profile_name: String::from("player"), tcpstream: None, state: RacePlayerState::RaceFree }
+        Self { 
+            profile_name: String::from("anonymous"),
+            user_token: Uuid::new_v4(),
+            tcpstream: None,
+            state: RacePlayerState::RaceFree
+        }
+    }
+}
+
+impl RacePlayer {
+    pub fn new(username: String) -> Self {
+        Self {
+            profile_name: username,
+            user_token: Uuid::new_v4(),
+            tcpstream: None,
+            state: RacePlayerState::RaceFree
+        }
     }
 }
