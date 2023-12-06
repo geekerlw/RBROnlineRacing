@@ -1,6 +1,4 @@
-use actix_web::dev::Response;
 use actix_web::{web, App, HttpResponse, HttpServer};
-use server::room::RaceRoom;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use uuid::Uuid;
@@ -9,7 +7,7 @@ use tokio::sync::Mutex;
 
 use server::player::RacePlayer;
 use server::server::RacingServer;
-use protocol::httpapi::{UserLogin, UserAccess, RaceInfo};
+use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate};
 use protocol::httpapi::API_VERSION_STRING;
 
 #[tokio::main]
@@ -29,7 +27,6 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_race_join)
         .service(handle_http_race_exit)
         .service(handle_http_race_update_state)
-        .service(handle_http_race_get_result)
     })
     .bind("127.0.0.1:8080")?
     .run();
@@ -134,21 +131,40 @@ async fn handle_http_race_create(data: web::Data<Arc<Mutex<RacingServer>>>, body
 }
 
 #[actix_web::post("/api/race/join")]
-async fn handle_http_race_join() -> HttpResponse {
-    HttpResponse::Ok().body("not support now.")
+async fn handle_http_race_join(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserJoin>) -> HttpResponse {
+    let info = body.into_inner();
+    println!("Received user join race info: {:?}", info);
+
+    let mut server = data.lock().await;
+    if server.join_raceroom(info.room, info.token) {
+        HttpResponse::Ok().body("Join race successful!")
+    } else {
+        HttpResponse::NotFound().body("Join race failed!")
+    }
 }
 
 #[actix_web::post("/api/race/exit")]
-async fn handle_http_race_exit() -> HttpResponse {
-    HttpResponse::Ok().body("not support now.")
+async fn handle_http_race_exit(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserAccess>) -> HttpResponse {
+    let info: UserAccess = body.into_inner();
+    println!("Received user logout: {:?}", info);
+
+    let mut server = data.lock().await;
+    if server.leave_raceroom(info.token) {
+        HttpResponse::Ok().body("Leave race room successful!")
+    } else {
+        HttpResponse::NotAcceptable().body("Leave race room failed!")
+    }
 }
 
 #[actix_web::put("/api/race/state")]
-async fn handle_http_race_update_state() -> HttpResponse {
-    HttpResponse::Ok().body("not support now.")
-}
+async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserUpdate>) -> HttpResponse {
+    let info: UserUpdate = body.into_inner();
+    println!("Received user logout: {:?}", info);
 
-#[actix_web::get("/api/race/result/")]
-async fn handle_http_race_get_result() -> HttpResponse {
-    HttpResponse::Ok().body("not support now.")
+    let mut server = data.lock().await;
+    if server.update_player_state(info.token, info.state) {
+        HttpResponse::Ok().body("Leave race room successful!")
+    } else {
+        HttpResponse::NotAcceptable().body("Leave race room failed!")
+    }
 }

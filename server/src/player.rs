@@ -1,18 +1,11 @@
 use tokio::net::TcpStream;
 use uuid::Uuid;
-
-pub enum RacePlayerState {
-    RaceFree,
-    RaceJoined,
-    RaceLoaded,
-    RaceRunning,
-    RaceRetired,
-    RaceFinished,
-}
+use protocol::httpapi::RacePlayerState;
 
 pub struct RacePlayer {
     pub user_token: Uuid,
     pub profile_name: String,
+    pub room_name: String,
     tcpstream: Option<TcpStream>,
     pub state: RacePlayerState,
 }
@@ -22,8 +15,9 @@ impl Default for RacePlayer {
         Self {
             user_token: Uuid::new_v4(),
             profile_name: String::from("anonymous"),
+            room_name: String::new(),
             tcpstream: None,
-            state: RacePlayerState::RaceFree
+            state: RacePlayerState::default()
         }
     }
 }
@@ -33,8 +27,9 @@ impl RacePlayer {
         Self {
             user_token: token,
             profile_name: username,
+            room_name: String::new(),
             tcpstream: None,
-            state: RacePlayerState::RaceFree
+            state: RacePlayerState::default()
         }
     }
 }

@@ -1,5 +1,4 @@
-use crate::player::RacePlayer;
-use uuid::Uuid;
+use protocol::httpapi::RacePlayerState;
 
 #[derive(Default)]
 pub struct RaceRoom {
@@ -7,16 +6,16 @@ pub struct RaceRoom {
     pub car: Option<String>,
     pub damage: Option<u32>,
     pub setup: Option<String>,
-    pub players: Vec<RacePlayer>,
-    pub state: u32,
+    pub players: Vec<String>,
+    pub state: RacePlayerState,
 }
 
 impl RaceRoom {
-    pub fn push_player(&mut self, player: RacePlayer) {
+    pub fn push_player(&mut self, player: String) {
         self.players.push(player);
     }
 
-    pub fn pop_player(&mut self, token: &Uuid) {
-        self.players.retain(|x| x.user_token == *token);
+    pub fn pop_player(&mut self, player: &String) {
+        self.players.retain(|x| x == player);
     }
 }

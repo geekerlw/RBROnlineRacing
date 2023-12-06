@@ -21,4 +21,11 @@ impl RaceLobby {
     pub fn is_player_exist(&mut self, token: &Uuid) -> bool {
         self.players.contains_key(token)
     }
+
+    pub fn get_player(&mut self, token: Uuid) -> Option<&mut RacePlayer> {
+        if let Some(player) = self.players.get_mut(&token) {
+            return Some(player);
+        }
+        None
+    }
 }
