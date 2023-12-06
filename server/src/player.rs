@@ -11,17 +11,17 @@ pub enum RacePlayerState {
 }
 
 pub struct RacePlayer {
-    pub profile_name: String,
     pub user_token: Uuid,
+    pub profile_name: String,
     tcpstream: Option<TcpStream>,
     pub state: RacePlayerState,
 }
 
 impl Default for RacePlayer {
     fn default() -> Self {
-        Self { 
-            profile_name: String::from("anonymous"),
+        Self {
             user_token: Uuid::new_v4(),
+            profile_name: String::from("anonymous"),
             tcpstream: None,
             state: RacePlayerState::RaceFree
         }
@@ -29,10 +29,10 @@ impl Default for RacePlayer {
 }
 
 impl RacePlayer {
-    pub fn new(username: String) -> Self {
+    pub fn new(token: Uuid, username: String) -> Self {
         Self {
+            user_token: token,
             profile_name: username,
-            user_token: Uuid::new_v4(),
             tcpstream: None,
             state: RacePlayerState::RaceFree
         }

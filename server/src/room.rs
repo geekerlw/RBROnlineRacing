@@ -3,8 +3,12 @@ use uuid::Uuid;
 
 #[derive(Default)]
 pub struct RaceRoom {
-    pub name: String,
+    pub stage: String,
+    pub car: Option<String>,
+    pub damage: Option<u32>,
+    pub setup: Option<String>,
     pub players: Vec<RacePlayer>,
+    pub state: u32,
 }
 
 impl RaceRoom {

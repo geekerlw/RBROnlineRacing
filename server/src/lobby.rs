@@ -1,18 +1,24 @@
 use uuid::Uuid;
-
+use std::collections::HashMap;
 use crate::player::RacePlayer;
 
 #[derive(Default)]
 pub struct RaceLobby {
-    players: Vec<RacePlayer>,
+    players: HashMap<Uuid, RacePlayer>,
 }
 
 impl RaceLobby {
-    pub fn push_player(&mut self, player: RacePlayer) {
-        self.players.push(player);
+    pub fn push_player(&mut self, token: Uuid, player: RacePlayer) {
+        if !self.players.contains_key(&token) {
+            self.players.insert(token, player);
+        }
     }
 
     pub fn pop_player(&mut self, token: &Uuid) {
-        self.players.retain(|x| x.user_token == *token);
+        self.players.retain(|k, _v| k == token);
+    }
+
+    pub fn is_player_exist(&mut self, token: &Uuid) -> bool {
+        self.players.contains_key(token)
     }
 }

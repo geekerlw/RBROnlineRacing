@@ -1,12 +1,15 @@
+use actix_web::dev::Response;
 use actix_web::{web, App, HttpResponse, HttpServer};
+use server::room::RaceRoom;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use server::player::RacePlayer;
 use server::server::RacingServer;
-use protocol::httpapi::{UserLogin, UserAccess};
+use protocol::httpapi::{UserLogin, UserAccess, RaceInfo};
 use protocol::httpapi::API_VERSION_STRING;
 
 #[tokio::main]
@@ -76,9 +79,10 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     println!("Received user login: {:?}", user);
 
     if user.passwd == "simrallycn" {
-        let player = RacePlayer::new(user.name);
+        let token = Uuid::new_v4();
+        let response = token.to_string();
+        let player = RacePlayer::new(token, user.name);
         let mut server = data.lock().await;
-        let response = player.user_token.to_string();
         server.player_login(player);
         HttpResponse::Ok().body(response)
     } else {
@@ -95,31 +99,46 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
     if server.player_logout(user.token) {
         HttpResponse::Ok().body("Logout successful!")
     } else {
-        HttpResponse::Unauthorized().body("Logout failed!")
+        HttpResponse::NotAcceptable().body("Logout failed!")
     }
 }
 
 #[actix_web::get("/api/race/list")]
-async fn handle_http_race_list() -> HttpResponse {
-    HttpResponse::Ok().body("not support now.")
+async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+    let server = data.lock().await;
+    if let Some(response) = server.get_raceroom_list() {
+        HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
+    } else {
+        HttpResponse::NoContent().body("Get Race list failed!")
+    }
 }
 
-#[actix_web::get("/api/race/info")]
-async fn handle_http_race_info() -> HttpResponse {
-    HttpResponse::Ok().body("not support now.")
+#[actix_web::get("/api/race/info/{name}")]
+async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, name: web::Path<String>) -> HttpResponse {
+    let server = data.lock().await;
+    if let Some(response) = server.get_raceroom_info(&name) {
+        HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
+    } else {
+        HttpResponse::NoContent().body("Get Race info failed!")
+    }
 }
 
-#[actix_web::get("/api/race/create")]
-async fn handle_http_race_create() -> HttpResponse {
-    HttpResponse::Ok().body("not support now.")
+#[actix_web::post("/api/race/create")]
+async fn handle_http_race_create(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceInfo>) -> HttpResponse {
+    let info = body.into_inner();
+    println!("Received user create race info: {:?}", info);
+
+    let mut server = data.lock().await;
+    server.create_raceroom(info);
+    HttpResponse::Ok().body("Create race successful!")
 }
 
-#[actix_web::post("/api/race/join/{token}")]
+#[actix_web::post("/api/race/join")]
 async fn handle_http_race_join() -> HttpResponse {
     HttpResponse::Ok().body("not support now.")
 }
 
-#[actix_web::post("/api/race/exit/{token}")]
+#[actix_web::post("/api/race/exit")]
 async fn handle_http_race_exit() -> HttpResponse {
     HttpResponse::Ok().body("not support now.")
 }
