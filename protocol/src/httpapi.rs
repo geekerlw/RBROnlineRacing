@@ -57,3 +57,16 @@ pub struct UserUpdate {
     pub token: String,
     pub state: RacePlayerState,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MetaHeader {
+    pub length: u16,
+    pub format: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetaRaceData {
+    pub token: String,
+    pub process: f32,
+    pub racetime: f32,
+}

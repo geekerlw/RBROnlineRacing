@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use server::server::RacingServer;
-use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate};
+use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader, MetaRaceData};
 use protocol::httpapi::API_VERSION_STRING;
 
 #[tokio::main]
@@ -44,24 +44,6 @@ async fn main() -> std::io::Result<()>{
 
     let _ = tokio::join!(http_server, data_task);
     Ok(())
-}
-
-async fn handle_data_stream(mut stream: TcpStream, data: Arc<Mutex<RacingServer>>) {
-    let mut buffer = vec![0u8; 1024];
-    while let Ok(n) = stream.read(&mut buffer).await {
-        if n == 0 {
-            break;
-        }
-
-        // 处理接收的数据
-        // 这里只是简单地将接收到的数据打印出来
-        println!("Received data: {:?}", &buffer[..n]);
-
-        let mut response = String::from("response from server, count: ");
-        let server = data.lock().await;
-        response.push_str(server.count.to_string().as_str());
-        stream.write_all(response.as_bytes()).await.unwrap();
-    }
 }
 
 #[actix_web::get("/api/version")]
@@ -167,5 +149,55 @@ async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>
         HttpResponse::Ok().body("Update race player state successful!")
     } else {
         HttpResponse::NotAcceptable().body("Update race player state failed!")
+    }
+}
+
+async fn handle_data_stream(mut stream: TcpStream, data: Arc<Mutex<RacingServer>>) {
+    let mut recvbuf = vec![0u8; 1024];
+    let mut remain = Vec::<u8>::new();
+    while let Ok(n) = stream.read(&mut recvbuf).await {
+        if n == 0 {
+            break;
+        }
+
+        // 处理接收的数据
+        // 这里只是简单地将接收到的数据打印出来
+        println!("Received data: {:?}", &recvbuf[..n]);
+
+        let buffer = [&remain[..], &recvbuf[..]].concat();
+        let datalen = buffer.len();
+
+        if datalen <= 4 {
+            remain = buffer.to_vec();
+            continue;
+        }
+
+        let head: MetaHeader = bincode::deserialize(&buffer[..4]).unwrap();
+        if datalen <= head.length as usize + 4 {
+            remain = buffer.to_vec();
+            continue;
+        }
+
+        let mut server = data.lock().await;
+        let pack_data = &buffer[4..4+head.length as usize];
+        match head.format {
+            0 => {
+                let access: UserAccess = bincode::deserialize(pack_data).unwrap();
+                if !server.meta_player_login(access) {
+                    break; // can't access, disconnect.
+                }
+            }
+            1 => {
+                let racedata = bincode::deserialize(pack_data).unwrap();
+                for data in server.meta_player_exchange_race_data(racedata) {
+                    // send back to player.
+                }
+            }
+            _ => {
+                break; //data type error, auto close.
+            }
+        }
+
+        remain = (&buffer[4 + head.length as usize..]).to_vec();
     }
 }

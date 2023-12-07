@@ -1,4 +1,5 @@
 use protocol::httpapi::RacePlayerState;
+use protocol::httpapi::MetaRaceData;
 
 #[derive(Default)]
 pub struct RaceRoom {
@@ -8,6 +9,7 @@ pub struct RaceRoom {
     pub setup: Option<String>,
     pub players: Vec<String>,
     pub state: RacePlayerState,
+    pub racedata: Vec<MetaRaceData>,
 }
 
 impl RaceRoom {

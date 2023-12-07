@@ -1,9 +1,10 @@
 use uuid::Uuid;
-use protocol::httpapi::{UserLogin, RaceInfo, RaceItem, RaceList};
+use protocol::httpapi::{UserLogin, RaceInfo, RaceItem, RaceList, UserAccess, MetaRaceData};
 use crate::lobby::RaceLobby;
 use crate::room::RaceRoom;
 use crate::player::RacePlayer;
 use std::collections::HashMap;
+use tokio::net::TcpStream;
 use protocol::httpapi::RacePlayerState;
 
 #[derive(Default)]
@@ -152,5 +153,25 @@ impl RacingServer {
             }
         }
         return false;
+    }
+
+    pub fn meta_player_login(&mut self, access: UserAccess) -> bool {
+        if let Ok(token) = Uuid::parse_str(&access.token.as_str()) {
+            return self.lobby.is_player_exist(Some(&token), None);
+        }
+        return false;
+    }
+
+    pub fn meta_player_exchange_race_data(&mut self, racedata: MetaRaceData) -> Vec<MetaRaceData> {
+        let res = Vec::<MetaRaceData>::new();
+        if let Ok(token) = Uuid::parse_str(&racedata.token.as_str()) {
+            if let Some(player) = self.lobby.get_player(token) {
+                if let Some(room) = self.rooms.get(&player.room_name) {
+                    return res;
+                }
+            }
+        }
+
+        return res;
     }
 }

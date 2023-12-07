@@ -4,7 +4,7 @@ use protocol::httpapi::RacePlayerState;
 pub struct RacePlayer {
     pub profile_name: String,
     pub room_name: String,
-    tcpstream: Option<TcpStream>,
+    pub tcpstream: Option<TcpStream>,
     pub state: RacePlayerState,
 }
 
