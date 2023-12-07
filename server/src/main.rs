@@ -5,7 +5,6 @@ use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use server::player::RacePlayer;
 use server::server::RacingServer;
 use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate};
 use protocol::httpapi::API_VERSION_STRING;
@@ -75,12 +74,11 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     let user = body.into_inner();
     println!("Received user login: {:?}", user);
 
-    if user.passwd == "simrallycn" {
-        let token = Uuid::new_v4();
-        let response = token.to_string();
-        let player = RacePlayer::new(token, user.name);
-        let mut server = data.lock().await;
-        server.player_login(player);
+    let token = Uuid::new_v4();
+    let response = token.to_string();
+    let mut server = data.lock().await;
+
+    if server.player_login(user, token) {
         HttpResponse::Ok().body(response)
     } else {
         HttpResponse::Unauthorized().body("Login failed!")
@@ -126,8 +124,11 @@ async fn handle_http_race_create(data: web::Data<Arc<Mutex<RacingServer>>>, body
     println!("Received user create race info: {:?}", info);
 
     let mut server = data.lock().await;
-    server.create_raceroom(info);
-    HttpResponse::Ok().body("Create race successful!")
+    if server.create_raceroom(info) {
+        HttpResponse::Ok().body("Create race successful!")
+    } else {
+        HttpResponse::Ok().body("Create race Failed!")
+    }
 }
 
 #[actix_web::post("/api/race/join")]
@@ -143,7 +144,7 @@ async fn handle_http_race_join(data: web::Data<Arc<Mutex<RacingServer>>>, body: 
     }
 }
 
-#[actix_web::post("/api/race/exit")]
+#[actix_web::post("/api/race/leave")]
 async fn handle_http_race_exit(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserAccess>) -> HttpResponse {
     let info: UserAccess = body.into_inner();
     println!("Received user logout: {:?}", info);
@@ -163,8 +164,8 @@ async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>
 
     let mut server = data.lock().await;
     if server.update_player_state(info.token, info.state) {
-        HttpResponse::Ok().body("Leave race room successful!")
+        HttpResponse::Ok().body("Update race player state successful!")
     } else {
-        HttpResponse::NotAcceptable().body("Leave race room failed!")
+        HttpResponse::NotAcceptable().body("Update race player state failed!")
     }
 }

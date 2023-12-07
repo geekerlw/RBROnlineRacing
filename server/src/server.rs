@@ -1,8 +1,8 @@
 use uuid::Uuid;
-use protocol::httpapi::{RaceInfo, RaceItem, RaceList};
+use protocol::httpapi::{UserLogin, RaceInfo, RaceItem, RaceList};
 use crate::lobby::RaceLobby;
-use crate::player::RacePlayer;
 use crate::room::RaceRoom;
+use crate::player::RacePlayer;
 use std::collections::HashMap;
 use protocol::httpapi::RacePlayerState;
 
@@ -18,14 +18,25 @@ impl RacingServer {
         self.rooms.contains_key(name)
     }
 
-    pub fn player_login(&mut self, player: RacePlayer) {
-        self.lobby.push_player(player.user_token, player);
+    pub fn player_login(&mut self, user: UserLogin, token: Uuid) -> bool {
+        if user.passwd != "simrallycn" {
+            return false;
+        }
+
+        if !self.lobby.is_player_exist(None, Some(&user.name)) {
+            let player: RacePlayer = RacePlayer::new(user.name);
+            self.lobby.push_player(token, player);
+            return true;
+        }
+        return false;
     }
 
     pub fn player_logout(&mut self, tokenstr: String) -> bool {
         if let Ok(token) = Uuid::parse_str(&tokenstr.as_str()) {
-            self.lobby.pop_player(&token);
-            return true;
+            if self.lobby.is_player_exist(Some(&token), None) {
+                self.lobby.pop_player(&token);
+                return true;
+            }
         }
         return false;
     }
@@ -67,31 +78,51 @@ impl RacingServer {
         None
     }
 
-    pub fn create_raceroom(&mut self, info: RaceInfo) {
+    pub fn create_raceroom(&mut self, info: RaceInfo) -> bool {
         if self.rooms.contains_key(&info.name) {
-            return;
+            return true;
         }
 
-        let mut raceroom = RaceRoom::default();
-        raceroom.stage = info.stage;
-        if let Some(car) = info.car {
-            raceroom.car = Some(car);
+        if let Ok(token) = Uuid::parse_str(&info.token.as_str()) {
+            if !self.lobby.is_player_exist(Some(&token), None) {
+                return false;
+            }
+
+            if let Some(player) = self.lobby.get_player(token) {
+                player.room_name = info.name.clone();
+                let mut raceroom = RaceRoom::default();
+                raceroom.stage = info.stage;
+                if let Some(car) = info.car {
+                    raceroom.car = Some(car);
+                }
+                if let Some(damage) = info.damage {
+                    raceroom.damage = Some(damage);
+                }
+                if let Some(setup) = info.setup {
+                    raceroom.setup = Some(setup);
+                }
+                raceroom.state = RacePlayerState::default();
+                raceroom.players.insert(0, player.profile_name.clone());
+                self.rooms.insert(info.name, raceroom);
+                return true;
+            }
         }
-        if let Some(damage) = info.damage {
-            raceroom.damage = Some(damage);
-        }
-        if let Some(setup) = info.setup {
-            raceroom.setup = Some(setup);
-        }
-        raceroom.state = RacePlayerState::default();
-        self.rooms.insert(info.name, raceroom);
+        return false;
     }
 
     pub fn join_raceroom(&mut self, roomname: String, tokenstr: String) -> bool {
         if let Ok(token) = Uuid::parse_str(&tokenstr.as_str()) {
             if let Some(player) = self.lobby.get_player(token) {
-                player.room_name = roomname.clone();
+                if !player.room_name.is_empty() {
+                    if let Some(room) = self.rooms.get_mut(&player.room_name) {
+                        room.pop_player(&player.profile_name);
+                    }
+                }
                 if let Some(room) = self.rooms.get_mut(&roomname) {
+                    if room.is_player_exist(&player.profile_name) {
+                        return true;
+                    }
+                    player.room_name = roomname.clone();
                     room.push_player(player.profile_name.clone());
                     return true;
                 }

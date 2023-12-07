@@ -2,6 +2,14 @@ use serde::{Deserialize, Serialize};
 
 pub static API_VERSION_STRING: &'static str = "v1.0";
 
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub enum RacePlayerState {
+    #[default]
+    RaceDefault,
+    RaceRunning(u32),
+    RaceFinished(u32),
+}
+
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct UserLogin {
     pub name: String,
@@ -18,7 +26,7 @@ pub struct RaceItem {
     pub name: String,
     pub stage: String,
     pub owner: String,
-    pub state: u32,
+    pub state: RacePlayerState,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -28,11 +36,24 @@ pub struct RaceList {
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct RaceInfo {
+    pub token: String,
     pub name: String,
     pub stage: String,
     pub car: Option<String>,
     pub damage: Option<u32>,
     pub setup: Option<String>,
-    pub state: u32,
+    pub state: RacePlayerState,
     pub players: Vec<String>,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct UserJoin {
+    pub token: String,
+    pub room: String,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct UserUpdate {
+    pub token: String,
+    pub state: RacePlayerState,
 }
