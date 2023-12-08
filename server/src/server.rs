@@ -1,9 +1,10 @@
 use uuid::Uuid;
-use protocol::httpapi::{UserLogin, RaceInfo, RaceItem, RaceList, UserAccess, MetaRaceData, MetaRaceResult};
+use protocol::httpapi::{UserLogin, RaceInfo, RaceItem, RaceList, UserAccess, MetaRaceData};
 use crate::lobby::RaceLobby;
 use crate::room::RaceRoom;
 use crate::player::RacePlayer;
 use std::collections::HashMap;
+use protocol::httpapi::RoomState;
 use protocol::httpapi::RaceState;
 
 #[derive(Default)]
@@ -124,7 +125,7 @@ impl RacingServer {
                 if let Some(setup) = info.setup {
                     raceroom.setup = Some(setup);
                 }
-                raceroom.state = RaceState::default();
+                raceroom.state = RoomState::default();
                 raceroom.players.insert(0, player.profile_name.clone());
                 self.rooms.insert(info.name, raceroom);
                 return true;
@@ -185,19 +186,6 @@ impl RacingServer {
             }
         }
         return false;
-    }
-
-    pub fn meta_player_exchange_race_data(&mut self, racedata: MetaRaceData) -> Option<MetaRaceResult> {
-        if let Ok(token) = Uuid::parse_str(&racedata.token.as_str()) {
-            if let Some(player) = self.lobby.get_player(token) {
-                player.race_data = racedata;
-                if let Some(room) = self.rooms.get(&player.room_name) {
-                    return Some(room.result.clone());
-                }
-            }
-        }
-
-        None
     }
 
     // only can be used in racing on.

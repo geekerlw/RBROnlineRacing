@@ -6,8 +6,34 @@ pub static API_VERSION_STRING: &'static str = "v1.0";
 pub enum RaceState {
     #[default]
     RaceDefault,
-    RaceRunning(u32),
-    RaceFinished(u32),
+    RaceInit,
+    RaceReady,
+    RaceLoad,
+    RaceLoaded,
+    RaceStart,
+    RaceRunning,
+    RaceRetired,
+    RaceFinished,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub enum RoomState {
+    #[default]
+    RoomDefault,
+    RoomLocked,
+    RoomRaceOn,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub enum DataFormat {
+    #[default]
+    FmtDefault,
+    FmtUserAccess = 1,
+    FmtUpdateState = 2,
+    FmtUploadData = 3,
+    FmtRaceCommand = 4,
+    FmtPushData = 5,
+    FmtResponse = 0x8000,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -26,7 +52,7 @@ pub struct RaceItem {
     pub name: String,
     pub stage: String,
     pub owner: String,
-    pub state: RaceState,
+    pub state: RoomState,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -42,7 +68,7 @@ pub struct RaceInfo {
     pub car: Option<String>,
     pub damage: Option<u32>,
     pub setup: Option<String>,
-    pub state: RaceState,
+    pub state: RoomState,
     pub players: Vec<String>,
 }
 
@@ -61,7 +87,7 @@ pub struct UserUpdate {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetaHeader {
     pub length: u16,
-    pub format: u16,
+    pub format: DataFormat,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

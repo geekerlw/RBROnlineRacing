@@ -1,5 +1,4 @@
-use protocol::httpapi::RaceState;
-use protocol::httpapi::MetaRaceResult;
+use protocol::httpapi::RoomState;
 
 #[derive(Default)]
 pub struct RaceRoom {
@@ -8,8 +7,7 @@ pub struct RaceRoom {
     pub damage: Option<u32>,
     pub setup: Option<String>,
     pub players: Vec<String>,
-    pub state: RaceState,
-    pub result: MetaRaceResult,
+    pub state: RoomState,
 }
 
 impl RaceRoom {
