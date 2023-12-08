@@ -18,6 +18,22 @@ impl RacingServer {
         self.rooms.contains_key(name)
     }
 
+    pub fn find_player_by_token_mut(&mut self, tokenstr: &String) -> Option<&mut RacePlayer> {
+        if let Ok(token) = Uuid::parse_str(tokenstr.as_str()) {
+            if let Some(player) = self.lobby.get_player(token) {
+                return Some(player);
+            }
+        }
+        None
+    }
+
+    pub fn find_room_by_name_mut(&mut self, name: &String) -> Option<&mut RaceRoom> {
+        if let Some(room) = self.rooms.get_mut(name) {
+            return Some(room);
+        }
+        None
+    }
+
     pub fn player_login(&mut self, user: UserLogin, token: Uuid) -> bool {
         if user.passwd != "simrallycn" {
             return false;
@@ -27,6 +43,13 @@ impl RacingServer {
             let player: RacePlayer = RacePlayer::new(user.name);
             self.lobby.push_player(token, player);
             return true;
+        }
+        return false;
+    }
+
+    pub fn player_access(&mut self, access: &UserAccess) -> bool {
+        if let Ok(token) = Uuid::parse_str(access.token.as_str()) {
+            return self.lobby.is_player_exist(Some(&token), None);
         }
         return false;
     }
@@ -131,7 +154,7 @@ impl RacingServer {
         return false;
     }
 
-    pub fn leave_raceroom(&mut self, tokenstr: String) -> bool {
+    pub fn leave_raceroom(&mut self, tokenstr: &String) -> bool {
         if let Ok(token) = Uuid::parse_str(&tokenstr.as_str()) {
             if let Some(player) = self.lobby.get_player(token) {
                 if let Some(room) = self.rooms.get_mut(&player.room_name) {
@@ -144,8 +167,8 @@ impl RacingServer {
         return false;
     }
 
-    pub fn update_player_state(&mut self, tokenstr: String, state: RaceState) -> bool {
-        if let Ok(token) = Uuid::parse_str(&tokenstr.as_str()) {
+    pub fn update_player_state(&mut self, tokenstr: &String, state: RaceState) -> bool {
+        if let Ok(token) = Uuid::parse_str(tokenstr.as_str()) {
             if let Some(player) = self.lobby.get_player(token) {
                 player.state = state;
                 return true;
@@ -154,9 +177,12 @@ impl RacingServer {
         return false;
     }
 
-    pub fn meta_player_login(&mut self, access: UserAccess) -> bool {
-        if let Ok(token) = Uuid::parse_str(&access.token.as_str()) {
-            return self.lobby.is_player_exist(Some(&token), None);
+    pub fn update_player_race_data(&mut self, data: MetaRaceData) -> bool {
+        if let Ok(token) = Uuid::parse_str(&data.token.as_str()) {
+            if let Some(player) = self.lobby.get_player(token) {
+                player.race_data = data;
+                return true;
+            }
         }
         return false;
     }
@@ -167,6 +193,25 @@ impl RacingServer {
                 player.race_data = racedata;
                 if let Some(room) = self.rooms.get(&player.room_name) {
                     return Some(room.result.clone());
+                }
+            }
+        }
+
+        None
+    }
+
+    // only can be used in racing on.
+    pub fn get_room_all_players(&mut self, tokenstr: &String) -> Option<Vec<RacePlayer>> {
+        let mut players = Vec::<RacePlayer>::new();
+        if let Ok(token) = Uuid::parse_str(&tokenstr) {
+            if let Some(player) = self.lobby.get_player(token) {
+                if let Some(room) = self.rooms.get(&player.room_name) {
+                    for profile_name in &room.players {
+                        if let Some(item) = self.lobby.get_player_by_name(profile_name.clone()) {
+                            players.push(item.clone());
+                        }
+                    }
+                    return Some(players);
                 }
             }
         }

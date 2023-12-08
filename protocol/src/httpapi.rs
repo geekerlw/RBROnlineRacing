@@ -78,6 +78,6 @@ pub struct MetaRaceData {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct MetaRaceResult {
-    state: RaceState,
-    board: Vec<MetaRaceData>,
+    pub state: RaceState,
+    pub board: Vec<MetaRaceData>,
 }

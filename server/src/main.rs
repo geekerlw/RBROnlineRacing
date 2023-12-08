@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use server::server::RacingServer;
-use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader};
+use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader, MetaRaceResult, RaceState};
 use protocol::httpapi::API_VERSION_STRING;
 
 #[tokio::main]
@@ -35,7 +35,7 @@ async fn main() -> std::io::Result<()>{
 
         while let Ok((stream, _)) = listener.accept().await {
             let socket = Arc::new(Mutex::new(stream));
-            tokio::spawn(handle_data_stream(socket, data_clone));
+            tokio::spawn(handle_data_stream(socket, data_clone.clone()));
         }
     });
 
@@ -132,7 +132,7 @@ async fn handle_http_race_leave(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     println!("Received user logout: {:?}", info);
 
     let mut server = data.lock().await;
-    if server.leave_raceroom(info.token) {
+    if server.leave_raceroom(&info.token) {
         HttpResponse::Ok().body("Leave race room successful!")
     } else {
         HttpResponse::NotAcceptable().body("Leave race room failed!")
@@ -145,7 +145,7 @@ async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>
     println!("Received user logout: {:?}", info);
 
     let mut server = data.lock().await;
-    if server.update_player_state(info.token, info.state) {
+    if server.update_player_state(&info.token, info.state) {
         HttpResponse::Ok().body("Update race player state successful!")
     } else {
         HttpResponse::NotAcceptable().body("Update race player state failed!")
@@ -183,36 +183,31 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
         match head.format {
             1 => { // user meta data socket login.
                 let access: UserAccess = bincode::deserialize(pack_data).unwrap();
-                if !server.meta_player_login(access) {
+                if !server.player_access(&access) {
                     break; // can't access, disconnect.
                 }
-
-                // tokio::spawn to wait player state ready, once ready send 1 back to auto load game.
+                // wait player state ready, once ready send 1 back to auto load game.
+                tokio::spawn(wait_all_players_ready(access.token.clone(), data.clone(), stream.clone()));
+                tokio::spawn(sort_all_players_racedata(access.token, data.clone(), stream.clone()));
             }
-            
+
             2 => { // race load game over and pause in game start state.
-                // tokio::spawn to wait all player state loaded. once ready send 2 back to start racing.
+                let state: UserUpdate = bincode::deserialize(pack_data).unwrap();
+                server.update_player_state(&state.token, state.state);
+                // wait all player state loaded. once ready send 2 back to start racing.
+                tokio::spawn(wait_all_players_loaded(state.token, data.clone(), stream.clone()));
             }
 
-            3 => { // race running, loop update player's state.
-                // tokio::spawn to calc room's players racedata, sort and send back the leader board to show.
-            }
-
-            4 => { // player finish or retire the race.
-                // tokio::spawn to wait all player state finish or retire, once ready send back race result to show.
-
-                // once send out the result, break and auto close the socket.
+            3 => { // player finish or retire the race.
+                let state: UserUpdate = bincode::deserialize(pack_data).unwrap();
+                server.update_player_state(&state.token, state.state);
+                // wait all player state finish or retire, once ready send back race result to show.
+                tokio::spawn(wait_all_players_finish(state.token, data.clone(), stream.clone()));
             }
 
             10 => { // user exchange racing data.
                 let racedata = bincode::deserialize(pack_data).unwrap();
-                if let Some(result) = server.meta_player_exchange_race_data(racedata) {
-                    let bodybuf = bincode::serialize(&result).unwrap();
-                    let head = MetaHeader {length: bodybuf.len() as u16, format: 0x8000 | 10u16};
-                    let headbuf = bincode::serialize(&head).unwrap();
-                    let data = [&headbuf[..], &bodybuf[..]].concat();
-                    stream.lock().await.write_all(&data).await.unwrap();
-                }
+                server.update_player_race_data(racedata);
             }
             _ => {
                 break; //data type error, auto close.
@@ -223,8 +218,86 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
     }
 }
 
-async fn handle_data_service(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<RacingServer>>) {
-    while let Some(msg) = rx.recv().await {
-        stream.lock().await.write_all(msg.as_bytes()).await.unwrap();
+async fn wait_all_players_ready(token: String, server: Arc<Mutex<RacingServer>>, socket: Arc<Mutex<TcpStream>>) {
+    let mut server = server.lock().await;
+    loop {
+        if let Some(players) = server.get_room_all_players(&token) {
+            if players.iter().all(|x| {
+                match x.state {
+                    RaceState::RaceFinished(_i) => true,
+                    _ => false,
+                }
+            }) {
+                break;
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_micros(200)).await;
+    }
+
+    // send socket to notice start loading game.
+}
+
+async fn wait_all_players_loaded(token: String, server: Arc<Mutex<RacingServer>>, socket: Arc<Mutex<TcpStream>>) {
+    let mut server = server.lock().await;
+    loop {
+        if let Some(players) = server.get_room_all_players(&token) {
+            if players.iter().all(|x| {
+                match x.state {
+                    RaceState::RaceFinished(_i) => true,
+                    _ => false,
+                }
+            }) {
+                break;
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_micros(1)).await;
+    }
+
+    // send socket to notice start racing.
+}
+
+async fn wait_all_players_finish(token: String, server: Arc<Mutex<RacingServer>>, socket: Arc<Mutex<TcpStream>>) {
+    let mut server = server.lock().await;
+    loop {
+        if let Some(players) = server.get_room_all_players(&token) {
+            if players.iter().all(|x| {
+                match x.state {
+                    RaceState::RaceFinished(_i) => true,
+                    _ => false,
+                }
+            }) {
+                break;
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_micros(1)).await;
+    }
+
+    // send socket to notice race result. need to sort again.
+}
+
+async fn sort_all_players_racedata(token: String, server: Arc<Mutex<RacingServer>>, socket: Arc<Mutex<TcpStream>>) {
+    let mut server = server.lock().await;
+    loop {
+        let mut response = MetaRaceResult::default();
+        if let Some(mut players) = server.get_room_all_players(&token) {
+            let players_clone = players.clone();
+            players.sort_by(|a, b| a.sort_by_time(b));
+            for player in players {
+                response.board.push(player.race_data);
+            }
+
+            // send race learder board.
+
+
+            if players_clone.iter().all(|x| {
+                match x.state {
+                    RaceState::RaceFinished(_i) => true,
+                    _ => false,
+                }
+            }) {
+                break; // finish racing, exit sort.
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_micros(1)).await;
     }
 }
