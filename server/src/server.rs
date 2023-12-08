@@ -1,11 +1,10 @@
 use uuid::Uuid;
-use protocol::httpapi::{UserLogin, RaceInfo, RaceItem, RaceList, UserAccess, MetaRaceData};
+use protocol::httpapi::{UserLogin, RaceInfo, RaceItem, RaceList, UserAccess, MetaRaceData, MetaRaceResult};
 use crate::lobby::RaceLobby;
 use crate::room::RaceRoom;
 use crate::player::RacePlayer;
 use std::collections::HashMap;
-use tokio::net::TcpStream;
-use protocol::httpapi::RacePlayerState;
+use protocol::httpapi::RaceState;
 
 #[derive(Default)]
 pub struct RacingServer {
@@ -102,7 +101,7 @@ impl RacingServer {
                 if let Some(setup) = info.setup {
                     raceroom.setup = Some(setup);
                 }
-                raceroom.state = RacePlayerState::default();
+                raceroom.state = RaceState::default();
                 raceroom.players.insert(0, player.profile_name.clone());
                 self.rooms.insert(info.name, raceroom);
                 return true;
@@ -145,7 +144,7 @@ impl RacingServer {
         return false;
     }
 
-    pub fn update_player_state(&mut self, tokenstr: String, state: RacePlayerState) -> bool {
+    pub fn update_player_state(&mut self, tokenstr: String, state: RaceState) -> bool {
         if let Ok(token) = Uuid::parse_str(&tokenstr.as_str()) {
             if let Some(player) = self.lobby.get_player(token) {
                 player.state = state;
@@ -162,16 +161,16 @@ impl RacingServer {
         return false;
     }
 
-    pub fn meta_player_exchange_race_data(&mut self, racedata: MetaRaceData) -> Vec<MetaRaceData> {
-        let res = Vec::<MetaRaceData>::new();
+    pub fn meta_player_exchange_race_data(&mut self, racedata: MetaRaceData) -> Option<MetaRaceResult> {
         if let Ok(token) = Uuid::parse_str(&racedata.token.as_str()) {
             if let Some(player) = self.lobby.get_player(token) {
+                player.race_data = racedata;
                 if let Some(room) = self.rooms.get(&player.room_name) {
-                    return res;
+                    return Some(room.result.clone());
                 }
             }
         }
 
-        return res;
+        None
     }
 }

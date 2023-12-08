@@ -1,11 +1,12 @@
 use tokio::net::TcpStream;
-use protocol::httpapi::RacePlayerState;
+use protocol::httpapi::{RaceState, MetaRaceData};
 
 pub struct RacePlayer {
     pub profile_name: String,
     pub room_name: String,
     pub tcpstream: Option<TcpStream>,
-    pub state: RacePlayerState,
+    pub state: RaceState,
+    pub race_data: MetaRaceData,
 }
 
 impl Default for RacePlayer {
@@ -14,7 +15,8 @@ impl Default for RacePlayer {
             profile_name: String::from("anonymous"),
             room_name: String::new(),
             tcpstream: None,
-            state: RacePlayerState::default()
+            state: RaceState::default(),
+            race_data: MetaRaceData::default(),
         }
     }
 }
@@ -25,7 +27,8 @@ impl RacePlayer {
             profile_name: username,
             room_name: String::new(),
             tcpstream: None,
-            state: RacePlayerState::default()
+            state: RaceState::default(),
+            race_data: MetaRaceData::default(),
         }
     }
 }

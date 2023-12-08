@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub static API_VERSION_STRING: &'static str = "v1.0";
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub enum RacePlayerState {
+pub enum RaceState {
     #[default]
     RaceDefault,
     RaceRunning(u32),
@@ -26,7 +26,7 @@ pub struct RaceItem {
     pub name: String,
     pub stage: String,
     pub owner: String,
-    pub state: RacePlayerState,
+    pub state: RaceState,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -42,7 +42,7 @@ pub struct RaceInfo {
     pub car: Option<String>,
     pub damage: Option<u32>,
     pub setup: Option<String>,
-    pub state: RacePlayerState,
+    pub state: RaceState,
     pub players: Vec<String>,
 }
 
@@ -55,7 +55,7 @@ pub struct UserJoin {
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct UserUpdate {
     pub token: String,
-    pub state: RacePlayerState,
+    pub state: RaceState,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -64,9 +64,20 @@ pub struct MetaHeader {
     pub format: u16,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct MetaRaceData {
     pub token: String,
-    pub process: f32,
+    pub profile_name: String,
+    pub starttime: f32,
     pub racetime: f32,
+    pub process: f32,
+    pub splittime1: f32,
+    pub splittime2: f32,
+    pub finishtime: f32,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct MetaRaceResult {
+    state: RaceState,
+    board: Vec<MetaRaceData>,
 }

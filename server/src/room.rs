@@ -1,5 +1,5 @@
-use protocol::httpapi::RacePlayerState;
-use protocol::httpapi::MetaRaceData;
+use protocol::httpapi::RaceState;
+use protocol::httpapi::MetaRaceResult;
 
 #[derive(Default)]
 pub struct RaceRoom {
@@ -8,8 +8,8 @@ pub struct RaceRoom {
     pub damage: Option<u32>,
     pub setup: Option<String>,
     pub players: Vec<String>,
-    pub state: RacePlayerState,
-    pub racedata: Vec<MetaRaceData>,
+    pub state: RaceState,
+    pub result: MetaRaceResult,
 }
 
 impl RaceRoom {
