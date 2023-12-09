@@ -61,7 +61,7 @@ impl eframe::App for RacingClient {
                     RaceState::RaceRunning => ui.label("比赛进行中"),
                     RaceState::RaceStart => ui.label("比赛开始"),
                 };
-            })
+            });
         });
 
         match self.store.curr_page {
