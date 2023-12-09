@@ -1,0 +1,30 @@
+use eframe::egui;
+use egui::RichText;
+use crate::{store::RacingStore, UiPageState};
+
+#[derive(Default, Clone)]
+pub struct UiLogin {
+}
+
+impl UiLogin {
+    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, store: &mut RacingStore) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.horizontal_centered(|ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add_space(100.0);
+                    ui.label(RichText::new("致每一位热爱理查德伯恩斯拉力赛的小伙伴：").size(24.0));
+                    ui.add_space(10.0);
+                    ui.label(RichText::new("翻得开心，寄得愉快！").size(32.0));
+                    ui.add_space(40.0);
+                    ui.label(RichText::new("SimRallyCn 中国总群: 658110104").size(24.0));
+                    ui.add_space(10.0);
+                    ui.label(RichText::new("作者：子夜(Lw_Ziye), Copyright (c) 2023, 有疑问请进群@Lw_Ziye。").size(16.0));
+                    ui.add_space(50.0);
+                    if ui.button("知道了啦").clicked() {
+                        store.swich_page(UiPageState::PageLobby);
+                    }
+                });
+            });
+        });
+    }
+}

@@ -20,6 +20,7 @@ pub enum RaceState {
 pub enum RoomState {
     #[default]
     RoomDefault,
+    RoomFree,
     RoomLocked,
     RoomRaceOn,
 }
@@ -36,18 +37,18 @@ pub enum DataFormat {
     FmtResponse = 0x8000,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct UserLogin {
     pub name: String,
     pub passwd: String,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct UserAccess {
     pub token: String,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct RaceItem {
     pub name: String,
     pub stage: String,
@@ -55,12 +56,12 @@ pub struct RaceItem {
     pub state: RoomState,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct RaceList {
     pub room: Vec<RaceItem>,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct RaceInfo {
     pub token: String,
     pub name: String,
@@ -72,25 +73,25 @@ pub struct RaceInfo {
     pub players: Vec<String>,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct UserJoin {
     pub token: String,
     pub room: String,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct UserUpdate {
     pub token: String,
     pub state: RaceState,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaHeader {
     pub length: u16,
     pub format: DataFormat,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaRaceData {
     pub token: String,
     pub profile_name: String,
@@ -102,7 +103,7 @@ pub struct MetaRaceData {
     pub finishtime: f32,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaRaceResult {
     pub state: RaceState,
     pub board: Vec<MetaRaceData>,
