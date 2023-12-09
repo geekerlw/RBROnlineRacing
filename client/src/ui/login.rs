@@ -16,7 +16,7 @@ impl UiLogin {
                     ui.add_space(10.0);
                     ui.label(RichText::new("翻得开心，寄得愉快！").size(32.0));
                     ui.add_space(40.0);
-                    ui.label(RichText::new("SimRallyCn 中国总群: 658110104").size(24.0));
+                    ui.label(RichText::new("SimRallyCN 中国总群: 658110104").size(24.0));
                     ui.add_space(10.0);
                     ui.label(RichText::new("作者：子夜(Lw_Ziye), Copyright (c) 2023, 有疑问请进群@Lw_Ziye。").size(16.0));
                     ui.add_space(50.0);
