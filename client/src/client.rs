@@ -4,7 +4,7 @@ use crate::{UiPageState, UiPages};
 use crate::store::RacingStore;
 use protocol::httpapi::RaceState;
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct RacingClient {
     pub store: RacingStore,
     pub ui: UiPages,
@@ -18,6 +18,10 @@ impl RacingClient {
         ctx.set_fonts(fonts);
         self
     }
+
+    pub fn switch_to_page(&mut self, page: UiPageState) {
+        self.store.switch_to_page(page);
+    }
 }
  
 impl eframe::App for RacingClient {
@@ -25,21 +29,25 @@ impl eframe::App for RacingClient {
         egui::TopBottomPanel::top("menu bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("主页").clicked() {
-                    self.store.swich_page(UiPageState::PageLogin);
+                    self.switch_to_page(UiPageState::PageLogin);
                 }
                 ui.menu_button("比赛大厅", |ui| {
                     ui.vertical(|ui| {
                         if ui.button("进入大厅").clicked() {
-                            self.store.swich_page(UiPageState::PageLobby);
+                            self.switch_to_page(UiPageState::PageLobby);
                             ui.close_menu();
                         }
                         if ui.button("创建比赛").clicked() {
-                            self.store.swich_page(UiPageState::PageCreate);
+                            self.switch_to_page(UiPageState::PageCreate);
+                            ui.close_menu();
                         }
                     });
                 });
                 if ui.button("设置").clicked() {
-                    self.store.swich_page(UiPageState::PageSetting);
+                    self.switch_to_page(UiPageState::PageSetting);
+                }
+                if ui.button("帮助").clicked() {
+                    self.switch_to_page(UiPageState::PageLogin);
                 }
             })
         });
@@ -47,7 +55,7 @@ impl eframe::App for RacingClient {
         egui::TopBottomPanel::bottom("status bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(String::from("用户："));
-                ui.label(self.store.user_name.clone());
+                ui.label(&self.store.user_name);
                 ui.separator();
                 ui.label("状态：");
                 match self.store.user_state {
@@ -66,13 +74,13 @@ impl eframe::App for RacingClient {
 
         match self.store.curr_page {
             UiPageState::PageLogin => self.ui.login.update(ctx, frame, &mut self.store),
-            UiPageState::PageFinish => self.ui.finish.update(ctx, frame),
-            UiPageState::PageLoading => self.ui.loading.update(ctx, frame),
+            UiPageState::PageFinish => self.ui.finish.update(ctx, frame, &mut self.store),
+            UiPageState::PageLoading => self.ui.loading.update(ctx, frame, &mut self.store),
             UiPageState::PageLobby => self.ui.lobby.update(ctx, frame, &mut self.store),
-            UiPageState::PageRacing => self.ui.racing.update(ctx, frame),
-            UiPageState::PageSetting => self.ui.setting.update(ctx, frame),
-            UiPageState::PageCreate => self.ui.create.update(ctx, frame),
-            UiPageState::PageInRoom => self.ui.inroom.update(ctx, frame),
+            UiPageState::PageRacing => self.ui.racing.update(ctx, frame, &mut self.store),
+            UiPageState::PageSetting => self.ui.setting.update(ctx, frame, &mut self.store),
+            UiPageState::PageCreate => self.ui.create.update(ctx, frame, &mut self.store),
+            UiPageState::PageInRoom => self.ui.inroom.update(ctx, frame, &mut self.store),
         }
     }
 }

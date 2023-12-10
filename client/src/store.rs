@@ -12,8 +12,13 @@ pub struct RacingStore {
 }
 
 impl RacingStore {
-    pub fn swich_page(&mut self, page: UiPageState) {
+    pub fn switch_to_page(&mut self, page: UiPageState) {
         self.prev_page = self.curr_page.clone();
         self.curr_page = page;
+    }
+
+    pub fn back_from_page(&mut self, page: UiPageState) {
+        self.curr_page = self.prev_page.clone();
+        self.prev_page = page;
     }
 }

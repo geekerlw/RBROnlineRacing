@@ -15,7 +15,7 @@ pub enum UiPageState {
     PageSetting,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct UiPages {
     pub login: ui::login::UiLogin,
     pub finish: ui::finish::UiFinish,

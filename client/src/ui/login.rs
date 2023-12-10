@@ -21,7 +21,7 @@ impl UiLogin {
                     ui.label(RichText::new("作者：子夜(Lw_Ziye), Copyright (c) 2023, 有疑问请进群@Lw_Ziye。").size(16.0));
                     ui.add_space(50.0);
                     if ui.button("知道了啦").clicked() {
-                        store.swich_page(UiPageState::PageLobby);
+                        store.switch_to_page(UiPageState::PageLobby);
                     }
                 });
             });

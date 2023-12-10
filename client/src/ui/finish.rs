@@ -1,6 +1,7 @@
 use eframe::egui;
 use egui::Grid;
 use protocol::httpapi::{MetaRaceResult, MetaRaceData};
+use crate::{store::RacingStore, UiPageState};
 
 #[derive(Clone)]
 pub struct UiFinish {
@@ -40,11 +41,11 @@ impl Default for UiFinish {
 }
 
 impl UiFinish {
-    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal_centered(|ui| {
+            ui.horizontal(|ui| {
                 ui.add_space(120.0);
-                ui.vertical_centered(|ui| {
+                ui.vertical(|ui| {
                     Grid::new("race result").min_col_width(120.0).show(ui, |ui| {
                         for content in &self.table_head {
                             ui.label(*content);
@@ -62,6 +63,14 @@ impl UiFinish {
                                 ui.label(content);
                             }
                             ui.end_row();
+                        }
+                    });
+
+                    ui.add_space(40.0);
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        ui.add_space(250.0);
+                        if ui.button("确认").clicked() {
+                            store.switch_to_page(UiPageState::PageInRoom);
                         }
                     });
                 })

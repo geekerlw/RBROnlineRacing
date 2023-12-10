@@ -58,13 +58,13 @@ impl UiLobby {
                                 ui.label(content);
                             }
                             if ui.button("加入").clicked() {
-                                
+                                store.switch_to_page(UiPageState::PageInRoom);
                             }
-
                             ui.end_row();
                         }
                     });
-                })
+                });
+                ui.add_space(120.0);
             });
         });
     }

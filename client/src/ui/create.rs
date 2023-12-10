@@ -2,6 +2,7 @@ use eframe::egui;
 use egui::Grid;
 use egui::RichText;
 use egui::ComboBox;
+use crate::{store::RacingStore, UiPageState};
 
 #[derive(Clone)]
 pub struct UiCreateRace {
@@ -30,40 +31,56 @@ impl Default for UiCreateRace {
 }
 
 impl UiCreateRace {
-    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add_space(60.0);
             ui.horizontal(|ui| {
-                ui.add_space(180.0);
-                Grid::new("race create table").show(ui, |ui| {
-                    ui.label("比赛赛道：");
-                    ComboBox::from_id_source("select stage").selected_text(self.stage[self.stage_index].clone())
-                    .show_ui(ui, |ui| {
-                        for (index, text) in self.stage.iter().enumerate() {
-                            if ui.selectable_label(self.stage_index == index, text).clicked() {
-                                self.stage_index = index;
+                ui.add_space(120.0);
+                ui.vertical(|ui| {
+                    Grid::new("race create table")
+                    .min_col_width(80.0)
+                    .min_row_height(24.0)
+                    .show(ui, |ui| {
+                        ui.label("比赛赛道：");
+                        ComboBox::from_id_source("select stage").selected_text(self.stage[self.stage_index].clone())
+                        .show_ui(ui, |ui| {
+                            for (index, text) in self.stage.iter().enumerate() {
+                                if ui.selectable_label(self.stage_index == index, text).clicked() {
+                                    self.stage_index = index;
+                                }
                             }
+                        });
+                        ui.end_row();
+
+                        ui.label("比赛车辆: ");
+                        ComboBox::from_id_source("select car").selected_text(self.car[self.car_index].clone())
+                        .show_ui(ui, |ui| {
+                            for (index, text) in self.car.iter().enumerate() {
+                                if ui.selectable_label(self.car_index == index, text).clicked() {
+                                    self.car_index = index;
+                                }
+                            }
+                        });
+                        ui.end_row();
+
+                        ui.label("车辆损坏：");
+                        ui.label("Always new");
+                        ui.end_row();
+
+                        ui.label("车辆调教: ");
+                        ui.label("Default");
+                    });
+
+                    ui.add_space(20.0);
+
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        ui.add_space(80.0);
+                        if ui.button("取消").clicked() {
+                            store.back_from_page(UiPageState::PageCreate);
+                        }
+                        if ui.button("确认").clicked() {
+                            store.switch_to_page(UiPageState::PageInRoom);
                         }
                     });
-                    ui.end_row();
-
-                    ui.label("比赛车辆: ");
-                    ComboBox::from_id_source("select car").selected_text(self.car[self.car_index].clone())
-                    .show_ui(ui, |ui| {
-                        for (index, text) in self.car.iter().enumerate() {
-                            if ui.selectable_label(self.car_index == index, text).clicked() {
-                                self.car_index = index;
-                            }
-                        }
-                    });
-                    ui.end_row();
-
-                    ui.label("车辆损坏：");
-                    ui.label("Always new");
-                    ui.end_row();
-
-                    ui.label("车辆调教: ");
-                    ui.label("Default");
                 });
             });
         });
