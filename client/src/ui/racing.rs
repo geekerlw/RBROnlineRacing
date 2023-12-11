@@ -9,8 +9,8 @@ enum UiRacingMsg {
 
 pub struct UiRacing {
     pub state: bool,
-    pub tx: Sender<UiRacingMsg>,
-    pub rx: Receiver<UiRacingMsg>,
+    tx: Sender<UiRacingMsg>,
+    rx: Receiver<UiRacingMsg>,
 }
 
 impl Default for UiRacing {
@@ -38,9 +38,11 @@ impl UiRacing {
                 if !self.state {
                     self.state = true;
                     let tx_clone = self.tx.clone();
+                    let ctx_clone = ctx.clone();
                     tokio::spawn(async move {
                         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                         tx_clone.clone().send(UiRacingMsg::MsgGotoPage(UiPageState::PageFinish)).await.unwrap();
+                        ctx_clone.request_repaint();
                     });
                 };
             });

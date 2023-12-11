@@ -9,8 +9,8 @@ enum UiLoadingMsg {
 
 pub struct UiLoading {
     pub state: bool,
-    pub tx: Sender<UiLoadingMsg>,
-    pub rx: Receiver<UiLoadingMsg>,
+    tx: Sender<UiLoadingMsg>,
+    rx: Receiver<UiLoadingMsg>,
 }
 
 impl Default for UiLoading {
@@ -40,9 +40,11 @@ impl UiLoading {
                 if !self.state {
                     self.state = true;
                     let tx_clone = self.tx.clone();
+                    let ctx_clone = ctx.clone();
                     tokio::spawn(async move {
                         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                         tx_clone.clone().send(UiLoadingMsg::MsgGotoPage(UiPageState::PageRacing)).await.unwrap();
+                        ctx_clone.request_repaint();
                     });
                 };
             });
