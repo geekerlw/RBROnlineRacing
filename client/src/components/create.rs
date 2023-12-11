@@ -1,7 +1,7 @@
 use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
-use super::PageView;
+use super::UiView;
 use crate::store::RacingStore;
 use crate::{route::RacingRoute, UiPageState};
 
@@ -31,7 +31,7 @@ impl Default for UiCreateRace {
     }
 }
 
-impl PageView for UiCreateRace {
+impl UiView for UiCreateRace {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {

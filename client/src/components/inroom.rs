@@ -2,7 +2,7 @@ use eframe::egui;
 use egui::Grid;
 use crate::{route::RacingRoute, UiPageState};
 use crate::store::RacingStore;
-use super::PageView;
+use super::UiView;
 
 #[derive(Clone)]
 pub struct UiInRoom {
@@ -28,7 +28,7 @@ impl Default for UiInRoom {
     }
 }
 
-impl PageView for UiInRoom {
+impl UiView for UiInRoom {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {

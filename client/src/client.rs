@@ -3,7 +3,7 @@ use egui::{FontDefinitions, FontData};
 use crate::{UiPageState, UiPages};
 use crate::store::RacingStore;
 use crate::route::RacingRoute;
-use crate::ui::PageView;
+use crate::components::UiView;
 
 #[derive(Default)]
 pub struct RacingClient {

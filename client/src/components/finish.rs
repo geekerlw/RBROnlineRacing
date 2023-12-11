@@ -3,7 +3,7 @@ use egui::Grid;
 use protocol::httpapi::{MetaRaceResult, MetaRaceData};
 use crate::{route::RacingRoute, UiPageState};
 use crate::store::RacingStore;
-use super::PageView;
+use super::UiView;
 
 #[derive(Clone)]
 pub struct UiFinish {
@@ -42,7 +42,7 @@ impl Default for UiFinish {
     }
 }
 
-impl PageView for UiFinish {
+impl UiView for UiFinish {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {

@@ -3,7 +3,7 @@ use egui::Grid;
 use protocol::httpapi::{RaceList, RaceItem, RoomState};
 use crate::{route::RacingRoute, UiPageState};
 use crate::store::RacingStore;
-use super::PageView;
+use super::UiView;
 
 #[derive(Clone)]
 pub struct UiLobby {
@@ -33,7 +33,7 @@ impl Default for UiLobby {
     }
 }
 
-impl PageView for UiLobby {
+impl UiView for UiLobby {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {

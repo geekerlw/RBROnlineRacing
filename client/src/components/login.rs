@@ -2,13 +2,13 @@ use eframe::egui;
 use egui::RichText;
 use crate::{route::RacingRoute, UiPageState};
 use crate::store::RacingStore;
-use super::PageView;
+use super::UiView;
 
 #[derive(Default, Clone)]
 pub struct UiLogin {
 }
 
-impl PageView for UiLogin {
+impl UiView for UiLogin {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {

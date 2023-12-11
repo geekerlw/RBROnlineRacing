@@ -1,5 +1,5 @@
 pub mod client;
-pub mod ui;
+pub mod components;
 pub mod store;
 pub mod route;
 
@@ -18,12 +18,12 @@ pub enum UiPageState {
 
 #[derive(Default)]
 pub struct UiPages {
-    pub login: ui::login::UiLogin,
-    pub finish: ui::finish::UiFinish,
-    pub loading: ui::loading::UiLoading,
-    pub lobby: ui::lobby::UiLobby,
-    pub racing: ui::racing::UiRacing,
-    pub setting: ui::setting::UiSetting,
-    pub create: ui::create::UiCreateRace,
-    pub inroom: ui::inroom::UiInRoom,
+    pub login: components::login::UiLogin,
+    pub finish: components::finish::UiFinish,
+    pub loading: components::loading::UiLoading,
+    pub lobby: components::lobby::UiLobby,
+    pub racing: components::racing::UiRacing,
+    pub setting: components::setting::UiSetting,
+    pub create: components::create::UiCreateRace,
+    pub inroom: components::inroom::UiInRoom,
 }

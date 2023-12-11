@@ -3,7 +3,7 @@ use egui::RichText;
 use crate::{route::RacingRoute, UiPageState};
 use tokio::sync::mpsc::{Sender, Receiver};
 use crate::store::RacingStore;
-use super::PageView;
+use super::UiView;
 
 enum UiRacingMsg {
     MsgGotoPage(UiPageState),
@@ -26,7 +26,7 @@ impl Default for UiRacing {
     }
 }
 
-impl PageView for UiRacing {
+impl UiView for UiRacing {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {

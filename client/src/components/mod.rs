@@ -10,6 +10,6 @@ pub mod inroom;
 use crate::route::RacingRoute;
 use crate::store::RacingStore;
 
-pub trait PageView {
+pub trait UiView {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore);
 }
