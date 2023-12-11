@@ -2,11 +2,13 @@ use eframe::egui;
 use egui::{FontDefinitions, FontData};
 use crate::{UiPageState, UiPages};
 use crate::store::RacingStore;
-use protocol::httpapi::RaceState;
+use crate::route::RacingRoute;
+use crate::ui::PageView;
 
 #[derive(Default)]
 pub struct RacingClient {
     pub store: RacingStore,
+    pub route: RacingRoute,
     pub ui: UiPages,
 }
 
@@ -20,7 +22,7 @@ impl RacingClient {
     }
 
     pub fn switch_to_page(&mut self, page: UiPageState) {
-        self.store.switch_to_page(page);
+        self.route.switch_to_page(page);
     }
 }
  
@@ -58,29 +60,19 @@ impl eframe::App for RacingClient {
                 ui.label(&self.store.user_name);
                 ui.separator();
                 ui.label("状态：");
-                match self.store.user_state {
-                    RaceState::RaceDefault => ui.label("空闲"),
-                    RaceState::RaceFinished => ui.label("比赛完成"),
-                    RaceState::RaceInit => ui.label("初始化比赛"),
-                    RaceState::RaceLoad => ui.label("比赛加载中"),
-                    RaceState::RaceLoaded => ui.label("比赛加载完成"),
-                    RaceState::RaceReady => ui.label("比赛就绪"),
-                    RaceState::RaceRetired => ui.label("比赛已放弃"),
-                    RaceState::RaceRunning => ui.label("比赛进行中"),
-                    RaceState::RaceStart => ui.label("比赛开始"),
-                };
+                self.store.show_user_state(ui);
             });
         });
 
-        match self.store.curr_page {
-            UiPageState::PageLogin => self.ui.login.update(ctx, frame, &mut self.store),
-            UiPageState::PageFinish => self.ui.finish.update(ctx, frame, &mut self.store),
-            UiPageState::PageLoading => self.ui.loading.update(ctx, frame, &mut self.store),
-            UiPageState::PageLobby => self.ui.lobby.update(ctx, frame, &mut self.store),
-            UiPageState::PageRacing => self.ui.racing.update(ctx, frame, &mut self.store),
-            UiPageState::PageSetting => self.ui.setting.update(ctx, frame, &mut self.store),
-            UiPageState::PageCreate => self.ui.create.update(ctx, frame, &mut self.store),
-            UiPageState::PageInRoom => self.ui.inroom.update(ctx, frame, &mut self.store),
+        match self.route.curr_page {
+            UiPageState::PageLogin => self.ui.login.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageFinish => self.ui.finish.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageLoading => self.ui.loading.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageLobby => self.ui.lobby.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageRacing => self.ui.racing.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageSetting => self.ui.setting.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageCreate => self.ui.create.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageInRoom => self.ui.inroom.update(ctx, frame, &mut self.route, &mut self.store),
         }
     }
 }

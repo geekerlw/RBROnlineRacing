@@ -1,6 +1,7 @@
 pub mod client;
 pub mod ui;
 pub mod store;
+pub mod route;
 
 #[derive(Default, Clone)]
 pub enum UiPageState {

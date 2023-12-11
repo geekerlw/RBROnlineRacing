@@ -1,7 +1,9 @@
 use eframe::egui;
 use egui::RichText;
-use crate::{store::RacingStore, UiPageState};
+use crate::{route::RacingRoute, UiPageState};
 use tokio::sync::mpsc::{Sender, Receiver};
+use crate::store::RacingStore;
+use super::PageView;
 
 enum UiRacingMsg {
     MsgGotoPage(UiPageState),
@@ -24,11 +26,11 @@ impl Default for UiRacing {
     }
 }
 
-impl UiRacing {
-    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, store: &mut RacingStore) {
+impl PageView for UiRacing {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {
-                UiRacingMsg::MsgGotoPage(page) => store.switch_to_page(page),
+                UiRacingMsg::MsgGotoPage(page) => route.switch_to_page(page),
             };
         }
 

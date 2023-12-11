@@ -1,8 +1,9 @@
 use eframe::egui;
 use egui::Grid;
-use egui::RichText;
 use egui::ComboBox;
-use crate::{store::RacingStore, UiPageState};
+use super::PageView;
+use crate::store::RacingStore;
+use crate::{route::RacingRoute, UiPageState};
 
 #[derive(Clone)]
 pub struct UiCreateRace {
@@ -30,8 +31,8 @@ impl Default for UiCreateRace {
     }
 }
 
-impl UiCreateRace {
-    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, store: &mut RacingStore) {
+impl PageView for UiCreateRace {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.add_space(120.0);
@@ -75,10 +76,10 @@ impl UiCreateRace {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         ui.add_space(80.0);
                         if ui.button("取消").clicked() {
-                            store.back_from_page(UiPageState::PageCreate);
+                            route.back_from_page(UiPageState::PageCreate);
                         }
                         if ui.button("确认").clicked() {
-                            store.switch_to_page(UiPageState::PageInRoom);
+                            route.switch_to_page(UiPageState::PageInRoom);
                         }
                     });
                 });

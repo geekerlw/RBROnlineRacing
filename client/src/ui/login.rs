@@ -1,13 +1,15 @@
 use eframe::egui;
 use egui::RichText;
-use crate::{store::RacingStore, UiPageState};
+use crate::{route::RacingRoute, UiPageState};
+use crate::store::RacingStore;
+use super::PageView;
 
 #[derive(Default, Clone)]
 pub struct UiLogin {
 }
 
-impl UiLogin {
-    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, store: &mut RacingStore) {
+impl PageView for UiLogin {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.vertical_centered(|ui| {
@@ -21,7 +23,7 @@ impl UiLogin {
                     ui.label(RichText::new("作者：子夜(Lw_Ziye), Copyright (c) 2023, 有疑问请进群@Lw_Ziye。").size(16.0));
                     ui.add_space(50.0);
                     if ui.button("知道了啦").clicked() {
-                        store.switch_to_page(UiPageState::PageLobby);
+                        route.switch_to_page(UiPageState::PageLobby);
                     }
                 });
             });
