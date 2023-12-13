@@ -1,21 +1,22 @@
-use client::ui::UiPageState;
+use ui::UiPageState;
 use protocol::httpapi::RaceState;
-use client::ui::index::UiRacingApp;
-use client::ui::{UiPageCtx, UiMsg};
-use tokio::sync::mpsc::{channel, Sender, Receiver};
+use client::RacingClient;
+
+mod ui;
+mod game;
+mod components;
+mod client;
 
 #[tokio::main]
 async fn main() {
-    let (tx, mut rx) = channel::<UiMsg>(32);
-    let mut ctx = UiPageCtx::new(tx);
-    ctx.route.prev_page = UiPageState::PageLogin;
-    ctx.route.curr_page = UiPageState::PageLogin;
-    ctx.store.server_addr = "127.0.0.1".to_string();
-    ctx.store.server_port = 8080;
-    ctx.store.user_name = String::from("Lw_Ziye");
-    ctx.store.user_passwd = String::from("simrallycn");
-    ctx.store.user_state = RaceState::RaceInit;
-    let app = UiRacingApp::new(ctx, rx);
+    let mut app = RacingClient::default();
+    app.ctx.route.prev_page = UiPageState::PageLogin;
+    app.ctx.route.curr_page = UiPageState::PageLogin;
+    app.ctx.store.server_addr = "127.0.0.1".to_string();
+    app.ctx.store.server_port = 8080;
+    app.ctx.store.user_name = String::from("Lw_Ziye");
+    app.ctx.store.user_passwd = String::from("simrallycn");
+    app.ctx.store.user_state = RaceState::RaceInit;
 
     let mut native_options: eframe::NativeOptions = eframe::NativeOptions::default();
     native_options.initial_window_size = Some(egui::Vec2::new(1000.0, 600.0));

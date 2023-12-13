@@ -1,6 +1,5 @@
 use eframe::egui;
 use egui::RichText;
-use tokio::sync::mpsc::{Sender, Receiver};
 use crate::ui::UiPageState;
 use super::{UiView, UiPageCtx, UiMsg};
 

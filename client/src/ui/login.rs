@@ -1,10 +1,32 @@
 use eframe::egui;
 use egui::RichText;
+use protocol::httpapi::UserLogin;
+use reqwest::StatusCode;
 use crate::ui::UiPageState;
-use super::{UiView, UiPageCtx};
+use super::{UiMsg, UiView, UiPageCtx};
 
 #[derive(Default, Clone)]
 pub struct UiLogin {
+}
+
+impl UiLogin {
+    fn login(&mut self, page: &mut UiPageCtx) {
+        if page.store.user_token.is_empty() {
+            let user = UserLogin{name: page.store.user_name.clone(), passwd: page.store.user_passwd.clone()};
+            let url = page.store.get_http_url("api/user/login");
+            let tx = page.tx.clone();
+            tokio::spawn(async move {
+                let res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
+                if res.status() == StatusCode::OK {
+                    let token = res.text().await.unwrap();
+                    tx.send(UiMsg::MsgUserLogined(token)).await.unwrap();
+                    tx.send(UiMsg::MsgGotoPage(UiPageState::PageLobby)).await.unwrap();
+                }
+            });
+        } else {
+            page.route.switch_to_page(UiPageState::PageLobby);
+        }
+    }
 }
 
 impl UiView for UiLogin {
@@ -21,8 +43,10 @@ impl UiView for UiLogin {
                     ui.add_space(10.0);
                     ui.label(RichText::new("作者：子夜(Lw_Ziye), Copyright (c) 2023, 有疑问请进群@Lw_Ziye。").size(16.0));
                     ui.add_space(50.0);
-                    if ui.button("知道了啦").clicked() {
-                        page.route.switch_to_page(UiPageState::PageLobby);
+                    if !page.store.user_name.is_empty() && !page.store.user_passwd.is_empty() {
+                        if ui.button("知道了啦").clicked() {
+                            self.login(page);
+                        }
                     }
                 });
             });
