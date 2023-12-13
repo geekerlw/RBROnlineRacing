@@ -1,8 +1,5 @@
 use eframe::egui;
-use crate::components::store::RacingStore;
-use crate::components::route::RacingRoute;
-use crate::ui::UiPageState;
-use super::UiView;
+use super::{UiView, UiPageCtx};
 
 #[derive(Default, Clone)]
 pub struct UiSetting {
@@ -10,7 +7,7 @@ pub struct UiSetting {
 }
 
 impl UiView for UiSetting {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.add_space(200.0);

@@ -1,14 +1,12 @@
 use eframe::egui;
 use egui::{FontDefinitions, FontData};
 use super::UiPageState;
-use crate::components::store::RacingStore;
-use crate::components::route::RacingRoute;
-use crate::ui::UiView;
+use crate::ui::{UiView, UiPageCtx, UiMsg};
+use tokio::sync::mpsc::Receiver;
 
-#[derive(Default)]
 pub struct UiRacingApp {
-    pub store: RacingStore,
-    pub route: RacingRoute,
+    pub ctx: UiPageCtx,
+    pub rx: Receiver<UiMsg>,
 
     pub login: super::login::UiLogin,
     pub finish: super::finish::UiFinish,
@@ -21,6 +19,21 @@ pub struct UiRacingApp {
 }
 
 impl UiRacingApp {
+    pub fn new(ctx: UiPageCtx, rx: Receiver<UiMsg>) -> Self {
+        Self {
+            ctx,
+            rx,
+            login: super::login::UiLogin::default(),
+            finish: super::finish::UiFinish::default(),
+            loading: super::loading::UiLoading::default(),
+            lobby: super::lobby::UiLobby::default(),
+            racing: super::racing::UiRacing::default(),
+            setting: super::setting::UiSetting::default(),
+            create: super::create::UiCreateRace::default(),
+            inroom: super::inroom::UiInRoom::default(),
+        }
+    }
+
     pub fn configure_font(self, ctx: &egui::Context) -> Self {
         let mut fonts = FontDefinitions::default();
         fonts.font_data.insert("msyh".to_owned(), FontData::from_static(include_bytes!("C:\\Windows\\Fonts\\msyh.ttc")));
@@ -30,12 +43,25 @@ impl UiRacingApp {
     }
 
     pub fn switch_to_page(&mut self, page: UiPageState) {
-        self.route.switch_to_page(page);
+        self.ctx.route.switch_to_page(page);
+    }
+
+    pub fn handle_async_uimsg(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let Ok(msg) = self.rx.try_recv() {
+            match msg {
+                UiMsg::MsgGotoPage(state) => {
+                    self.ctx.route.switch_to_page(state)
+                }
+            };
+        }
+        ctx.request_repaint();
     }
 }
  
 impl eframe::App for UiRacingApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        self.handle_async_uimsg(ctx, frame);
+
         egui::TopBottomPanel::top("menu bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("主页").clicked() {
@@ -65,22 +91,22 @@ impl eframe::App for UiRacingApp {
         egui::TopBottomPanel::bottom("status bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(String::from("用户："));
-                ui.label(&self.store.user_name);
+                ui.label(&self.ctx.store.user_name);
                 ui.separator();
                 ui.label("状态：");
-                self.store.show_user_state(ui);
+                self.ctx.store.show_user_state(ui);
             });
         });
 
-        match self.route.curr_page {
-            UiPageState::PageLogin => self.login.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageFinish => self.finish.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageLoading => self.loading.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageLobby => self.lobby.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageRacing => self.racing.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageSetting => self.setting.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageCreate => self.create.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageInRoom => self.inroom.update(ctx, frame, &mut self.route, &mut self.store),
+        match self.ctx.route.curr_page {
+            UiPageState::PageLogin => self.login.update(ctx, frame, &mut self.ctx),
+            UiPageState::PageFinish => self.finish.update(ctx, frame, &mut self.ctx),
+            UiPageState::PageLoading => self.loading.update(ctx, frame, &mut self.ctx),
+            UiPageState::PageLobby => self.lobby.update(ctx, frame, &mut self.ctx),
+            UiPageState::PageRacing => self.racing.update(ctx, frame, &mut self.ctx),
+            UiPageState::PageSetting => self.setting.update(ctx, frame, &mut self.ctx),
+            UiPageState::PageCreate => self.create.update(ctx, frame, &mut self.ctx),
+            UiPageState::PageInRoom => self.inroom.update(ctx, frame, &mut self.ctx),
         }
     }
 }

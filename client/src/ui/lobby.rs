@@ -1,10 +1,8 @@
 use eframe::egui;
 use egui::Grid;
 use protocol::httpapi::{RaceList, RaceItem, RoomState};
-use crate::components::store::RacingStore;
-use crate::components::route::RacingRoute;
 use crate::ui::UiPageState;
-use super::UiView;
+use super::{UiView, UiPageCtx};
 
 #[derive(Clone)]
 pub struct UiLobby {
@@ -35,7 +33,7 @@ impl Default for UiLobby {
 }
 
 impl UiView for UiLobby {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.add_space(120.0);
@@ -61,7 +59,7 @@ impl UiView for UiLobby {
                                 ui.label(content);
                             }
                             if ui.button("加入").clicked() {
-                                route.switch_to_page(UiPageState::PageInRoom);
+                                page.route.switch_to_page(UiPageState::PageInRoom);
                             }
                             ui.end_row();
                         }

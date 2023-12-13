@@ -1,9 +1,7 @@
 use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
-use super::UiView;
-use crate::components::store::RacingStore;
-use crate::components::route::RacingRoute;
+use super::{UiView, UiPageCtx};
 use crate::ui::UiPageState;
 
 #[derive(Clone)]
@@ -33,7 +31,7 @@ impl Default for UiCreateRace {
 }
 
 impl UiView for UiCreateRace {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.add_space(120.0);
@@ -77,10 +75,10 @@ impl UiView for UiCreateRace {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         ui.add_space(80.0);
                         if ui.button("取消").clicked() {
-                            route.back_from_page(UiPageState::PageCreate);
+                            page.route.back_from_page(UiPageState::PageCreate);
                         }
                         if ui.button("确认").clicked() {
-                            route.switch_to_page(UiPageState::PageInRoom);
+                            page.route.switch_to_page(UiPageState::PageInRoom);
                         }
                     });
                 });

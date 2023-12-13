@@ -1,9 +1,7 @@
 use eframe::egui;
 use egui::Grid;
-use crate::components::store::RacingStore;
-use crate::components::route::RacingRoute;
 use crate::ui::UiPageState;
-use super::UiView;
+use super::{UiView, UiPageCtx};
 
 #[derive(Clone)]
 pub struct UiInRoom {
@@ -30,7 +28,7 @@ impl Default for UiInRoom {
 }
 
 impl UiView for UiInRoom {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.add_space(120.0);
@@ -75,10 +73,10 @@ impl UiView for UiInRoom {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         ui.add_space(80.0);
                         if ui.button("退出").clicked() {
-                            route.switch_to_page(UiPageState::PageLobby);
+                            page.route.switch_to_page(UiPageState::PageLobby);
                         }
                         if ui.button("准备").clicked() {
-                            route.switch_to_page(UiPageState::PageLoading);
+                            page.route.switch_to_page(UiPageState::PageLoading);
                         }
                     });
                 });

@@ -1,53 +1,26 @@
 use eframe::egui;
 use egui::RichText;
 use tokio::sync::mpsc::{Sender, Receiver};
-use crate::components::store::RacingStore;
-use crate::components::route::RacingRoute;
 use crate::ui::UiPageState;
-use super::UiView;
+use super::{UiView, UiPageCtx, UiMsg};
 
-enum UiLoadingMsg {
-    MsgGotoPage(UiPageState),
-}
 
+#[derive(Default)]
 pub struct UiLoading {
     pub state: bool,
-    tx: Sender<UiLoadingMsg>,
-    rx: Receiver<UiLoadingMsg>,
-}
-
-impl Default for UiLoading {
-    fn default() -> Self {
-        let (tx, rx) = tokio::sync::mpsc::channel::<UiLoadingMsg>(16);
-        Self {
-            state: false,
-            tx,
-            rx,
-        }
-    }
 }
 
 impl UiView for UiLoading {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
-        if let Ok(msg) = self.rx.try_recv() {
-            match msg {
-                UiLoadingMsg::MsgGotoPage(page) => {
-                    route.switch_to_page(page)
-                },
-            };
-        }
-
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.centered_and_justified(|ui| {
                 ui.label(RichText::new("游戏加载中...").size(40.0));
                 if !self.state {
                     self.state = true;
-                    let tx_clone = self.tx.clone();
-                    let ctx_clone = ctx.clone();
+                    let tx_clone = page.tx.clone();
                     tokio::spawn(async move {
                         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                        tx_clone.clone().send(UiLoadingMsg::MsgGotoPage(UiPageState::PageRacing)).await.unwrap();
-                        ctx_clone.request_repaint();
+                        tx_clone.clone().send(UiMsg::MsgGotoPage(UiPageState::PageRacing)).await.unwrap();
                     });
                 };
             });

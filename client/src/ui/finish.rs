@@ -1,10 +1,8 @@
 use eframe::egui;
 use egui::Grid;
 use protocol::httpapi::{MetaRaceResult, MetaRaceData};
-use crate::components::store::RacingStore;
-use crate::components::route::RacingRoute;
 use crate::ui::UiPageState;
-use super::UiView;
+use super::{UiView, UiPageCtx};
 
 #[derive(Clone)]
 pub struct UiFinish {
@@ -44,7 +42,7 @@ impl Default for UiFinish {
 }
 
 impl UiView for UiFinish {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, route: &mut RacingRoute, store: &mut RacingStore) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.add_space(120.0);
@@ -73,7 +71,7 @@ impl UiView for UiFinish {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         ui.add_space(250.0);
                         if ui.button("确认").clicked() {
-                            route.switch_to_page(UiPageState::PageInRoom);
+                            page.route.switch_to_page(UiPageState::PageInRoom);
                         }
                     });
                 })
