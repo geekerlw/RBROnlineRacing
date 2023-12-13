@@ -1,16 +1,18 @@
-use client::client::RacingClient;
-use client::UiPageState;
-use client::store::RacingStore;
-use client::route::RacingRoute;
+use client::ui::UiPageState;
+use client::components::store::RacingStore;
+use client::components::route::RacingRoute;
 use protocol::httpapi::RaceState;
+use client::ui::index::UiRacingApp;
 
 #[tokio::main]
 async fn main() {
-    let mut app = RacingClient::default();
-    let mut store = RacingStore::default();
+    let mut app = UiRacingApp::default();
+    let mut store: RacingStore = RacingStore::default();
     let mut route = RacingRoute::default();
     route.prev_page = UiPageState::PageLogin;
     route.curr_page = UiPageState::PageLogin;
+    store.server_addr = "127.0.0.1".to_string();
+    store.server_port = 8080;
     store.user_name = String::from("Lw_Ziye");
     store.user_passwd = String::from("simrallycn");
     store.user_state = RaceState::RaceInit;

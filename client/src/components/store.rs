@@ -3,6 +3,8 @@ use protocol::httpapi::RaceState;
 
 #[derive(Default, Clone)]
 pub struct RacingStore {
+    pub server_addr: String,
+    pub server_port: u16,
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,
@@ -22,5 +24,15 @@ impl RacingStore {
             RaceState::RaceRunning => ui.label("比赛进行中"),
             RaceState::RaceStart => ui.label("比赛开始"),
         };        
+    }
+
+    pub fn get_http_url(&self, uri: &str) -> String {
+        let url = "http://".to_string()
+            + self.server_addr.as_str()
+            + ":"
+            + self.server_port.to_string().as_str()
+            + "/"
+            + uri;
+        return url;
     }
 }

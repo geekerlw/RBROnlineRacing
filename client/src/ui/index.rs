@@ -1,18 +1,26 @@
 use eframe::egui;
 use egui::{FontDefinitions, FontData};
-use crate::{UiPageState, UiPages};
-use crate::store::RacingStore;
-use crate::route::RacingRoute;
-use crate::components::UiView;
+use super::UiPageState;
+use crate::components::store::RacingStore;
+use crate::components::route::RacingRoute;
+use crate::ui::UiView;
 
 #[derive(Default)]
-pub struct RacingClient {
+pub struct UiRacingApp {
     pub store: RacingStore,
     pub route: RacingRoute,
-    pub ui: UiPages,
+
+    pub login: super::login::UiLogin,
+    pub finish: super::finish::UiFinish,
+    pub loading: super::loading::UiLoading,
+    pub lobby: super::lobby::UiLobby,
+    pub racing: super::racing::UiRacing,
+    pub setting: super::setting::UiSetting,
+    pub create: super::create::UiCreateRace,
+    pub inroom: super::inroom::UiInRoom,
 }
 
-impl RacingClient {
+impl UiRacingApp {
     pub fn configure_font(self, ctx: &egui::Context) -> Self {
         let mut fonts = FontDefinitions::default();
         fonts.font_data.insert("msyh".to_owned(), FontData::from_static(include_bytes!("C:\\Windows\\Fonts\\msyh.ttc")));
@@ -26,7 +34,7 @@ impl RacingClient {
     }
 }
  
-impl eframe::App for RacingClient {
+impl eframe::App for UiRacingApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("menu bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -65,14 +73,14 @@ impl eframe::App for RacingClient {
         });
 
         match self.route.curr_page {
-            UiPageState::PageLogin => self.ui.login.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageFinish => self.ui.finish.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageLoading => self.ui.loading.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageLobby => self.ui.lobby.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageRacing => self.ui.racing.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageSetting => self.ui.setting.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageCreate => self.ui.create.update(ctx, frame, &mut self.route, &mut self.store),
-            UiPageState::PageInRoom => self.ui.inroom.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageLogin => self.login.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageFinish => self.finish.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageLoading => self.loading.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageLobby => self.lobby.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageRacing => self.racing.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageSetting => self.setting.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageCreate => self.create.update(ctx, frame, &mut self.route, &mut self.store),
+            UiPageState::PageInRoom => self.inroom.update(ctx, frame, &mut self.route, &mut self.store),
         }
     }
 }

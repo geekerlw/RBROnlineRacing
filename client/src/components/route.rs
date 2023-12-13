@@ -1,4 +1,4 @@
-use crate::UiPageState;
+use crate::ui::UiPageState;
 
 #[derive(Default, Clone)]
 pub struct RacingRoute {

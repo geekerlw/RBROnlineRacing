@@ -2,8 +2,9 @@ use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
 use super::UiView;
-use crate::store::RacingStore;
-use crate::{route::RacingRoute, UiPageState};
+use crate::components::store::RacingStore;
+use crate::components::route::RacingRoute;
+use crate::ui::UiPageState;
 
 #[derive(Clone)]
 pub struct UiCreateRace {

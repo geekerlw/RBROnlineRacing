@@ -1,8 +1,9 @@
 use eframe::egui;
 use egui::RichText;
-use crate::{route::RacingRoute, UiPageState};
 use tokio::sync::mpsc::{Sender, Receiver};
-use crate::store::RacingStore;
+use crate::components::store::RacingStore;
+use crate::components::route::RacingRoute;
+use crate::ui::UiPageState;
 use super::UiView;
 
 enum UiRacingMsg {

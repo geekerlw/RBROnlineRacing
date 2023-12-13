@@ -1,6 +1,7 @@
 use eframe::egui;
-use crate::{route::RacingRoute, UiPageState};
-use crate::store::RacingStore;
+use crate::components::store::RacingStore;
+use crate::components::route::RacingRoute;
+use crate::ui::UiPageState;
 use super::UiView;
 
 #[derive(Default, Clone)]
