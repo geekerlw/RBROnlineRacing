@@ -1,0 +1,55 @@
+NGPCarMenu 1.0.18.87  https://github.com/mika-n/NGPCarMenu
+21:22:58 RBRFullscreenMode=0 PacenotePluginInstalled=1 TMPluginInstalled=0 RSFPluginInstalled=1 RBRProManagerInstalled=0 RBRVRInstalled=0 VulkanMode=1
+21:22:58 NGP version 7.2.773.479
+21:22:58 RSF version 0.54.5042.0
+21:22:58 RBR wnd resolution 3440x1440
+21:22:58 RBR game resolution 1920x1440
+21:22:58 RSF_ScreenshotCropping value is empty. Using the default value RSF_ScreenshotCropping=1255 240 2410 1104
+21:22:58 RBRTM_CarPictureRect value is empty. Using the default value RBRTM_CarPictureRect=760 732 2113 1383
+21:22:58 RBRRX_MapPictureRect value is empty. Using the default value RBRRX_MapPictureRect=1930 960 2650 1410
+21:22:58 RBRRX_MapPictureRectOpt value is empty. Using the default value RBRRX_MapPictureRectOpt=775 435 2665 1440
+21:22:58 RBRRX_MapPictureRectLoadTrack value is empty. Using the default value RBRRX_MapPictureRectLoadTrack=760 0 2680 1110
+21:22:58 RBRRX_MinimapPictureRect value is empty. Using the default value RBRRX_MinimapPictureRect=1930 960 2650 1392
+21:22:58 RBRRX_MinimapPictureRectOpt value is empty. Using the default value RBRRX_MinimapPictureRectOpt=775 435 2665 1422
+21:22:58 RBRRX_MinimapPictureRectLoadTrack value is empty. Using the default value RBRRX_MinimapPictureRectLoadTrack=775 15 2665 1116
+21:22:58 InvertedPedalsStartupFix enabled and inverted pedals bitflag=15
+21:22:58 RecentResultsPosition value is empty. Using the default value RecentResultsPosition=1750 15
+21:22:58 RBRTM_RecentResultsPosition value is empty. Using the default value RBRTM_RecentResultsPosition=1780 450
+21:22:58 RBRRX_RecentResultsPosition value is empty. Using the default value RBRRX_RecentResultsPosition=1930 66
+21:22:58 AutoLogon sequence enabled. main/options/plugins/Rallysimfans.hu
+21:22:58 Physics folder missing, but Physics.rbz file exists. Creating the Physics folder to fix QuickRally and RBRRX racing (ie. racing outside the RSF plugin)
+21:22:58 Completed the creation of Physics folder
+21:22:58 Warning. Car  (slot 0) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Warning. Car  (slot 1) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Warning. Car  (slot 2) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Warning. Car  (slot 3) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Warning. Car  (slot 4) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Warning. Car  (slot 5) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Warning. Car  (slot 6) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Warning. Car  (slot 7) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:58 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:22:58 Completed plugin initialization
+21:22:59 Warning. Car  (slot 6) not found from RSF. Car details are missing. Maybe the slot doesn't have a NGP compatible car
+21:22:59 Warning. Car model  not found from NGP carList.ini or E:\Richard Burns Rally\Plugins\NGPCarMenu\CustomCarSpecs.ini file. Car details are missing
+21:23:01 Auto navigating to the custom plugin Rallysimfans.hu
+21:23:01 Automatic menu navigation completed
+21:23:21 Using trackSettings [55O_M_lightrain_heavycloud] from E:\Richard Burns Rally\Maps\TrackSettings55.ini
+21:23:23 Using MyPacenotes E:\Richard Burns Rally\Plugins\NGPCarMenu\MyPacenotes\Noiker II\Noiker II 20221213_LUPPIS.ini
+21:32:43 RaceStatDB E:\Richard Burns Rally\Plugins\NGPCarMenu\RaceStat\raceStatDB.sqlite3 (SQLite 3.34.0)
+21:33:02 Using TrackSettings [61M_crisp_partcloud] from E:\Richard Burns Rally\Maps\TrackSettings.ini
+21:33:04 Using default pacenotes for Versme RallyCross (130)
+21:36:08 RaceStatDB E:\Richard Burns Rally\Plugins\NGPCarMenu\RaceStat\raceStatDB.sqlite3 (SQLite 3.34.0)
+21:36:47 Using trackSettings [55O_M_lightrain_heavycloud] from E:\Richard Burns Rally\Maps\TrackSettings55.ini
+21:36:49 Using MyPacenotes E:\Richard Burns Rally\Plugins\NGPCarMenu\MyPacenotes\Noiker II\Noiker II 20221213_LUPPIS.ini
+21:46:01 RaceStatDB E:\Richard Burns Rally\Plugins\NGPCarMenu\RaceStat\raceStatDB.sqlite3 (SQLite 3.34.0)
+21:46:15 Using TrackSettings [61M_crisp_partcloud] from E:\Richard Burns Rally\Maps\TrackSettings.ini
+21:46:17 Using default pacenotes for Versme RallyCross (130)
+21:49:15 RaceStatDB E:\Richard Burns Rally\Plugins\NGPCarMenu\RaceStat\raceStatDB.sqlite3 (SQLite 3.34.0)
+21:49:36 RaceStatDB E:\Richard Burns Rally\Plugins\NGPCarMenu\RaceStat\raceStatDB.sqlite3 (SQLite 3.34.0)
