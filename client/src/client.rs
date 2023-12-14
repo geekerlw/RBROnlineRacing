@@ -50,6 +50,10 @@ impl RacingClient {
                 UiMsg::MsgUserLogined(token) => {
                     self.ctx.store.user_token = token;
                 },
+                UiMsg::MsgRaceRoomCreated(value) => {
+                    self.pages[UiPageState::PageInRoom as usize].set_param(value);
+                    self.ctx.route.switch_to_page(UiPageState::PageInRoom);
+                }
             };
         }
         ctx.request_repaint();

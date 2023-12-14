@@ -113,7 +113,7 @@ async fn handle_http_race_create(data: web::Data<Arc<Mutex<RacingServer>>>, body
     if server.create_raceroom(info) {
         HttpResponse::Ok().body("Create race successful!")
     } else {
-        HttpResponse::Ok().body("Create race Failed!")
+        HttpResponse::NotAcceptable().body("Create race Failed!")
     }
 }
 

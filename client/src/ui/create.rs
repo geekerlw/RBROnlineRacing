@@ -1,11 +1,16 @@
 use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
-use super::{UiView, UiPageCtx};
+use protocol::httpapi::RaceInfo;
+use protocol::httpapi::RoomState;
+use reqwest::StatusCode;
+use serde_json::json;
+use super::{UiView, UiPageCtx, UiMsg};
 use crate::ui::UiPageState;
 
 #[derive(Clone)]
 pub struct UiCreateRace {
+    pub room_name: String,
     pub stage: Vec<String>,
     pub stage_id: Vec<u32>,
     pub stage_index: usize,
@@ -18,7 +23,9 @@ pub struct UiCreateRace {
 
 impl Default for UiCreateRace {
     fn default() -> Self {
-        Self { stage: vec!["Semetin 2009".to_string(), "Semetin 2010".to_string()],
+        Self { 
+            room_name: "Test Room".to_string(),
+            stage: vec!["Semetin 2009".to_string(), "Semetin 2010".to_string()],
             stage_id: vec![0, 1],
             stage_index: 0,
             car: vec!["Ford Fiesta 2019".to_string(), "Ford Fiesta R2".to_string()],
@@ -78,11 +85,38 @@ impl UiView for UiCreateRace {
                             page.route.back_from_page(UiPageState::PageCreate);
                         }
                         if ui.button("确认").clicked() {
-                            page.route.switch_to_page(UiPageState::PageInRoom);
+                            self.create_room(page);
                         }
                     });
                 });
             });
+        });
+    }
+}
+
+impl UiCreateRace {
+    fn create_room(&mut self, page: &mut UiPageCtx) {
+        let raceinfo = RaceInfo{
+            token: page.store.user_token.clone(),
+            name: self.room_name.clone(),
+            stage: self.stage[self.stage_index].clone(),
+            car: Some(self.car[self.car_index].clone()),
+            damage: Some(self.damage),
+            setup: Some(self.setup.clone()),
+            state: RoomState::default(),
+            players: Vec::<String>::new(),
+        };
+
+        let url = page.store.get_http_url("api/race/create");
+        let tx = page.tx.clone();
+        let create_info = json!({
+            "name": self.room_name.clone()
+        });
+        tokio::spawn(async move {
+            let res = reqwest::Client::new().post(url).json(&raceinfo).send().await.unwrap();
+            if res.status() == StatusCode::OK {
+                tx.send(UiMsg::MsgRaceRoomCreated(create_info)).await.unwrap();
+            }
         });
     }
 }

@@ -27,6 +27,7 @@ pub enum UiPageState {
 pub enum UiMsg {
     MsgGotoPage(UiPageState),
     MsgUserLogined(String),
+    MsgRaceRoomCreated(serde_json::Value),
 }
 
 pub struct UiPageCtx {
@@ -58,4 +59,6 @@ pub trait UiView {
     fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {}
 
     fn quit(&mut self) {}
+
+    fn set_param(&mut self, _value: serde_json::Value) {}
 }

@@ -1,10 +1,12 @@
 use eframe::egui;
 use egui::Grid;
+use reqwest::StatusCode;
 use crate::ui::UiPageState;
-use super::{UiView, UiPageCtx};
+use super::{UiView, UiPageCtx, UiMsg};
 
 #[derive(Clone)]
 pub struct UiInRoom {
+    pub room_name: String,
     pub stage: String,
     pub stage_id: u32,
     pub car: String,
@@ -16,7 +18,9 @@ pub struct UiInRoom {
 
 impl Default for UiInRoom {
     fn default() -> Self {
-        Self { stage: "Semetin 2009".to_string(),
+        Self { 
+            room_name: "Test Room".to_string(),
+            stage: "Semetin 2009".to_string(),
             stage_id: 0,
             car: "Ford Fiesta 2019".to_string(),
             car_id: 1,
@@ -28,6 +32,22 @@ impl Default for UiInRoom {
 }
 
 impl UiView for UiInRoom {
+    fn set_param(&mut self, value: serde_json::Value) {
+        self.room_name = String::from(value["name"].as_str().unwrap());
+    }
+
+    fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        let url = page.store.get_http_url("api/race/info");
+        let tx = page.tx.clone();
+        let roomname = self.room_name.clone();
+        tokio::spawn(async move {
+            let res = reqwest::Client::new().get(url).query(&[("name", roomname)]).send().await.unwrap();
+            if res.status() == StatusCode::OK {
+                //tx.send(UiMsg::MsgRaceRoomCreated(create_info)).await.unwrap();
+            }
+        });
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
