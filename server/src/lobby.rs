@@ -11,13 +11,11 @@ impl RaceLobby {
     pub fn push_player(&mut self, token: Uuid, player: RacePlayer) {
         if !self.players.contains_key(&token) {
             self.players.insert(token, player);
-            println!("steven: push in num: {}", self.players.len());
         }
     }
 
     pub fn pop_player(&mut self, token: &Uuid) {
         self.players.retain(|k, _v| k != token);
-        println!("steven: remain num: {}", self.players.len());
     }
 
     pub fn is_player_exist(&mut self, token: Option<&Uuid>, name: Option<&String>) -> bool {

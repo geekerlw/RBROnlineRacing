@@ -3,15 +3,19 @@ use egui::Grid;
 use protocol::httpapi::{RaceList, RaceItem, RoomState};
 use crate::ui::UiPageState;
 use super::{UiView, UiPageCtx};
+use reqwest::StatusCode;
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 
-#[derive(Clone)]
 pub struct UiLobby {
     pub table_head: Vec<&'static str>,
     pub table_data: RaceList,
+    rx: Receiver<RaceList>,
+    tx: Sender<RaceList>,
 }
 
 impl Default for UiLobby {
     fn default() -> Self {
+        let (tx, rx) = channel::<RaceList>(8);
         Self {
             table_head: vec!["序号", "房名", "赛道", "房主", "状态"],
             table_data: RaceList {
@@ -27,13 +31,39 @@ impl Default for UiLobby {
                     owner: String::from("Shanyin"),
                     state: RoomState::RoomLocked,
                 }]
-            }
+            },
+            rx,
+            tx,
         }
     }
 }
 
 impl UiView for UiLobby {
+    fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        let url = page.store.get_http_url("api/race/list");
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let res = reqwest::Client::new().get(url).send().await.unwrap();
+            match res.status() {
+                StatusCode::OK => {
+                    let text = res.text().await.unwrap();
+                    let racelist: RaceList = serde_json::from_str(text.as_str()).unwrap();
+                    tx.send(racelist).await.unwrap();
+                },
+                StatusCode::NO_CONTENT => {
+                    let racelist = RaceList::default();
+                    tx.send(racelist).await.unwrap();
+                },
+                _ => {},
+            }
+        });
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        if let Ok(msg) = self.rx.try_recv() {
+            self.table_data = msg;
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.add_space(120.0);

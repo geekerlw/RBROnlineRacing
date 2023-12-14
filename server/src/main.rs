@@ -82,6 +82,8 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
 
 #[actix_web::get("/api/race/list")]
 async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+    println!("Received user query race list");
+
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_list() {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
@@ -92,6 +94,8 @@ async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> Htt
 
 #[actix_web::get("/api/race/info")]
 async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, name: web::Query<String>) -> HttpResponse {
+    println!("Received user query race info: {:?}", name);
+
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_info(&name) {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())

@@ -11,17 +11,17 @@ use crate::components::route::RacingRoute;
 use crate::components::store::RacingStore;
 use tokio::sync::mpsc::{channel, Sender, Receiver};
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq)]
 pub enum UiPageState {
     #[default]
-    PageLogin,
-    PageLobby,
-    PageCreate,
-    PageInRoom,
-    PageLoading,
-    PageRacing,
-    PageFinish,
-    PageSetting,
+    PageLogin = 0,
+    PageLobby = 1,
+    PageCreate = 2,
+    PageInRoom = 3,
+    PageLoading = 4,
+    PageRacing = 5,
+    PageFinish = 6,
+    PageSetting = 7,
 }
 
 pub enum UiMsg {
@@ -38,7 +38,7 @@ pub struct UiPageCtx {
 
 impl Default for UiPageCtx {
     fn default() -> Self {
-        let (tx, mut rx) = channel::<UiMsg>(32);
+        let (tx, rx) = channel::<UiMsg>(32);
         Self {
             store: RacingStore::default(),
             route: RacingRoute::default(),
@@ -49,5 +49,13 @@ impl Default for UiPageCtx {
 }
 
 pub trait UiView {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx);
+    fn init(&mut self) {}
+
+    fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {}
+
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx);
+
+    fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {}
+
+    fn quit(&mut self) {}
 }

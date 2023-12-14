@@ -2,25 +2,33 @@ use eframe::egui;
 use egui::{FontDefinitions, FontData};
 use protocol::httpapi::UserAccess;
 use crate::ui;
-use crate::ui::{UiPageState, UiView};
-use crate::ui::{UiPageCtx, UiMsg};
-use reqwest::StatusCode;
+use crate::ui::{UiPageCtx, UiMsg, UiPageState};
 
 #[derive(Default)]
 pub struct RacingClient {
     pub ctx: UiPageCtx,
-
-    pub login: ui::login::UiLogin,
-    pub finish: ui::finish::UiFinish,
-    pub loading: ui::loading::UiLoading,
-    pub lobby: ui::lobby::UiLobby,
-    pub racing: ui::racing::UiRacing,
-    pub setting: ui::setting::UiSetting,
-    pub create: ui::create::UiCreateRace,
-    pub inroom: ui::inroom::UiInRoom,
+    pub curr_page: UiPageState,
+    pub pages: Vec<Box<dyn ui::UiView>>,
 }
 
 impl RacingClient {
+    pub fn init(mut self) -> Self {
+        self.pages.insert(UiPageState::PageLogin as usize, Box::new(ui::login::UiLogin::default()));
+        self.pages.insert(UiPageState::PageLobby as usize, Box::new(ui::lobby::UiLobby::default()));
+        self.pages.insert(UiPageState::PageCreate as usize, Box::new(ui::create::UiCreateRace::default()));
+        self.pages.insert(UiPageState::PageInRoom as usize, Box::new(ui::inroom::UiInRoom::default()));
+        self.pages.insert(UiPageState::PageLoading as usize, Box::new(ui::loading::UiLoading::default()));
+        self.pages.insert(UiPageState::PageRacing as usize, Box::new(ui::racing::UiRacing::default()));
+        self.pages.insert(UiPageState::PageFinish as usize, Box::new(ui::finish::UiFinish::default()));
+        self.pages.insert(UiPageState::PageSetting as usize, Box::new(ui::setting::UiSetting::default()));
+
+        for (_, page) in self.pages.iter_mut().enumerate() {
+            page.init();
+        }
+
+        self
+    }
+
     pub fn configure_font(self, ctx: &egui::Context) -> Self {
         let mut fonts = FontDefinitions::default();
         fonts.font_data.insert("msyh".to_owned(), FontData::from_static(include_bytes!("C:\\Windows\\Fonts\\msyh.ttc")));
@@ -56,6 +64,10 @@ impl eframe::App for RacingClient {
             tokio::spawn(async move {
                 let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
             });
+        }
+
+        for (_, page) in self.pages.iter_mut().enumerate() {
+            page.quit();
         }
     }
 
@@ -100,15 +112,11 @@ impl eframe::App for RacingClient {
             });
         });
 
-        match self.ctx.route.curr_page {
-            UiPageState::PageLogin => self.login.update(ctx, frame, &mut self.ctx),
-            UiPageState::PageFinish => self.finish.update(ctx, frame, &mut self.ctx),
-            UiPageState::PageLoading => self.loading.update(ctx, frame, &mut self.ctx),
-            UiPageState::PageLobby => self.lobby.update(ctx, frame, &mut self.ctx),
-            UiPageState::PageRacing => self.racing.update(ctx, frame, &mut self.ctx),
-            UiPageState::PageSetting => self.setting.update(ctx, frame, &mut self.ctx),
-            UiPageState::PageCreate => self.create.update(ctx, frame, &mut self.ctx),
-            UiPageState::PageInRoom => self.inroom.update(ctx, frame, &mut self.ctx),
+        if self.curr_page != self.ctx.route.curr_page {
+            self.pages[self.ctx.route.prev_page.clone() as usize].exit(ctx, frame, &mut self.ctx);
+            self.pages[self.ctx.route.curr_page.clone() as usize].enter(ctx, frame, &mut self.ctx);
+            self.curr_page = self.ctx.route.curr_page.clone();
         }
+        self.pages[self.curr_page.clone() as usize].update(ctx, frame, &mut self.ctx);
     }
 }

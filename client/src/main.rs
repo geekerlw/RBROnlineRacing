@@ -9,7 +9,7 @@ mod client;
 
 #[tokio::main]
 async fn main() {
-    let mut app = RacingClient::default();
+    let mut app = RacingClient::default().init();
     app.ctx.route.prev_page = UiPageState::PageLogin;
     app.ctx.route.curr_page = UiPageState::PageLogin;
     app.ctx.store.server_addr = "127.0.0.1".to_string();
