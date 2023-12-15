@@ -17,9 +17,7 @@ impl RacingClient {
         self.pages.insert(UiPageState::PageLobby as usize, Box::new(ui::lobby::UiLobby::default()));
         self.pages.insert(UiPageState::PageCreate as usize, Box::new(ui::create::UiCreateRace::default()));
         self.pages.insert(UiPageState::PageInRoom as usize, Box::new(ui::inroom::UiInRoom::default()));
-        self.pages.insert(UiPageState::PageLoading as usize, Box::new(ui::loading::UiLoading::default()));
         self.pages.insert(UiPageState::PageRacing as usize, Box::new(ui::racing::UiRacing::default()));
-        self.pages.insert(UiPageState::PageFinish as usize, Box::new(ui::finish::UiFinish::default()));
         self.pages.insert(UiPageState::PageSetting as usize, Box::new(ui::setting::UiSetting::default()));
 
         for (_, page) in self.pages.iter_mut().enumerate() {

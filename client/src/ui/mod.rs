@@ -1,5 +1,3 @@
-pub mod finish;
-pub mod loading;
 pub mod lobby;
 pub mod racing;
 pub mod setting;
@@ -18,10 +16,8 @@ pub enum UiPageState {
     PageLobby = 1,
     PageCreate = 2,
     PageInRoom = 3,
-    PageLoading = 4,
-    PageRacing = 5,
-    PageFinish = 6,
-    PageSetting = 7,
+    PageRacing = 4,
+    PageSetting = 5,
 }
 
 pub enum UiMsg {

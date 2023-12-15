@@ -102,7 +102,7 @@ impl UiView for UiInRoom {
                             page.route.switch_to_page(UiPageState::PageLobby);
                         }
                         if ui.button("准备").clicked() {
-                            page.route.switch_to_page(UiPageState::PageLoading);
+                            page.route.switch_to_page(UiPageState::PageRacing);
                         }
                     });
                 });
