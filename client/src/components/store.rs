@@ -9,11 +9,12 @@ pub struct RacingStore {
     pub user_passwd: String,
     pub user_token: String,
     pub user_state: RaceState,
+    pub curr_room: String,
 }
 
 impl RacingStore {
     pub fn show_user_state(&mut self, ui: &mut Ui) {
-        match self.user_state {
+        match &self.user_state {
             RaceState::RaceDefault => ui.label("空闲"),
             RaceState::RaceFinished => ui.label("比赛完成"),
             RaceState::RaceInit => ui.label("初始化比赛"),
@@ -23,7 +24,8 @@ impl RacingStore {
             RaceState::RaceRetired => ui.label("比赛已放弃"),
             RaceState::RaceRunning => ui.label("比赛进行中"),
             RaceState::RaceStart => ui.label("比赛开始"),
-        };        
+            RaceState::RaceError(err) => ui.label(err),
+        };
     }
 
     pub fn get_http_url(&self, uri: &str) -> String {

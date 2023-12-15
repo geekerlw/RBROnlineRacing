@@ -1,6 +1,6 @@
 use eframe::egui;
 use egui::{FontDefinitions, FontData};
-use protocol::httpapi::UserAccess;
+use protocol::httpapi::{UserAccess, RaceState};
 use crate::ui;
 use crate::ui::{UiPageCtx, UiMsg, UiPageState};
 
@@ -41,7 +41,7 @@ impl RacingClient {
         self.ctx.route.switch_to_page(page);
     }
 
-    pub fn handle_async_uimsg(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    pub fn handle_async_uimsg(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         if let Ok(msg) = self.ctx.rx.try_recv() {
             match msg {
                 UiMsg::MsgGotoPage(state) => {
@@ -50,9 +50,14 @@ impl RacingClient {
                 UiMsg::MsgUserLogined(token) => {
                     self.ctx.store.user_token = token;
                 },
-                UiMsg::MsgRaceRoomCreated(value) => {
-                    self.pages[UiPageState::PageInRoom as usize].set_param(value);
-                    self.ctx.route.switch_to_page(UiPageState::PageInRoom);
+                UiMsg::MsgSetRoomInfo(room) => {
+                    self.ctx.store.curr_room = room;
+                },
+                UiMsg::MsgSetErrState(err) => {
+                    self.ctx.store.user_state = RaceState::RaceError(err);
+                },
+                UiMsg::MsgQuitApp => {
+                    frame.close();
                 }
             };
         }

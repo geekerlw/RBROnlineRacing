@@ -14,6 +14,7 @@ pub enum RaceState {
     RaceRunning,
     RaceRetired,
     RaceFinished,
+    RaceError(String),
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -46,6 +47,11 @@ pub struct UserLogin {
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct UserAccess {
     pub token: String,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct RaceQuery {
+    pub name: String,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

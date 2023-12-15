@@ -4,7 +4,6 @@ use egui::ComboBox;
 use protocol::httpapi::RaceInfo;
 use protocol::httpapi::RoomState;
 use reqwest::StatusCode;
-use serde_json::json;
 use super::{UiView, UiPageCtx, UiMsg};
 use crate::ui::UiPageState;
 
@@ -47,6 +46,10 @@ impl UiView for UiCreateRace {
                     .min_col_width(80.0)
                     .min_row_height(24.0)
                     .show(ui, |ui| {
+                        ui.label("房间名称：");
+                        ui.text_edit_singleline(&mut self.room_name);
+                        ui.end_row();
+
                         ui.label("比赛赛道：");
                         ComboBox::from_id_source("select stage").selected_text(self.stage[self.stage_index].clone())
                         .show_ui(ui, |ui| {
@@ -85,6 +88,7 @@ impl UiView for UiCreateRace {
                             page.route.back_from_page(UiPageState::PageCreate);
                         }
                         if ui.button("确认").clicked() {
+                            _frame.close();
                             self.create_room(page);
                         }
                     });
@@ -109,13 +113,17 @@ impl UiCreateRace {
 
         let url = page.store.get_http_url("api/race/create");
         let tx = page.tx.clone();
-        let create_info = json!({
-            "name": self.room_name.clone()
-        });
+        let room_name = self.room_name.clone();
         tokio::spawn(async move {
             let res = reqwest::Client::new().post(url).json(&raceinfo).send().await.unwrap();
-            if res.status() == StatusCode::OK {
-                tx.send(UiMsg::MsgRaceRoomCreated(create_info)).await.unwrap();
+            match res.status() {
+                StatusCode::OK => {
+                    tx.send(UiMsg::MsgSetRoomInfo(room_name)).await.unwrap();
+                    tx.send(UiMsg::MsgGotoPage(UiPageState::PageInRoom)).await.unwrap();
+                }
+                _ => {
+                    tx.send(UiMsg::MsgSetErrState("Failed to create race room".to_string())).await.unwrap();
+                }
             }
         });
     }

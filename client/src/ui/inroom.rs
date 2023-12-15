@@ -1,54 +1,56 @@
 use eframe::egui;
 use egui::Grid;
+use protocol::httpapi::{RaceQuery, RaceInfo};
 use reqwest::StatusCode;
 use crate::ui::UiPageState;
-use super::{UiView, UiPageCtx, UiMsg};
+use super::{UiView, UiPageCtx};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 
-#[derive(Clone)]
 pub struct UiInRoom {
     pub room_name: String,
-    pub stage: String,
-    pub stage_id: u32,
-    pub car: String,
-    pub car_id: u32,
-    pub damage: u32,
-    pub setup: String,
-    pub players: Vec<String>,
+    pub raceinfo: RaceInfo,
+    rx: Receiver<RaceInfo>,
+    tx: Sender<RaceInfo>,
 }
 
 impl Default for UiInRoom {
     fn default() -> Self {
+        let (tx, rx) = channel::<RaceInfo>(8);
         Self { 
-            room_name: "Test Room".to_string(),
-            stage: "Semetin 2009".to_string(),
-            stage_id: 0,
-            car: "Ford Fiesta 2019".to_string(),
-            car_id: 1,
-            damage: 0,
-            setup: "Default".to_string(),
-            players: vec!["Ziye".to_string(), "Somechen".to_string(), "Shanyin".to_string()],
+            room_name: "No Room Info".to_string(),
+            raceinfo: RaceInfo::default(),
+            rx,
+            tx,
         }
     }
 }
 
 impl UiView for UiInRoom {
-    fn set_param(&mut self, value: serde_json::Value) {
-        self.room_name = String::from(value["name"].as_str().unwrap());
-    }
-
     fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        self.room_name = page.store.curr_room.clone();
         let url = page.store.get_http_url("api/race/info");
-        let tx = page.tx.clone();
-        let roomname = self.room_name.clone();
+        let tx = self.tx.clone();
+        let query = RaceQuery {name: self.room_name.clone()};
         tokio::spawn(async move {
-            let res = reqwest::Client::new().get(url).query(&[("name", roomname)]).send().await.unwrap();
+            let res = reqwest::Client::new().get(url).json(&query).send().await.unwrap();
             if res.status() == StatusCode::OK {
-                //tx.send(UiMsg::MsgRaceRoomCreated(create_info)).await.unwrap();
+                let text = res.text().await.unwrap();
+                let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
+                tx.send(raceinfo).await.unwrap();
             }
         });
     }
 
+    fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        page.store.curr_room.clear();
+        self.room_name.clear();
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        if let Ok(msg) = self.rx.try_recv() {
+            self.raceinfo = msg;
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.add_space(120.0);
@@ -57,12 +59,20 @@ impl UiView for UiInRoom {
                     .min_col_width(80.0)
                     .min_row_height(24.0)
                     .show(ui, |ui| {
+                        ui.label("比赛房间：");
+                        ui.label(&self.room_name);
+                        ui.end_row();
+
                         ui.label("比赛赛道：");
-                        ui.label(self.stage.clone());
+                        ui.label(self.raceinfo.stage.clone());
                         ui.end_row();
 
                         ui.label("比赛车辆: ");
-                        ui.label(self.car.clone());
+                        if let Some(car) = &self.raceinfo.car {
+                            ui.label(car);
+                        } else {
+                            ui.label("不限");
+                        }
                         ui.end_row();
 
                         ui.label("车辆损坏：");
@@ -82,7 +92,7 @@ impl UiView for UiInRoom {
                         ui.label("序号");
                         ui.label("车手");
                         ui.end_row();
-                        for (index, player) in self.players.iter().enumerate() {
+                        for (index, player) in self.raceinfo.players.iter().enumerate() {
                             ui.label(index.to_string());
                             ui.label(player);
                             ui.end_row();

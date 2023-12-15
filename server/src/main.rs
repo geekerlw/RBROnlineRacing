@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use server::server::RacingServer;
-use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader, MetaRaceResult, RaceState, DataFormat};
+use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader, MetaRaceResult, RaceState, DataFormat, RaceQuery};
 use protocol::httpapi::API_VERSION_STRING;
 
 #[tokio::main]
@@ -93,11 +93,12 @@ async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> Htt
 }
 
 #[actix_web::get("/api/race/info")]
-async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, name: web::Query<String>) -> HttpResponse {
-    println!("Received user query race info: {:?}", name);
+async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
+    let query = body.into_inner();
+    println!("Received user query race info: {:?}", query);
 
     let server = data.lock().await;
-    if let Some(response) = server.get_raceroom_info(&name) {
+    if let Some(response) = server.get_raceroom_info(&query.name) {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
     } else {
         HttpResponse::NoContent().body("Get Race info failed!")

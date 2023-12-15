@@ -1,8 +1,8 @@
 use eframe::egui;
 use egui::Grid;
-use protocol::httpapi::{RaceList, RaceItem, RoomState};
+use protocol::httpapi::{RaceList, RoomState, UserJoin};
 use crate::ui::UiPageState;
-use super::{UiView, UiPageCtx};
+use super::{UiView, UiPageCtx, UiMsg};
 use reqwest::StatusCode;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -18,23 +18,25 @@ impl Default for UiLobby {
         let (tx, rx) = channel::<RaceList>(8);
         Self {
             table_head: vec!["序号", "房名", "赛道", "房主", "状态"],
-            table_data: RaceList {
-                room: vec![RaceItem {
-                    name: String::from("Test Room 1"),
-                    stage: String::from("semetin 2009"),
-                    owner: String::from("Ziye"),
-                    state: RoomState::RoomFree,
-                },
-                RaceItem {
-                    name: String::from("Test Room 2"),
-                    stage: String::from("semetin 2010"),
-                    owner: String::from("Shanyin"),
-                    state: RoomState::RoomLocked,
-                }]
-            },
+            table_data: RaceList::default(),
             rx,
             tx,
         }
+    }
+}
+
+impl UiLobby {
+    pub fn join_raceroom(&mut self, room: &String, page: &mut UiPageCtx) {
+        let user_join = UserJoin {token: page.store.user_token.clone(), room: room.clone()};
+        let url = page.store.get_http_url("api/race/join");
+        let tx = page.tx.clone();
+        page.store.curr_room = room.clone();
+        tokio::spawn(async move {
+            let res = reqwest::Client::new().post(url).json(&user_join).send().await.unwrap();
+            if res.status() == StatusCode::OK {
+                tx.send(UiMsg::MsgGotoPage(UiPageState::PageInRoom)).await.unwrap();
+            }
+        });
     }
 }
 
@@ -74,7 +76,8 @@ impl UiView for UiLobby {
                         }
                         ui.end_row();
 
-                        for (index, race) in self.table_data.room.iter().enumerate() {
+                        let table_data = self.table_data.clone();
+                        for (index, race) in table_data.room.iter().enumerate() {
                             let table = vec![index.to_string(),
                                 race.name.clone(),
                                 race.stage.clone(),
@@ -88,8 +91,10 @@ impl UiView for UiLobby {
                             for content in table {
                                 ui.label(content);
                             }
-                            if ui.button("加入").clicked() {
-                                page.route.switch_to_page(UiPageState::PageInRoom);
+                            if &race.name != &page.store.curr_room {
+                                if ui.button("加入").clicked() {
+                                    self.join_raceroom(&race.name, page);
+                                }
                             }
                             ui.end_row();
                         }

@@ -1,6 +1,6 @@
 use eframe::egui;
 use egui::RichText;
-use protocol::httpapi::UserLogin;
+use protocol::httpapi::{UserLogin, API_VERSION_STRING};
 use reqwest::StatusCode;
 use crate::ui::UiPageState;
 use super::{UiMsg, UiView, UiPageCtx};
@@ -10,13 +10,24 @@ pub struct UiLogin {
 }
 
 impl UiLogin {
-    fn login(&mut self, page: &mut UiPageCtx) {
+    fn login(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         if page.store.user_token.is_empty() {
             let user = UserLogin{name: page.store.user_name.clone(), passwd: page.store.user_passwd.clone()};
-            let url = page.store.get_http_url("api/user/login");
+            let url_ver = page.store.get_http_url("api/version");
+            let url_login = page.store.get_http_url("api/user/login");
             let tx = page.tx.clone();
             tokio::spawn(async move {
-                let res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
+                let res = reqwest::get(url_ver).await.unwrap();
+                if res.status() == StatusCode::OK {
+                    let version = res.text().await.unwrap();
+                    if version != API_VERSION_STRING {
+                        tx.send(UiMsg::MsgSetErrState("客户端版本不匹配，请更新版本!".to_string())).await.unwrap();
+                        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                        tx.send(UiMsg::MsgQuitApp).await.unwrap();
+                    }
+                }
+
+                let res = reqwest::Client::new().post(url_login).json(&user).send().await.unwrap();
                 if res.status() == StatusCode::OK {
                     let token = res.text().await.unwrap();
                     tx.send(UiMsg::MsgUserLogined(token)).await.unwrap();
@@ -30,7 +41,7 @@ impl UiLogin {
 }
 
 impl UiView for UiLogin {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.vertical_centered(|ui| {
@@ -45,7 +56,7 @@ impl UiView for UiLogin {
                     ui.add_space(50.0);
                     if !page.store.user_name.is_empty() && !page.store.user_passwd.is_empty() {
                         if ui.button("知道了啦").clicked() {
-                            self.login(page);
+                            self.login(ctx, frame, page);
                         }
                     }
                 });
