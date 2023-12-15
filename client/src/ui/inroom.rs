@@ -1,6 +1,6 @@
 use eframe::egui;
 use egui::Grid;
-use protocol::httpapi::{RaceQuery, RaceInfo};
+use protocol::httpapi::{RaceQuery, RaceInfo, UserAccess};
 use reqwest::StatusCode;
 use crate::ui::UiPageState;
 use super::{UiView, UiPageCtx};
@@ -39,11 +39,6 @@ impl UiView for UiInRoom {
                 tx.send(raceinfo).await.unwrap();
             }
         });
-    }
-
-    fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
-        page.store.curr_room.clear();
-        self.room_name.clear();
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
@@ -103,6 +98,7 @@ impl UiView for UiInRoom {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         ui.add_space(80.0);
                         if ui.button("退出").clicked() {
+                            self.leave_raceroom(page);
                             page.route.switch_to_page(UiPageState::PageLobby);
                         }
                         if ui.button("准备").clicked() {
@@ -112,5 +108,20 @@ impl UiView for UiInRoom {
                 });
             });
         });
+    }
+}
+
+impl UiInRoom {
+    fn leave_raceroom(&mut self, page: &mut UiPageCtx) {
+        if !page.store.user_token.is_empty() {
+            let user: UserAccess = UserAccess{token: page.store.user_token.clone()};
+            let url = page.store.get_http_url("api/race/leave");
+            tokio::spawn(async move {
+                let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
+            });
+        }
+
+        page.store.curr_room.clear();
+        self.room_name.clear();
     }
 }

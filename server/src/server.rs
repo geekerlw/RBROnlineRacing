@@ -9,7 +9,6 @@ use protocol::httpapi::RaceState;
 
 #[derive(Default)]
 pub struct RacingServer {
-    pub count: i32,
     pub lobby: RaceLobby,
     pub rooms: HashMap<String, RaceRoom>,
 }
@@ -17,6 +16,10 @@ pub struct RacingServer {
 impl RacingServer {
     pub fn is_raceroom_exist(&mut self, name: &String) -> bool {
         self.rooms.contains_key(name)
+    }
+
+    pub fn do_self_check(&mut self) {
+        self.rooms.retain(|_k, v| !v.is_empty());
     }
 
     pub fn find_player_by_token_mut(&mut self, tokenstr: &String) -> Option<&mut RacePlayer> {

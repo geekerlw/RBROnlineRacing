@@ -13,6 +13,7 @@ use protocol::httpapi::API_VERSION_STRING;
 async fn main() -> std::io::Result<()>{
     let server = Arc::new(Mutex::new(RacingServer::default()));
     let data_clone = server.clone();
+    let mng_clone = server.clone();
 
     let http_server = HttpServer::new(move || {
         App::new()
@@ -39,10 +40,18 @@ async fn main() -> std::io::Result<()>{
         }
     });
 
+    let mgr_task = tokio::spawn(async move {
+        loop {
+            let mut server = mng_clone.lock().await;
+            server.do_self_check();
+            tokio::time::sleep(tokio::time::Duration::from_micros(200)).await;
+        }
+    });
+
     println!("Http server listening on port 8080");
     println!("Data listener listening on port 9493");
 
-    let _ = tokio::join!(http_server, data_task);
+    let _ = tokio::join!(http_server, data_task, mgr_task);
     Ok(())
 }
 
@@ -134,7 +143,7 @@ async fn handle_http_race_join(data: web::Data<Arc<Mutex<RacingServer>>>, body: 
 #[actix_web::post("/api/race/leave")]
 async fn handle_http_race_leave(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserAccess>) -> HttpResponse {
     let info: UserAccess = body.into_inner();
-    println!("Received user logout: {:?}", info);
+    println!("Received user leave race info: {:?}", info);
 
     let mut server = data.lock().await;
     if server.leave_raceroom(&info.token) {
@@ -326,6 +335,6 @@ async fn sort_all_players_racedata(token: String, server: Arc<Mutex<RacingServer
             let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtPushData}).unwrap();
             socket.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
         }
-        tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
+        tokio::time::sleep(tokio::time::Duration::from_micros(100)).await;
     }
 }

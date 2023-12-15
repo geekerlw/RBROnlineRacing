@@ -95,6 +95,10 @@ impl UiView for UiLobby {
                                 if ui.button("加入").clicked() {
                                     self.join_raceroom(&race.name, page);
                                 }
+                            } else {
+                                if ui.button("进入").clicked() {
+                                    page.route.switch_to_page(UiPageState::PageInRoom);
+                                }
                             }
                             ui.end_row();
                         }

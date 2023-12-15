@@ -88,7 +88,6 @@ impl UiView for UiCreateRace {
                             page.route.back_from_page(UiPageState::PageCreate);
                         }
                         if ui.button("确认").clicked() {
-                            _frame.close();
                             self.create_room(page);
                         }
                     });

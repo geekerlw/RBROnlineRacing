@@ -22,4 +22,8 @@ impl RaceRoom {
     pub fn is_player_exist(&mut self, name: &String) -> bool {
         self.players.contains(name)
     }
+
+    pub fn is_empty(&mut self) -> bool {
+        self.players.is_empty()
+    }
 }

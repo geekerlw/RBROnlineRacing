@@ -69,9 +69,14 @@ impl eframe::App for RacingClient {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         if !self.ctx.store.user_token.is_empty() {
             let user: UserAccess = UserAccess{token: self.ctx.store.user_token.clone()};
-            let url = self.ctx.store.get_http_url("api/user/logout");
+            let url_leave = self.ctx.store.get_http_url("api/race/leave");
+            let url_logout = self.ctx.store.get_http_url("api/user/logout");
+            let is_inroom = !self.ctx.store.curr_room.is_empty();
             tokio::spawn(async move {
-                let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
+                if is_inroom {
+                    let _res = reqwest::Client::new().post(url_leave).json(&user).send().await.unwrap();
+                }
+                let _res = reqwest::Client::new().post(url_logout).json(&user).send().await.unwrap();
             });
         }
 
