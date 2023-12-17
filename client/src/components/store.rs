@@ -5,6 +5,7 @@ use protocol::httpapi::RaceState;
 pub struct RacingStore {
     pub server_addr: String,
     pub server_port: u16,
+    pub meta_port: u16,
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,
@@ -36,5 +37,10 @@ impl RacingStore {
             + "/"
             + uri;
         return url;
+    }
+
+    pub fn get_meta_url(&self) -> String {
+        let addr = String::from(&self.server_addr) + ":" + self.meta_port.to_string().as_str();
+        return addr;
     }
 }

@@ -1,11 +1,19 @@
 use eframe::egui;
 use egui::Grid;
 use egui::RichText;
+use protocol::httpapi::MetaHeader;
 use protocol::httpapi::RaceState;
+use protocol::httpapi::UserAccess;
+use protocol::httpapi::DataFormat;
+use protocol::httpapi::UserUpdate;
+use tokio::net::TcpStream;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::{Sender, Receiver};
 use crate::ui::UiPageState;
 use super::{UiView, UiPageCtx};
 use protocol::httpapi::{MetaRaceResult, MetaRaceData};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 enum UiRacingMsg {
     MsgGotoPage(UiPageState),
@@ -55,6 +63,101 @@ impl Default for UiRacing {
 }
 
 impl UiView for UiRacing {
+    fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        let meta_addr = page.store.get_meta_url();
+        let user_token = page.store.user_token.clone();
+
+        tokio::spawn(async move {
+            let socket = TcpStream::connect(meta_addr).await.unwrap();
+            let stream = Arc::new(Mutex::new(socket));
+
+            let user = UserAccess {token: user_token.clone()};
+            let body = bincode::serialize(&user).unwrap();
+            let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUserAccess}).unwrap();
+            socket.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+
+            tokio::spawn(async move {
+                let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceReady};
+                let body = bincode::serialize(&update).unwrap();
+                let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+                stream.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+                
+
+                let gamestate = RaceState::RaceLoaded;
+                loop {
+                    // read game state.
+                    match gamestate {
+                        RaceState::RaceLoaded => {
+                            let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceLoaded};
+                            let body = bincode::serialize(&update).unwrap();
+                            let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+                            stream.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+                        },
+                        RaceState::RaceRunning => {
+
+                        },
+                        RaceState::RaceRetired | RaceState::RaceFinished => {
+
+                        },
+                        _ => break,
+                    }
+                }
+            });
+
+            let mut recvbuf = vec![0u8; 1024];
+            let mut remain = Vec::<u8>::new();
+            while let Ok(n) = stream.read(&mut recvbuf).await {
+                if n == 0 {
+                    break;
+                }
+
+                // 处理接收的数据
+                // 这里只是简单地将接收到的数据打印出来
+                println!("Received data: {:?}", &recvbuf[..n]);
+
+                let buffer = [&remain[..], &recvbuf[..]].concat();
+                let datalen = buffer.len();
+
+                if datalen <= 4 {
+                    remain = buffer.to_vec();
+                    continue;
+                }
+
+                let head: MetaHeader = bincode::deserialize(&buffer[..4]).unwrap();
+                if datalen <= head.length as usize + 4 {
+                    remain = buffer.to_vec();
+                    continue;
+                }
+
+                let pack_data = &buffer[4..4+head.length as usize];
+                match head.format {
+                    DataFormat::FmtRaceCommand => { // race update game state
+                        let state: UserUpdate = bincode::deserialize(pack_data).unwrap();
+                        match state.state {
+                            RaceState::RaceLoad => {
+                                // start to load game.
+                            }
+                            RaceState::RaceStart => {
+                                // start to racing.
+                            }
+                            _ => continue
+                        }
+                    }
+
+                    DataFormat::FmtPushData => { // user exchange racing data.
+                        let result: MetaRaceResult = bincode::deserialize(pack_data).unwrap();
+                        // send out race result.
+                    }
+                    _ => {
+                        break; //data type error, auto close.
+                    }
+                }
+
+                remain = (&buffer[4 + head.length as usize..]).to_vec();
+            }
+        });
+    }
+
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {
