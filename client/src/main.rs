@@ -14,6 +14,7 @@ async fn main() {
     app.ctx.route.curr_page = UiPageState::PageLogin;
     app.ctx.store.server_addr = "127.0.0.1".to_string();
     app.ctx.store.server_port = 8080;
+    app.ctx.store.meta_port = 9493;
     app.ctx.store.user_name = String::from("Lw_Ziye");
     app.ctx.store.user_passwd = String::from("simrallycn");
     app.ctx.store.user_state = RaceState::RaceInit;

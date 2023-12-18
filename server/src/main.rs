@@ -178,29 +178,29 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
         // 这里只是简单地将接收到的数据打印出来
         println!("Received data: {:?}", &recvbuf[..n]);
 
-        let buffer = [&remain[..], &recvbuf[..]].concat();
+        let buffer = [&remain[..], &recvbuf[..n]].concat();
         let datalen = buffer.len();
 
-        if datalen <= META_HEADER_LEN {
+        if datalen < META_HEADER_LEN {
             remain = buffer.to_vec();
             continue;
         }
 
         let head: MetaHeader = bincode::deserialize(&buffer[..META_HEADER_LEN]).unwrap();
-        if datalen <= head.length as usize + META_HEADER_LEN {
+        if datalen < head.length as usize + META_HEADER_LEN {
             remain = buffer.to_vec();
             continue;
         }
 
         let mut server = data.lock().await;
         let pack_data = &buffer[META_HEADER_LEN..META_HEADER_LEN+head.length as usize];
+        remain = (&buffer[META_HEADER_LEN + head.length as usize..]).to_vec();
         match head.format {
             DataFormat::FmtUserAccess => { // user meta data socket login.
                 let access: UserAccess = bincode::deserialize(pack_data).unwrap();
                 if !server.player_access(&access) {
                     break; // can't access, disconnect.
                 }
-                tokio::spawn(sort_all_players_racedata(access.token, data.clone(), stream.clone()));
             }
 
             DataFormat::FmtUpdateState => { // race update game state
@@ -213,7 +213,8 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
                     }
                     RaceState::RaceLoaded => {
                         // wait all player state loaded. once ready send back to start racing.
-                        tokio::spawn(wait_all_players_loaded(state.token, data.clone(), stream.clone()));
+                        tokio::spawn(wait_all_players_loaded(state.token.clone(), data.clone(), stream.clone()));
+                        tokio::spawn(sort_all_players_racedata(state.token, data.clone(), stream.clone()));
                     }
                     RaceState::RaceRetired | RaceState::RaceFinished => {
                         // wait all player state finish or retire, once ready send back race result to show.
@@ -231,8 +232,6 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
                 break; //data type error, auto close.
             }
         }
-
-        remain = (&buffer[META_HEADER_LEN + head.length as usize..]).to_vec();
     }
 }
 
@@ -249,7 +248,7 @@ async fn wait_all_players_ready(token: String, server: Arc<Mutex<RacingServer>>,
                 break;
             }
         }
-        tokio::time::sleep(tokio::time::Duration::from_micros(200)).await;
+        tokio::time::sleep(tokio::time::Duration::from_micros(500)).await;
     }
 
     let body = bincode::serialize(&UserUpdate{token: token, state: RaceState::RaceLoad}).unwrap();

@@ -97,21 +97,22 @@ impl UiView for UiRacing {
                 // 这里只是简单地将接收到的数据打印出来
                 println!("Received data: {:?}", &recvbuf[..n]);
 
-                let buffer = [&remain[..], &recvbuf[..]].concat();
+                let buffer = [&remain[..], &recvbuf[..n]].concat();
                 let datalen = buffer.len();
 
-                if datalen <= META_HEADER_LEN {
+                if datalen < META_HEADER_LEN {
                     remain = buffer.to_vec();
                     continue;
                 }
 
                 let head: MetaHeader = bincode::deserialize(&buffer[..META_HEADER_LEN]).unwrap();
-                if datalen <= head.length as usize + META_HEADER_LEN {
+                if datalen < head.length as usize + META_HEADER_LEN {
                     remain = buffer.to_vec();
                     continue;
                 }
 
                 let pack_data = &buffer[META_HEADER_LEN..META_HEADER_LEN+head.length as usize];
+                remain = (&buffer[META_HEADER_LEN + head.length as usize..]).to_vec();
                 match head.format {
                     DataFormat::FmtRaceCommand => {
                         let state: UserUpdate = bincode::deserialize(pack_data).unwrap();
@@ -135,8 +136,6 @@ impl UiView for UiRacing {
                         break; //data type error, auto close.
                     }
                 }
-
-                remain = (&buffer[META_HEADER_LEN + head.length as usize..]).to_vec();
             }
         });
     }
