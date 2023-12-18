@@ -91,6 +91,7 @@ pub struct UserUpdate {
     pub state: RaceState,
 }
 
+pub static META_HEADER_LEN: usize = 6;
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaHeader {
     pub length: u16,

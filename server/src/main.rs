@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 
 use server::server::RacingServer;
 use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader, MetaRaceResult, RaceState, DataFormat, RaceQuery};
-use protocol::httpapi::API_VERSION_STRING;
+use protocol::httpapi::{API_VERSION_STRING, META_HEADER_LEN};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()>{
@@ -181,19 +181,19 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
         let buffer = [&remain[..], &recvbuf[..]].concat();
         let datalen = buffer.len();
 
-        if datalen <= 4 {
+        if datalen <= META_HEADER_LEN {
             remain = buffer.to_vec();
             continue;
         }
 
-        let head: MetaHeader = bincode::deserialize(&buffer[..4]).unwrap();
-        if datalen <= head.length as usize + 4 {
+        let head: MetaHeader = bincode::deserialize(&buffer[..META_HEADER_LEN]).unwrap();
+        if datalen <= head.length as usize + META_HEADER_LEN {
             remain = buffer.to_vec();
             continue;
         }
 
         let mut server = data.lock().await;
-        let pack_data = &buffer[4..4+head.length as usize];
+        let pack_data = &buffer[META_HEADER_LEN..META_HEADER_LEN+head.length as usize];
         match head.format {
             DataFormat::FmtUserAccess => { // user meta data socket login.
                 let access: UserAccess = bincode::deserialize(pack_data).unwrap();
@@ -207,15 +207,15 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
                 let state: UserUpdate = bincode::deserialize(pack_data).unwrap();
                 server.update_player_state(&state.token, state.state.clone());
                 match state.state {
-                    RaceState::RaceInit => {
+                    RaceState::RaceReady => {
                         // wait player state ready, once ready send back to auto load game.
                         tokio::spawn(wait_all_players_ready(state.token, data.clone(), stream.clone()));
                     }
-                    RaceState::RaceReady => {
+                    RaceState::RaceLoaded => {
                         // wait all player state loaded. once ready send back to start racing.
                         tokio::spawn(wait_all_players_loaded(state.token, data.clone(), stream.clone()));
                     }
-                    RaceState::RaceLoaded => {
+                    RaceState::RaceRetired | RaceState::RaceFinished => {
                         // wait all player state finish or retire, once ready send back race result to show.
                         tokio::spawn(wait_all_players_finish(state.token, data.clone(), stream.clone()));
                     }
@@ -232,7 +232,7 @@ async fn handle_data_stream(stream: Arc<Mutex<TcpStream>>, data: Arc<Mutex<Racin
             }
         }
 
-        remain = (&buffer[4 + head.length as usize..]).to_vec();
+        remain = (&buffer[META_HEADER_LEN + head.length as usize..]).to_vec();
     }
 }
 

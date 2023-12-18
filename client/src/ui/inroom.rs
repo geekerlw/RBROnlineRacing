@@ -2,7 +2,7 @@ use eframe::egui;
 use egui::Grid;
 use protocol::httpapi::{RaceQuery, RaceInfo, UserAccess};
 use reqwest::StatusCode;
-use crate::ui::UiPageState;
+use crate::{ui::UiPageState, game::rbr::RBRGame};
 use super::{UiView, UiPageCtx};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -102,6 +102,7 @@ impl UiView for UiInRoom {
                             page.route.switch_to_page(UiPageState::PageLobby);
                         }
                         if ui.button("准备").clicked() {
+                            self.start_game_racing(page);
                             page.route.switch_to_page(UiPageState::PageRacing);
                         }
                     });
@@ -123,5 +124,10 @@ impl UiInRoom {
 
         page.store.curr_room.clear();
         self.room_name.clear();
+    }
+
+    fn start_game_racing(&mut self, page: &mut UiPageCtx) {
+        let mut rbr = RBRGame::new(&page.store.game_path);
+        rbr.set_race_info(&self.raceinfo);
     }
 }

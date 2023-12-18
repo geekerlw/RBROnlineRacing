@@ -11,6 +11,7 @@ pub struct RacingStore {
     pub user_token: String,
     pub user_state: RaceState,
     pub curr_room: String,
+    pub game_path: String,
 }
 
 impl RacingStore {
