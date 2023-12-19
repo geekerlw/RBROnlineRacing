@@ -48,7 +48,7 @@ impl Default for UiPageCtx {
 }
 
 pub trait UiView {
-    fn init(&mut self) {}
+    fn init(&mut self, _page: &mut UiPageCtx) {}
 
     fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {}
 
@@ -56,5 +56,5 @@ pub trait UiView {
 
     fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {}
 
-    fn quit(&mut self) {}
+    fn quit(&mut self, _page: &mut UiPageCtx) {}
 }

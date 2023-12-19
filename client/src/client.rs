@@ -20,8 +20,10 @@ impl RacingClient {
         self.pages.insert(UiPageState::PageRacing as usize, Box::new(ui::racing::UiRacing::default()));
         self.pages.insert(UiPageState::PageSetting as usize, Box::new(ui::setting::UiSetting::default()));
 
+        self.ctx.store.init();
+
         for (_, page) in self.pages.iter_mut().enumerate() {
-            page.init();
+            page.init(&mut self.ctx);
         }
 
         self
@@ -79,7 +81,7 @@ impl eframe::App for RacingClient {
         }
 
         for (_, page) in self.pages.iter_mut().enumerate() {
-            page.quit();
+            page.quit(&mut self.ctx);
         }
         self.ctx.store.save_config();
     }

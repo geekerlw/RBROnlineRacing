@@ -18,7 +18,7 @@ pub struct RacingStore {
 }
 
 impl RacingStore {
-    pub fn init(mut self) -> Self {
+    pub fn init(&mut self) {
         if let Ok(appdata) = env::var("AppData") {
             let conf_path = appdata + r"\RBROnlineRacing";
             let path = Path::new(&conf_path);
@@ -26,13 +26,13 @@ impl RacingStore {
                 std::fs::create_dir(path).unwrap();
             }
         }
+        self.load_config();
         self.user_name = String::from("Lw_Ziye");
         self.user_passwd = String::from("simrallycn");
         self.user_state = RaceState::RaceInit;
-        self
     }
 
-    pub fn load_config(mut self) -> Self {
+    pub fn load_config(&mut self) {
         if let Ok(appdata) = env::var("AppData") {
             let conf_file = appdata + r"\RBROnlineRacing\Config.ini";
             if let Ok(conf) = Ini::load_from_file(conf_file) {
@@ -43,7 +43,6 @@ impl RacingStore {
                 self.game_path = conf.get_from_or(Some("game"), "path", r".\").to_string();
             }
         }
-        self
     }
 
     pub fn save_config(&mut self) {
