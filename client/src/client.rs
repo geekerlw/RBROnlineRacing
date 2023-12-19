@@ -81,6 +81,7 @@ impl eframe::App for RacingClient {
         for (_, page) in self.pages.iter_mut().enumerate() {
             page.quit();
         }
+        self.ctx.store.save_config();
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {

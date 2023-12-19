@@ -1,9 +1,15 @@
 use crate::ui::UiPageState;
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct RacingRoute {
     pub prev_page: UiPageState,
     pub curr_page: UiPageState,
+}
+
+impl Default for RacingRoute {
+    fn default() -> Self {
+        Self { prev_page: UiPageState::PageLogin, curr_page: UiPageState::PageLogin }
+    }
 }
 
 impl RacingRoute {

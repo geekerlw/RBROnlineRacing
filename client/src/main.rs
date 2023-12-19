@@ -1,6 +1,5 @@
-use ui::UiPageState;
-use protocol::httpapi::RaceState;
 use client::RacingClient;
+use components::store::RacingStore;
 
 mod ui;
 mod game;
@@ -10,14 +9,7 @@ mod client;
 #[tokio::main]
 async fn main() {
     let mut app = RacingClient::default().init();
-    app.ctx.route.prev_page = UiPageState::PageLogin;
-    app.ctx.route.curr_page = UiPageState::PageLogin;
-    app.ctx.store.server_addr = "127.0.0.1".to_string();
-    app.ctx.store.server_port = 8080;
-    app.ctx.store.meta_port = 9493;
-    app.ctx.store.user_name = String::from("Lw_Ziye");
-    app.ctx.store.user_passwd = String::from("simrallycn");
-    app.ctx.store.user_state = RaceState::RaceInit;
+    app.ctx.store = RacingStore::default().init().load_config();
 
     let mut native_options: eframe::NativeOptions = eframe::NativeOptions::default();
     native_options.initial_window_size = Some(egui::Vec2::new(1000.0, 600.0));
