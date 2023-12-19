@@ -81,5 +81,6 @@ impl UiSetting {
     fn save_setting(&mut self, page: &mut UiPageCtx) {
         page.store.game_path = self.gamepath.clone();
         page.store.server_addr = self.server_addr.clone();
+        page.store.save_config();
     }
 }

@@ -4,6 +4,8 @@ use protocol::httpapi::RaceState;
 use ini::Ini;
 use std::path::Path;
 
+use crate::game::rbr::RBRGame;
+
 #[derive(Default, Clone)]
 pub struct RacingStore {
     pub server_addr: String,
@@ -27,9 +29,6 @@ impl RacingStore {
             }
         }
         self.load_config();
-        self.user_name = String::from("Lw_Ziye");
-        self.user_passwd = String::from("simrallycn");
-        self.user_state = RaceState::RaceInit;
     }
 
     pub fn load_config(&mut self) {
@@ -40,7 +39,9 @@ impl RacingStore {
                 self.server_port = conf.get_from_or(Some("server"), "http_port", "8080").parse::<u16>().unwrap();
                 self.meta_port = conf.get_from_or(Some("server"), "data_port", "9493").parse::<u16>().unwrap();
 
-                self.game_path = conf.get_from_or(Some("game"), "path", r".\").to_string();
+                self.game_path = conf.get_from_or(Some("game"), "path", r"E:\\Richard Burns Rally").to_string();
+                self.user_name = RBRGame::new(&self.game_path).get_user().to_string();
+                self.user_passwd = String::from("simrallycn");
             }
         }
     }

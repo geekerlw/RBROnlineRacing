@@ -5,6 +5,7 @@ use protocol::httpapi::RaceInfo;
 use protocol::httpapi::RoomState;
 use reqwest::StatusCode;
 use super::{UiView, UiPageCtx, UiMsg};
+use crate::game::rbr::RBRGame;
 use crate::ui::UiPageState;
 
 #[derive(Clone)]
@@ -37,6 +38,11 @@ impl Default for UiCreateRace {
 }
 
 impl UiView for UiCreateRace {
+    fn init(&mut self, page: &mut UiPageCtx) {
+        let mut rbr = RBRGame::new(&page.store.game_path);
+        //rbr.load_game_stages();
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
