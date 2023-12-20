@@ -221,11 +221,10 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
 }
 
 async fn start_game_load(gamepath: String, token: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
-    let mut rbr: RBRGame = RBRGame::new(&gamepath);
+    let rbr: RBRGame = RBRGame::new(&gamepath);
     let user_token = token.clone();
     tokio::spawn(async move {
-        rbr.launch().await;
-        rbr.load().await;
+        rbr.launch().await.load();
 
         let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceLoaded};
         let body = bincode::serialize(&update).unwrap();

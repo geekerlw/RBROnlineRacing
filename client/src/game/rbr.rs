@@ -1,6 +1,15 @@
 use std::io::Read;
 use unicode_normalization::UnicodeNormalization;
-
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
+use tokio::io::SeekFrom;
+use core::time::Duration;
+use std::thread::sleep;
+use std::ffi::OsStr;
+use std::iter::once;
+use std::os::windows::ffi::OsStrExt;
+use std::process::Command;
+extern crate winapi;
+use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_DOWN, VK_RETURN, VK_ESCAPE};
 use protocol::httpapi::{RaceState, MetaRaceData, RaceInfo, MetaRaceResult};
 use ini::Ini;
 use serde::{Serialize, Deserialize};
@@ -55,16 +64,81 @@ impl RBRGame {
         }
     }
 
-    pub async fn launch(&mut self) {
+    pub async fn launch(self) -> Self {
+        let rbr_sse = self.root_path.clone() + r"\RichardBurnsRally_SSE.exe";
+        let _process = Command::new(rbr_sse).current_dir(&self.root_path)
+            .spawn().expect("failed to execute command");
 
+        let target = "Automatic menu navigation completed\r\n";
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+            if let Ok(mut file) = tokio::fs::File::open(self.root_path.clone() + r"\Plugins\NGPCarMenu\NGPCarMenu.log").await {
+                if file.metadata().await.unwrap().len() < 40 {
+                    continue;
+                }
+                file.seek(SeekFrom::End(-37)).await.unwrap();
+                let mut content = String::new();
+                file.read_to_string(&mut content).await.unwrap();
+                if target == content.as_str() {
+                    println!("RBR Game automic login complete.");
+                    break;
+                }
+            }            
+        };
+        self
     }
 
-    pub async fn load(&mut self) {
+    pub fn load(&mut self) {
+        unsafe {
+            // Find the handle of the target window
+            let window_title = "Richard Burns Rally - DirectX9\0";
+            let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
+            let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
+    
+            sleep(Duration::from_secs(1));
 
+            // Simulate a special keyboard event (Down key)
+            SetForegroundWindow(window_handle);
+            SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
+            SendMessageW(window_handle, WM_KEYUP, VK_DOWN as usize, 0);
+    
+            sleep(Duration::from_secs(1));
+    
+            // Simulate a special keyboard event (Down key)
+            SetForegroundWindow(window_handle);
+            SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
+            SendMessageW(window_handle, WM_KEYUP, VK_DOWN as usize, 0);
+    
+            sleep(Duration::from_secs(1));
+    
+            // Simulate a special keyboard event (Enter key)
+            SetForegroundWindow(window_handle);
+            SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
+            SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
+    
+            sleep(Duration::from_secs(1));
+    
+            // Simulate a special keyboard event (Enter key)
+            SetForegroundWindow(window_handle);
+            SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
+            SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
+
+        }
     }
 
     pub fn start(&mut self) {
-        
+        unsafe {
+            // Find the handle of the target window
+            let window_title = "Richard Burns Rally - DirectX9\0";
+            let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
+            let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
+    
+            // Simulate a special keyboard event (ESC key)
+            SetForegroundWindow(window_handle);
+            SendMessageW(window_handle, WM_KEYDOWN, VK_ESCAPE as usize, 0);
+            SendMessageW(window_handle, WM_KEYUP, VK_ESCAPE as usize, 0);
+        }
     }
 
     pub fn get_user(&mut self) -> String {
