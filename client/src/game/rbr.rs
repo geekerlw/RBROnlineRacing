@@ -111,6 +111,11 @@ impl RBRGame {
             conf.with_section(Some("PracticeStage")).set("id", info.stage_id.to_string());
             conf.write_to_file(recent_filepath).unwrap();
         }
+        let conf_path = self.root_path.clone() + r"\rallysimfans.ini";
+        if let Ok(mut conf) = Ini::load_from_file(&conf_path) {
+            conf.with_section(Some("drive")).set("practice_damage", info.damage.to_string());
+            conf.write_to_file(conf_path).unwrap();
+        }
     }
 
     pub fn load_game_stages(&mut self) -> Option<Vec<RBRStageData>> {

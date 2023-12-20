@@ -15,8 +15,8 @@ pub struct UiCreateRace {
     pub select_stage: usize,
     pub cars: Vec<RBRCarData>,
     pub select_car: usize,
-    pub damage: u32,
-    pub setup: String,
+    pub damages: Vec<&'static str>,
+    pub select_damage: usize,
 }
 
 impl Default for UiCreateRace {
@@ -27,8 +27,8 @@ impl Default for UiCreateRace {
             select_stage: 0,
             cars: vec![],
             select_car: 0,
-            damage: 0,
-            setup: "Default".to_string(),
+            damages: vec!["Off", "Safe", "Reduced", "Realistic"],
+            select_damage: 3,
         }
     }
 }
@@ -80,11 +80,15 @@ impl UiView for UiCreateRace {
                         ui.end_row();
 
                         ui.label("车辆损坏：");
-                        ui.label("Always new");
+                        ComboBox::from_id_source("select damage").selected_text(self.damages[self.select_damage])
+                        .show_ui(ui, |ui| {
+                            for (index, damage) in self.damages.iter().enumerate() {
+                                if ui.selectable_label(self.select_car == index, damage.to_string()).clicked() {
+                                    self.select_damage = index;
+                                }
+                            }
+                        });
                         ui.end_row();
-
-                        ui.label("车辆调教: ");
-                        ui.label("Default");
                     });
 
                     ui.add_space(20.0);
@@ -113,8 +117,7 @@ impl UiCreateRace {
             stage_id: self.stages[self.select_stage].stage_id.parse().unwrap(),
             car: Some(self.cars[self.select_car].name.clone()),
             car_id: Some(self.cars[self.select_car].id.parse().unwrap()),
-            damage: Some(self.damage),
-            setup: Some(self.setup.clone()),
+            damage: self.select_damage as u32,
             state: RoomState::default(),
             players: Vec::<String>::new(),
         };

@@ -9,6 +9,7 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 pub struct UiInRoom {
     pub room_name: String,
     pub raceinfo: RaceInfo,
+    pub damages: Vec<&'static str>,
     rx: Receiver<RaceInfo>,
     tx: Sender<RaceInfo>,
 }
@@ -19,6 +20,7 @@ impl Default for UiInRoom {
         Self { 
             room_name: "No Room Info".to_string(),
             raceinfo: RaceInfo::default(),
+            damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             rx,
             tx,
         }
@@ -71,11 +73,8 @@ impl UiView for UiInRoom {
                         ui.end_row();
 
                         ui.label("车辆损坏：");
-                        ui.label("Always new");
+                        ui.label(self.damages[self.raceinfo.damage as usize]);
                         ui.end_row();
-
-                        ui.label("车辆调教: ");
-                        ui.label("Default");
                     });
 
                     ui.add_space(20.0);

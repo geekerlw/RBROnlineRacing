@@ -96,7 +96,6 @@ impl RacingServer {
             raceinfo.car = room.car.clone();
             raceinfo.car_id = room.car_id.clone();
             raceinfo.damage = room.damage.clone();
-            raceinfo.setup = room.setup.clone();
             raceinfo.state = room.state.clone();
             for player in &room.players {
                 raceinfo.players.push(player.clone());
@@ -128,12 +127,7 @@ impl RacingServer {
                 if let Some(car_id) = info.car_id {
                     raceroom.car_id = Some(car_id);
                 }
-                if let Some(damage) = info.damage {
-                    raceroom.damage = Some(damage);
-                }
-                if let Some(setup) = info.setup {
-                    raceroom.setup = Some(setup);
-                }
+                raceroom.damage = info.damage;
                 raceroom.state = RoomState::default();
                 raceroom.players.insert(0, player.profile_name.clone());
                 self.rooms.insert(info.name, raceroom);

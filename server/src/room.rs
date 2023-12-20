@@ -6,8 +6,7 @@ pub struct RaceRoom {
     pub stage_id: u32,
     pub car: Option<String>,
     pub car_id: Option<u32>,
-    pub damage: Option<u32>,
-    pub setup: Option<String>,
+    pub damage: u32,
     pub players: Vec<String>,
     pub state: RoomState,
 }
