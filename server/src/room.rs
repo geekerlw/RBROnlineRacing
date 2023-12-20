@@ -3,7 +3,9 @@ use protocol::httpapi::RoomState;
 #[derive(Default)]
 pub struct RaceRoom {
     pub stage: String,
+    pub stage_id: u32,
     pub car: Option<String>,
+    pub car_id: Option<u32>,
     pub damage: Option<u32>,
     pub setup: Option<String>,
     pub players: Vec<String>,

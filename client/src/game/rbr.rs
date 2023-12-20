@@ -1,3 +1,6 @@
+use std::io::Read;
+use unicode_normalization::UnicodeNormalization;
+
 use protocol::httpapi::{RaceState, MetaRaceData, RaceInfo, MetaRaceResult};
 use ini::Ini;
 use serde::{Serialize, Deserialize};
@@ -25,6 +28,23 @@ pub struct RBRStageData {
     pub author_web: String,
     pub author_note: String,
     pub fattrib: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RBRCarData {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub hash: String,
+    pub carmodel_id: String,
+    pub user_id: String,
+    pub base_group_id: String,
+    pub test: String,
+    pub ngp: String,
+    pub custom_setups: String,
+    pub rev: String,
+    pub audio: Option<String>,
+    pub audio_hash: String,
 }
 
 impl RBRGame {
@@ -83,12 +103,38 @@ impl RBRGame {
     }
 
     pub fn set_race_info(&mut self, info: &RaceInfo) {
-
+        let recent_filepath = self.root_path.clone() + r"\rsfdata\cache\recent.ini";
+        if let Ok(mut conf) = Ini::load_from_file(&recent_filepath) {
+            if let Some(car_id) = &info.car_id {
+                conf.with_section(Some("PracticeCar")).set("id", car_id.to_string());
+            }
+            conf.with_section(Some("PracticeStage")).set("id", info.stage_id.to_string());
+            conf.write_to_file(recent_filepath).unwrap();
+        }
     }
 
-    pub fn load_game_stages(&mut self) {
-        let stage_file = self.root_path.clone() + r"\rsfdata\cache\stages_data.json";
-        let file = std::fs::File::open(stage_file).unwrap();
-        let stages: Vec<RBRStageData> = serde_json::from_reader(file).unwrap();
+    pub fn load_game_stages(&mut self) -> Option<Vec<RBRStageData>> {
+        let filepath = self.root_path.clone() + r"\rsfdata\cache\stages_data.json";
+        if let Ok(mut file) = std::fs::File::open(filepath) {
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf).unwrap();
+            let bufstr = String::from_utf8_lossy(&buf).to_string().nfc().collect::<String>();
+            if let Ok(mut stages) = serde_json::from_str::<Vec<RBRStageData>>(&bufstr) {
+                stages.sort_by(|a, b| a.name.cmp(&b.name));
+                return Some(stages);
+            }
+        }
+        return None;
+    }
+
+    pub fn load_game_cars(&mut self) -> Option<Vec<RBRCarData>> {
+        let filepath = self.root_path.clone() + r"\rsfdata\cache\cars.json";
+        if let Ok(file) = std::fs::File::open(filepath) {
+            if let Ok(mut cars) = serde_json::from_reader::<std::fs::File, Vec<RBRCarData>>(file) {
+                cars.sort_by(|a, b| a.name.cmp(&b.name));
+                return Some(cars);
+            }
+        }
+        return None;
     }
 }

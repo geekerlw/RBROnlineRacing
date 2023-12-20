@@ -92,7 +92,9 @@ impl RacingServer {
             let mut raceinfo = RaceInfo::default();
             raceinfo.name = name.clone();
             raceinfo.stage = room.stage.clone();
+            raceinfo.stage_id = room.stage_id.clone();
             raceinfo.car = room.car.clone();
+            raceinfo.car_id = room.car_id.clone();
             raceinfo.damage = room.damage.clone();
             raceinfo.setup = room.setup.clone();
             raceinfo.state = room.state.clone();
@@ -119,8 +121,12 @@ impl RacingServer {
                 player.room_name = info.name.clone();
                 let mut raceroom = RaceRoom::default();
                 raceroom.stage = info.stage;
+                raceroom.stage_id = info.stage_id;
                 if let Some(car) = info.car {
                     raceroom.car = Some(car);
+                }
+                if let Some(car_id) = info.car_id {
+                    raceroom.car_id = Some(car_id);
                 }
                 if let Some(damage) = info.damage {
                     raceroom.damage = Some(damage);

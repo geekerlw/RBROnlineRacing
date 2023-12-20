@@ -5,18 +5,16 @@ use protocol::httpapi::RaceInfo;
 use protocol::httpapi::RoomState;
 use reqwest::StatusCode;
 use super::{UiView, UiPageCtx, UiMsg};
-use crate::game::rbr::RBRGame;
+use crate::game::rbr::{RBRGame, RBRStageData, RBRCarData};
 use crate::ui::UiPageState;
 
 #[derive(Clone)]
 pub struct UiCreateRace {
     pub room_name: String,
-    pub stage: Vec<String>,
-    pub stage_id: Vec<u32>,
-    pub stage_index: usize,
-    pub car: Vec<String>,
-    pub car_id: Vec<u32>,
-    pub car_index: usize,
+    pub stages: Vec<RBRStageData>,
+    pub select_stage: usize,
+    pub cars: Vec<RBRCarData>,
+    pub select_car: usize,
     pub damage: u32,
     pub setup: String,
 }
@@ -25,12 +23,10 @@ impl Default for UiCreateRace {
     fn default() -> Self {
         Self { 
             room_name: "Test Room".to_string(),
-            stage: vec!["Semetin 2009".to_string(), "Semetin 2010".to_string()],
-            stage_id: vec![0, 1],
-            stage_index: 0,
-            car: vec!["Ford Fiesta 2019".to_string(), "Ford Fiesta R2".to_string()],
-            car_id: vec![1, 2],
-            car_index: 0,
+            stages: vec![],
+            select_stage: 0,
+            cars: vec![],
+            select_car: 0,
             damage: 0,
             setup: "Default".to_string(),
         }
@@ -40,7 +36,12 @@ impl Default for UiCreateRace {
 impl UiView for UiCreateRace {
     fn init(&mut self, page: &mut UiPageCtx) {
         let mut rbr = RBRGame::new(&page.store.game_path);
-        //rbr.load_game_stages();
+        if let Some(stages) = rbr.load_game_stages() {
+            self.stages = stages;
+        }
+        if let Some(cars) = rbr.load_game_cars() {
+            self.cars = cars;
+        }
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
@@ -57,22 +58,22 @@ impl UiView for UiCreateRace {
                         ui.end_row();
 
                         ui.label("比赛赛道：");
-                        ComboBox::from_id_source("select stage").selected_text(self.stage[self.stage_index].clone())
+                        ComboBox::from_id_source("select stage").selected_text(self.stages[self.select_stage].name.clone())
                         .show_ui(ui, |ui| {
-                            for (index, text) in self.stage.iter().enumerate() {
-                                if ui.selectable_label(self.stage_index == index, text).clicked() {
-                                    self.stage_index = index;
+                            for (index, stage) in self.stages.iter().enumerate() {
+                                if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
+                                    self.select_stage = index;
                                 }
                             }
                         });
                         ui.end_row();
 
                         ui.label("比赛车辆: ");
-                        ComboBox::from_id_source("select car").selected_text(self.car[self.car_index].clone())
+                        ComboBox::from_id_source("select car").selected_text(self.cars[self.select_car].name.clone())
                         .show_ui(ui, |ui| {
-                            for (index, text) in self.car.iter().enumerate() {
-                                if ui.selectable_label(self.car_index == index, text).clicked() {
-                                    self.car_index = index;
+                            for (index, car) in self.cars.iter().enumerate() {
+                                if ui.selectable_label(self.select_car == index, &car.name).clicked() {
+                                    self.select_car = index;
                                 }
                             }
                         });
@@ -108,8 +109,10 @@ impl UiCreateRace {
         let raceinfo = RaceInfo{
             token: page.store.user_token.clone(),
             name: self.room_name.clone(),
-            stage: self.stage[self.stage_index].clone(),
-            car: Some(self.car[self.car_index].clone()),
+            stage: self.stages[self.select_stage].name.clone(),
+            stage_id: self.stages[self.select_stage].stage_id.parse().unwrap(),
+            car: Some(self.cars[self.select_car].name.clone()),
+            car_id: Some(self.cars[self.select_car].id.parse().unwrap()),
             damage: Some(self.damage),
             setup: Some(self.setup.clone()),
             state: RoomState::default(),
