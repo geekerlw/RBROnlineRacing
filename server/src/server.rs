@@ -38,17 +38,20 @@ impl RacingServer {
         None
     }
 
-    pub fn player_login(&mut self, user: UserLogin, token: Uuid) -> bool {
+    pub fn player_login(&mut self, user: UserLogin) -> Option<String> {
         if user.passwd != "simrallycn" {
-            return false;
+            return None;
         }
 
-        if !self.lobby.is_player_exist(None, Some(&user.name)) {
-            let player: RacePlayer = RacePlayer::new(user.name);
-            self.lobby.push_player(token, player);
-            return true;
+        if let Some(token) = &self.lobby.get_token_by_name(user.name.clone()) {
+            return Some(token.to_string());
         }
-        return false;
+
+        let token = Uuid::new_v4();
+        let tokenstr = token.to_string();
+        let player: RacePlayer = RacePlayer::new(user.name.clone());
+        self.lobby.push_player(token, player);
+        return Some(tokenstr);
     }
 
     pub fn player_access(&mut self, access: &UserAccess) -> bool {

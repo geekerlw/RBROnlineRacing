@@ -12,11 +12,13 @@ use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEY
 use protocol::httpapi::{RaceState, MetaRaceData, RaceInfo, MetaRaceResult};
 use ini::Ini;
 use serde::{Serialize, Deserialize};
+use process_memory::{Architecture, Memory, DataMember, Pid, ProcessHandleExt, TryIntoProcessHandle};
 
 #[derive(Debug, Default, Clone)]
 pub struct RBRGame {
     pub root_path: String,
     pub test_count: u32,
+    pub pid: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,6 +59,7 @@ pub struct RBRCarData {
 
 
 // Offset 0x007EAC48 + 0x728 The current game mode (state machine of RBR)
+#[derive(Clone, Copy, Debug)]
 #[repr(C, packed)]
 struct RBRGameMode {
     reversed: [u8; 0x728],
@@ -155,13 +158,15 @@ impl RBRGame {
         Self {
             root_path: path.clone(),
             test_count: 0,
+            pid: 0,
         }
     }
 
-    pub async fn launch(self) -> Self {
+    pub async fn launch(&mut self) {
         let rbr_sse = self.root_path.clone() + r"\RichardBurnsRally_SSE.exe";
-        let _process = Command::new(rbr_sse).current_dir(&self.root_path)
+        let process = Command::new(rbr_sse).current_dir(&self.root_path)
             .spawn().expect("failed to execute command");
+        self.pid = process.id();
 
         let target = "Automatic menu navigation completed\r\n";
         loop {
@@ -180,7 +185,6 @@ impl RBRGame {
                 }
             }            
         };
-        self
     }
 
     pub fn load(&mut self) {
@@ -227,7 +231,7 @@ impl RBRGame {
             let window_title = "Richard Burns Rally - DirectX9\0";
             let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
             let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
-    
+
             // Simulate a special keyboard event (ESC key)
             SetForegroundWindow(window_handle);
             SendMessageW(window_handle, WM_KEYDOWN, VK_ESCAPE as usize, 0);
@@ -245,17 +249,15 @@ impl RBRGame {
     }
 
     pub fn get_race_state(&mut self) -> RaceState {
-        let mut state = RaceState::default();
-        if self.test_count <= 10 {
-            state = RaceState::RaceRunning;
-        } else if self.test_count > 10 {
-            state = RaceState::RaceFinished;
-        } else {
-            state = RaceState::default();
+        let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
+        let game_mode_addr = DataMember::<i32>::new_offset(handle, vec![0x7EAC48, 0x728]);
+        let game_mode: i32 = unsafe {game_mode_addr.read().unwrap()};
+        match game_mode {
+            0x01 => return RaceState::RaceRunning,
+            0x0A => return RaceState::RaceLoaded,
+            0x0C => return RaceState::RaceFinished,
+            _ => return RaceState::RaceDefault,
         }
-
-        self.test_count += 1;
-        return state;
     }
 
     pub fn get_race_data(&mut self) -> MetaRaceData {

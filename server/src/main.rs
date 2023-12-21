@@ -65,12 +65,9 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     let user = body.into_inner();
     println!("Received user login: {:?}", user);
 
-    let token = Uuid::new_v4();
-    let response = token.to_string();
     let mut server = data.lock().await;
-
-    if server.player_login(user, token) {
-        HttpResponse::Ok().body(response)
+    if let Some(tokenstr) = server.player_login(user) {
+        HttpResponse::Ok().body(tokenstr)
     } else {
         HttpResponse::Unauthorized().body("Login failed!")
     }

@@ -221,28 +221,17 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
 }
 
 async fn start_game_load(gamepath: String, token: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
-    let rbr: RBRGame = RBRGame::new(&gamepath);
+    let mut rbr: RBRGame = RBRGame::new(&gamepath);
     let user_token = token.clone();
     tokio::spawn(async move {
-        rbr.launch().await.load();
+        rbr.launch().await;
+        rbr.load();
 
         let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceLoaded};
         let body = bincode::serialize(&update).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
         writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
-    });
-}
 
-async fn start_game_race(gamepath: String, token: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
-    let mut rbr = RBRGame::new(&gamepath);
-    let user_token = token.clone();
-    tokio::spawn(async move {
-        rbr.start();
-        let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceRunning};
-        let body = bincode::serialize(&update).unwrap();
-        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
-        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
-        
         loop {
             let state = rbr.get_race_state();
             match state {
@@ -264,5 +253,17 @@ async fn start_game_race(gamepath: String, token: String, writer: Arc<Mutex<Owne
             }
             tokio::time::sleep(tokio::time::Duration::from_micros(500)).await;
         }
+    });
+}
+
+async fn start_game_race(gamepath: String, token: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+    let mut rbr = RBRGame::new(&gamepath);
+    let user_token = token.clone();
+    tokio::spawn(async move {
+        rbr.start();
+        let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceRunning};
+        let body = bincode::serialize(&update).unwrap();
+        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
     });
 }

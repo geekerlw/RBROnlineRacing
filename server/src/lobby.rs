@@ -46,4 +46,13 @@ impl RaceLobby {
         }
         None
     }
+
+    pub fn get_token_by_name(&mut self, name: String) -> Option<Uuid> {
+        for (uuid, player) in &self.players {
+            if player.profile_name == name {
+                return Some(uuid.clone());
+            }
+        }
+        None
+    }
 }
