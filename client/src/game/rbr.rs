@@ -8,7 +8,6 @@ use std::ffi::OsStr;
 use std::iter::once;
 use std::os::windows::ffi::OsStrExt;
 use std::process::Command;
-extern crate winapi;
 use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_DOWN, VK_RETURN, VK_ESCAPE};
 use protocol::httpapi::{RaceState, MetaRaceData, RaceInfo, MetaRaceResult};
 use ini::Ini;
@@ -55,6 +54,101 @@ pub struct RBRCarData {
     pub audio: Option<String>,
     pub audio_hash: String,
 }
+
+
+// Offset 0x007EAC48 + 0x728 The current game mode (state machine of RBR)
+#[repr(C, packed)]
+struct RBRGameMode {
+    reversed: [u8; 0x728],
+    // gameMode
+    //		00 = (not available)
+    //		01 = driving (after 5secs or less left in start clock or already driving after GO! command)
+    //		02 = pause (when a menu is shown while stage or replay is running, not the main menu)
+    //		03 = main menu or plugin menu (stage not running)
+    //		04 = ? (black out)
+    //		05 = loading track (race or replay. When the track model is loaded the status goes briefly to 0x0D and when the countdown starts the status goes to 0x0A)
+    //		06 = exiting to menu from a race or replay (after this the mode goes to 12 for a few secs and finally to 3 when the game is showing the main or plugin menu)
+    //		07 = quit the application ?
+    //		08 = replay
+    //		09 = end lesson / finish race / retiring / end replay
+    //      0A = Before starting a race or replay (camera is spinning around the car. At this point map and car model has been loaded and is ready to rock)
+    //      0B = ? (black out)
+    //      0C = Game is starting or racing ended and going back to main menu (loading the initial "Load Profile" screen or "RBR menu system". Status goes to 0x03 when the "Load Profile" menu is ready and shown)
+    //      0D = (not available) (0x0D status after 0x05 map loading step is completed. After few secs the status goes to 0x0A and camera starts to spin around the car)
+    //      0E = (not available) (status goes to 0x0F and then RBR crashes)
+    //      0F = ? Doesnt work anymore. Goes to menu? Pause racing and replaying and hide all on-screen instruments and timers (supported only after the race or replay has started, ie 0x0A and 0x10 status has changed to 0x08 or 0x01)
+    //		10-0xFF = ?
+    game_mode: i32, // 0x728
+}
+
+// Offset 0x0165FC68 RBRCarInfo
+#[repr(C, packed)]
+struct RBRCarInfo {
+    hud_position_x: i32,     // 0x00
+    hud_position_y: i32,     // 0x04
+    race_started: i32,       // 0x08 (1=Race started. Start countdown less than 5 secs, so false start possible, 0=Race not yet started or start countdown still more than 5 secs and gas pedal doesn't work yet)
+    speed: f32, 			 // 0x0C
+    rpm: f32,				 // 0x10
+    temp: f32,				 // 0x14 (water temp in celsius?)
+    turbo: f32, 			 // 0x18. (pressure, in Pascals?)
+    unknown2: i32,  		 // 0x1C (always 0?)
+    distance_from_start: f32, // 0x20
+    distance_from_travelled: f32, // 0x24
+    distance_to_finish: f32, // 0x28
+    pad1: [u8; 0x110],
+    stage_process: f32,      // 0x13C  (meters, hundred meters, some map unit?. See RBRMapInfo.stageLength also)
+    race_time: f32,			 // 0x140  Total race time (includes time penalties)  (or if gameMode=8 then the time is taken from replay video)
+    race_finished: i32,      // 0x144  (0=Racing after GO! command, 1=Racing completed/retired or not yet started
+    unknown4: i32,          // 0x148
+    unknown5: i32,          // 0x14C
+    driving_direction: i32,  // 0x150. 0=Correct direction, 1=Car driving to wrong direction
+    fade_wrongway_msg: f32,   // 0x154. 1 when "wrong way" msg is shown
+    pad3: [u8; 0x18],
+    gear: i32,  		     // 0x170. 0=Reverse,1=Neutral,2..6=Gear-1 (ie. value 3 means gear 2) (note! the current value only, gear is not set via this value)
+    pad4: [u8; 0xD0],
+    stage_start_countdown: f32, // 0x244 (7=Countdown not yet started, 6.999-0.1 Countdown running, 0=GO!, <0=Racing time since GO! command)
+    false_start: i32,		   // 0x248 (0=No false start, 1=False start)
+    pad5: [u8; 8],
+    split_reached_num: i32,      // 0x254 0=Start line passed if race is on, 1=Split#1 passed, 2=Split#2 passed
+    split1_time: f32,        // 0x258 Total elapsed time in secs up to split1
+    split2_time: f32,        // 0x25C Total elapsed time in secs up to split2  (split2-split1 would be the time between split1 and split2)
+}
+
+// Fixed Offset 0x1660800 RBRMapSettings. Configuration of the next stage (Note! Need to set these values before the stage begins)
+#[repr(C, packed)]
+struct RBRMapSettings {
+    unknown1: i32,   // 0x00
+    track_id: i32,	// 0x04   (xx trackID)
+    car_id: i32,		// 0x08   (0..7 carID)
+    unknown2: i32,   // 0x0C
+    unknown3: i32,   // 0x10
+    transmission_type: i32, // 0x14  (0=Manual, 1=Automatic)
+    pad1: [u8; 0x18],
+    race_paused: i32, // 0x30 (0=Normal mode, 1=Racing in paused state)
+    pad2: i32,
+    tyre_type: i32,	// 0x38 (0=Dry tarmac, 1=Intermediate tarmac, 2=Wet tarmac, 3=Dry gravel, 4=Inter gravel, 5=Wet gravel, 6=Snow)
+    pad3: [u8; 0xC],
+    weather_type: i32,	// 0x48   (0=Good, 1=Random, 2=Bad)
+    unknown4: i32,       // 0x4C
+    damage_type: i32,		// 0x50   (0=No damage, 1=Safe, 2=Reduced, 3=Realistic)
+    pacecar_enabled: i32 // 0x54   (0=Pacecar disabled, 1=Pacecar enabled)
+}
+    
+// Fixed offset 0x8938F8. Additional map settings 
+#[repr(C, packed)]
+struct RBRMapSettingsEx {
+    unknown1: i32,		// 0x00
+    unknown2: i32,		// 0x04
+    track_id: i32,		// 0x08
+    unknown3: i32,		// 0x0C
+    sky_cloud_type: i32,	// 0x10 (0=Clear, 1=PartCloud, 2=LightCloud, 3=HeavyCloud)
+    surface_wetness: i32, // 0x14 (0=Dry, 1=Damp, 2=Wet)
+    surface_age: i32,     // 0x18 (0=New, 1=Normal, 2=Worn)
+    pad1: [u8; 0x1C],
+    timeofday: i32,		// 0x38 (0=Morning, 1=Noon, 2=Evening)
+    sky_type: i32,		// 0x3C (0=Crisp, 1=Hazy, 2=NoRain, 3=LightRain, 4=HeavyRain, 5=NoSnow, 6=LightSnow, 7=HeavySnow, 8=LightFog, 9=HeavyFog)
+}
+
 
 impl RBRGame {
     pub fn new(path: &String) -> Self {

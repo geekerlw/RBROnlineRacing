@@ -18,3 +18,4 @@ rust-ini = "0.20.0"
 rfd = "0.12.1"
 unicode-normalization = "0.1.22"
 winapi = { version = "0.3.9", features = ["winuser"] }
+libc = "0.2.151"
