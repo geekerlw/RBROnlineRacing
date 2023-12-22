@@ -6,7 +6,7 @@ use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use server::server::RacingServer;
+use rust_rbrserver::server::RacingServer;
 use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader, MetaRaceResult, RaceState, DataFormat, RaceQuery, MetaRaceData};
 use protocol::httpapi::{API_VERSION_STRING, META_HEADER_LEN};
 
