@@ -56,6 +56,11 @@ impl RacingClient {
                 UiMsg::MsgSetErrState(err) => {
                     self.ctx.store.user_state = err;
                 },
+                UiMsg::MsgReInitApp => {
+                    for (_, page) in self.pages.iter_mut().enumerate() {
+                        page.init(&mut self.ctx);
+                    }           
+                },
                 UiMsg::MsgQuitApp => {
                     frame.close();
                 }

@@ -100,5 +100,7 @@ impl UiSetting {
             page.store.meta_port = meta_port;
         }
         page.store.save_config();
+        let tx = page.tx.clone();
+        tokio::spawn(async move {tx.send(super::UiMsg::MsgReInitApp).await.unwrap();});
     }
 }

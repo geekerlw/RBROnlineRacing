@@ -25,6 +25,7 @@ pub enum UiMsg {
     MsgUserLogined(String),
     MsgSetRoomInfo(String),
     MsgSetErrState(String),
+    MsgReInitApp,
     MsgQuitApp,
 }
 
