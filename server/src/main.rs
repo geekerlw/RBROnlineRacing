@@ -2,7 +2,7 @@ use actix_web::{web, App, HttpResponse, HttpServer};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use uuid::Uuid;
+use clap::Parser;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -10,8 +10,25 @@ use rust_rbrserver::server::RacingServer;
 use protocol::httpapi::{UserLogin, UserAccess, RaceInfo, UserJoin, UserUpdate, MetaHeader, MetaRaceResult, RaceState, DataFormat, RaceQuery, MetaRaceData};
 use protocol::httpapi::{API_VERSION_STRING, META_HEADER_LEN};
 
+/// Set http and metadata ports.
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Port of the http service port
+    #[arg(short, long, default_value_t = 23555)]
+    port: u16,
+
+    /// Port of the meta data service port
+    #[arg(short, long, default_value_t = 20556)]
+    data: u16,
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()>{
+    let args = Args::parse();
+    let http_addr = "0.0.0.0:".to_string() + &args.port.to_string();
+    let meta_addr = "0.0.0.0:".to_string() + &args.data.to_string();
+
     let server = Arc::new(Mutex::new(RacingServer::default()));
     let data_clone = server.clone();
     let mng_clone = server.clone();
@@ -29,11 +46,11 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_race_leave)
         .service(handle_http_race_update_state)
     })
-    .bind("127.0.0.1:8080")?
+    .bind(http_addr)?
     .run();
 
     let data_task = tokio::spawn(async move {
-        let listener = TcpListener::bind("127.0.0.1:9493").await.unwrap();
+        let listener = TcpListener::bind(meta_addr).await.unwrap();
 
         while let Ok((stream, _)) = listener.accept().await {
             tokio::spawn(handle_data_stream(stream, data_clone.clone()));
@@ -48,8 +65,8 @@ async fn main() -> std::io::Result<()>{
         }
     });
 
-    println!("Http server listening on port 8080");
-    println!("Data listener listening on port 9493");
+    println!("Http server listening on port {}", args.port);
+    println!("Data listener listening on port {}", args.data);
 
     let _ = tokio::join!(http_server, data_task, mgr_task);
     Ok(())

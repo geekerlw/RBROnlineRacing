@@ -17,7 +17,6 @@ use process_memory::{Architecture, Memory, DataMember, Pid, ProcessHandleExt, Tr
 #[derive(Debug, Default, Clone)]
 pub struct RBRGame {
     pub root_path: String,
-    pub test_count: u32,
     pub pid: u32,
 }
 
@@ -157,7 +156,6 @@ impl RBRGame {
     pub fn new(path: &String) -> Self {
         Self {
             root_path: path.clone(),
-            test_count: 0,
             pid: 0,
         }
     }
@@ -251,17 +249,41 @@ impl RBRGame {
     pub fn get_race_state(&mut self) -> RaceState {
         let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
         let game_mode_addr = DataMember::<i32>::new_offset(handle, vec![0x7EAC48, 0x728]);
+        let loading_mode_addr = DataMember::<i32>::new_offset(handle, vec![0x7EA678, 0x70, 0x10]);
         let game_mode: i32 = unsafe {game_mode_addr.read().unwrap()};
-        match game_mode {
-            0x01 => return RaceState::RaceRunning,
-            0x0A => return RaceState::RaceLoaded,
-            0x0C => return RaceState::RaceFinished,
-            _ => return RaceState::RaceDefault,
+        let loading_mode: i32 = unsafe {loading_mode_addr.read().unwrap()};
+        if game_mode == 0x01 {
+            return RaceState::RaceRunning;
+        } else if game_mode == 0x0A && loading_mode == 0x08 {
+            return RaceState::RaceLoaded;
+        } else if game_mode == 0x0C {
+            return RaceState::RaceFinished;
         }
+        return RaceState::RaceDefault;
     }
 
     pub fn get_race_data(&mut self) -> MetaRaceData {
-        MetaRaceData::default()
+        let mut data = MetaRaceData::default();
+        let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
+        let racetime_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x140]);
+        let process_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x13C]);
+        let split1_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x258]);
+        let split2_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x25C]);
+        let finished_addr = DataMember::<i32>::new_offset(handle, vec![0x165FC68, 0x2C4]);
+
+        unsafe {
+            data.racetime = racetime_addr.read().unwrap();
+            data.process = process_addr.read().unwrap();
+            data.splittime1 = split1_addr.read().unwrap();
+            data.splittime2 = split2_addr.read().unwrap();
+            if finished_addr.read().unwrap() == 1 {
+                data.finishtime = racetime_addr.read().unwrap();
+            } else {
+                data.finishtime = 9999.0;
+            }
+        }
+
+        return data;
     }
 
     pub fn set_race_data(&mut self, result: &MetaRaceResult) {

@@ -1,6 +1,5 @@
 use std::env;
 use egui::Ui;
-use protocol::httpapi::RaceState;
 use ini::Ini;
 use std::path::Path;
 
@@ -14,7 +13,7 @@ pub struct RacingStore {
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,
-    pub user_state: RaceState,
+    pub user_state: String,
     pub curr_room: String,
     pub game_path: String,
 }
@@ -36,8 +35,8 @@ impl RacingStore {
             let conf_file = appdata + r"\RBROnlineRacing\Config.ini";
             if let Ok(conf) = Ini::load_from_file(conf_file) {
                 self.server_addr = conf.get_from_or(Some("server"), "address", "127.0.0.1").to_string();
-                self.server_port = conf.get_from_or(Some("server"), "http_port", "8080").parse::<u16>().unwrap();
-                self.meta_port = conf.get_from_or(Some("server"), "data_port", "9493").parse::<u16>().unwrap();
+                self.server_port = conf.get_from_or(Some("server"), "http_port", "20555").parse::<u16>().unwrap();
+                self.meta_port = conf.get_from_or(Some("server"), "data_port", "20556").parse::<u16>().unwrap();
 
                 self.game_path = conf.get_from_or(Some("game"), "path", r"E:\\Richard Burns Rally").to_string();
                 self.user_name = RBRGame::new(&self.game_path).get_user().to_string();
@@ -63,18 +62,11 @@ impl RacingStore {
     }
 
     pub fn show_user_state(&mut self, ui: &mut Ui) {
-        match &self.user_state {
-            RaceState::RaceDefault => ui.label("空闲"),
-            RaceState::RaceFinished => ui.label("比赛完成"),
-            RaceState::RaceInit => ui.label("初始化比赛"),
-            RaceState::RaceLoad => ui.label("比赛加载中"),
-            RaceState::RaceLoaded => ui.label("比赛加载完成"),
-            RaceState::RaceReady => ui.label("比赛就绪"),
-            RaceState::RaceRetired => ui.label("比赛已放弃"),
-            RaceState::RaceRunning => ui.label("比赛进行中"),
-            RaceState::RaceStart => ui.label("比赛开始"),
-            RaceState::RaceError(err) => ui.label(err),
-        };
+        if self.user_state.is_empty() {
+            ui.label("正常");
+        } else {
+            ui.label(&self.user_state);
+        }
     }
 
     pub fn get_http_url(&self, uri: &str) -> String {

@@ -54,7 +54,7 @@ impl RacingClient {
                     self.ctx.store.curr_room = room;
                 },
                 UiMsg::MsgSetErrState(err) => {
-                    self.ctx.store.user_state = RaceState::RaceError(err);
+                    self.ctx.store.user_state = err;
                 },
                 UiMsg::MsgQuitApp => {
                     frame.close();

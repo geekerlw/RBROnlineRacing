@@ -104,7 +104,6 @@ pub struct MetaHeader {
 pub struct MetaRaceData {
     pub token: String,
     pub profile_name: String,
-    pub starttime: f32,
     pub racetime: f32,
     pub process: f32,
     pub splittime1: f32,

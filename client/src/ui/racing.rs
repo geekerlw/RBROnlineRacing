@@ -12,6 +12,7 @@ use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::mpsc::{Sender, Receiver};
 use crate::game::rbr::RBRGame;
 use crate::ui::UiPageState;
+use crate::components::time::format_duration;
 use super::{UiView, UiPageCtx};
 use protocol::httpapi::{MetaRaceResult, MetaRaceData};
 use std::sync::Arc;
@@ -40,26 +41,7 @@ impl Default for UiRacing {
             table_head: vec!["排名", "车手", "分段1", "分段2", "完成时间"],
             table_data: MetaRaceResult {
                 state: protocol::httpapi::RaceState::RaceFinished,
-                board: vec![MetaRaceData {
-                    token: String::from("token"),
-                    profile_name: String::from("Ziye"),
-                    starttime: 0.0,
-                    racetime: 120.0,
-                    process: 100.0,
-                    splittime1: 30.0,
-                    splittime2: 80.0,
-                    finishtime: 120.0,
-                },
-                MetaRaceData {
-                    token: String::from("token"),
-                    profile_name: String::from("somechen"),
-                    starttime: 0.0,
-                    racetime: 120.0,
-                    process: 100.0,
-                    splittime1: 33.0,
-                    splittime2: 90.0,
-                    finishtime: 140.0,
-                }]
+                board: vec![]
             }
         }
     }
@@ -69,6 +51,7 @@ impl UiView for UiRacing {
     fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         let meta_addr = page.store.get_meta_url();
         let user_token = page.store.user_token.clone();
+        let user_profile = page.store.user_name.clone();
         let tx = self.tx.clone();
         let game_path = page.store.game_path.clone();
 
@@ -109,7 +92,7 @@ impl UiView for UiRacing {
                     }
         
                     let pack_data = &buffer[offset+META_HEADER_LEN..offset+META_HEADER_LEN+head.length as usize];
-                    meta_message_handle(head.clone(), pack_data, &mut rbr, &user_token, writer_clone.clone(), tx.clone()).await;
+                    meta_message_handle(head.clone(), pack_data, &mut rbr, &user_token, &user_profile, writer_clone.clone(), tx.clone()).await;
                     offset += META_HEADER_LEN + head.length as usize;
                 }
                 remain = (&buffer[offset..]).to_vec();
@@ -164,9 +147,9 @@ impl UiRacing {
                         for (index, result) in self.table_data.board.iter().enumerate() {
                             let table = vec![index.to_string(),
                                 result.profile_name.clone(),
-                                result.splittime1.to_string(),
-                                result.splittime2.to_string(),
-                                result.finishtime.to_string(),
+                                format_duration(result.splittime1),
+                                format_duration(result.splittime2),
+                                format_duration(result.finishtime),
                             ];
                             for content in table {
                                 ui.label(content);
@@ -189,16 +172,17 @@ impl UiRacing {
 }
 
 
-async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGame, token: &String, writer: Arc<Mutex<OwnedWriteHalf>>, tx: Sender<UiRacingMsg>) {
+async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGame, token: &String, profile: &String, writer: Arc<Mutex<OwnedWriteHalf>>, tx: Sender<UiRacingMsg>) {
     match head.format {
         DataFormat::FmtRaceCommand => {
             let state: UserUpdate = bincode::deserialize(pack_data).unwrap();
             match state.state {
                 RaceState::RaceLoad => {
-                    tokio::spawn(start_game_load(rbr.root_path.clone(), token.clone(), writer.clone()));
+                    tokio::spawn(start_game_load(rbr.root_path.clone(), token.clone(), profile.clone(), writer.clone()));
+                    tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoad)).await.unwrap();
                 }
                 RaceState::RaceStart => {
-                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), writer.clone()));
+                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), profile.clone(), writer.clone()));
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceRunning)).await.unwrap();
                 }
                 _ => {}
@@ -220,21 +204,27 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
     }
 }
 
-async fn start_game_load(gamepath: String, token: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_load(gamepath: String, token: String, profile: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let mut rbr: RBRGame = RBRGame::new(&gamepath);
     let user_token = token.clone();
     tokio::spawn(async move {
         rbr.launch().await;
         rbr.load();
-
-        let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceLoaded};
-        let body = bincode::serialize(&update).unwrap();
-        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
-        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+        let mut loaded = false;
 
         loop {
             let state = rbr.get_race_state();
             match state {
+                RaceState::RaceLoaded => {
+                    if !loaded {
+                        loaded = true;
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                        let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceLoaded};
+                        let body = bincode::serialize(&update).unwrap();
+                        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+                        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+                    }
+                },
                 RaceState::RaceRetired | RaceState::RaceFinished => {
                     let update = UserUpdate {token: user_token.clone(), state: state.clone()};
                     let body = bincode::serialize(&update).unwrap();
@@ -245,6 +235,7 @@ async fn start_game_load(gamepath: String, token: String, writer: Arc<Mutex<Owne
                 RaceState::RaceRunning => {
                     let mut data = rbr.get_race_data();
                     data.token = user_token.clone();
+                    data.profile_name = profile.clone();
                     let body = bincode::serialize(&data).unwrap();
                     let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUploadData}).unwrap();
                     writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
@@ -256,7 +247,7 @@ async fn start_game_load(gamepath: String, token: String, writer: Arc<Mutex<Owne
     });
 }
 
-async fn start_game_race(gamepath: String, token: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_race(gamepath: String, token: String, _profile: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let mut rbr = RBRGame::new(&gamepath);
     let user_token = token.clone();
     tokio::spawn(async move {

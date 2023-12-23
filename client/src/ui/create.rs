@@ -24,9 +24,9 @@ impl Default for UiCreateRace {
         Self { 
             room_name: "Test Room".to_string(),
             stages: vec![],
-            select_stage: 0,
+            select_stage: 246,
             cars: vec![],
-            select_car: 0,
+            select_car: 36,
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
         }

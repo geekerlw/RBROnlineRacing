@@ -9,12 +9,16 @@ use super::{UiView, UiPageCtx};
 pub struct UiSetting {
     pub gamepath: String,
     pub server_addr: String,
+    pub server_port: String,
+    pub meta_port: String,
 }
 
 impl UiView for UiSetting {
     fn init(&mut self, page: &mut UiPageCtx) {
         self.gamepath = page.store.game_path.clone();
         self.server_addr = page.store.server_addr.clone();
+        self.server_port = page.store.server_port.to_string();
+        self.meta_port = page.store.meta_port.to_string();
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
@@ -31,6 +35,14 @@ impl UiView for UiSetting {
                         .show(ui, |ui| {
                             ui.label("服务器地址: ");
                             ui.add_sized([300.0, 24.0], egui::TextEdit::singleline(&mut self.server_addr));
+                            ui.end_row();
+
+                            ui.label("服务端口: ");
+                            ui.add_sized([80.0, 24.0], egui::TextEdit::singleline(&mut self.server_port));
+                            ui.end_row();
+
+                            ui.label("数据端口: ");
+                            ui.add_sized([80.0, 24.0], egui::TextEdit::singleline(&mut self.meta_port));
                             ui.end_row();
                         });
                     });
@@ -81,6 +93,12 @@ impl UiSetting {
     fn save_setting(&mut self, page: &mut UiPageCtx) {
         page.store.game_path = self.gamepath.clone();
         page.store.server_addr = self.server_addr.clone();
+        if let Ok(server_port) = self.server_port.parse() {
+            page.store.server_port = server_port;
+        }
+        if let Ok(meta_port) = self.meta_port.parse() {
+            page.store.meta_port = meta_port;
+        }
         page.store.save_config();
     }
 }
