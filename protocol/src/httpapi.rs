@@ -11,6 +11,7 @@ pub enum RaceState {
     RaceLoad,
     RaceLoaded,
     RaceStart,
+    RaceStarted,
     RaceRunning,
     RaceRetired,
     RaceFinished,

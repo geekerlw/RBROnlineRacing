@@ -61,7 +61,8 @@ async fn main() -> std::io::Result<()>{
         loop {
             let mut server = mng_clone.lock().await;
             server.do_self_check();
-            tokio::time::sleep(tokio::time::Duration::from_micros(200)).await;
+            drop(server);
+            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
         }
     });
 
@@ -202,13 +203,13 @@ async fn handle_data_stream(stream: TcpStream, data: Arc<Mutex<RacingServer>>) {
             if datalen < META_HEADER_LEN {
                 break;
             }
-
             let head: MetaHeader = bincode::deserialize(&buffer[offset..offset+META_HEADER_LEN]).unwrap();
-            if datalen < head.length as usize + META_HEADER_LEN {
+
+            if (offset + META_HEADER_LEN + head.length as usize) > datalen {
                 break;
             }
-
             let pack_data = &buffer[offset+META_HEADER_LEN..offset+META_HEADER_LEN+head.length as usize];
+
             meta_message_handle(head.clone(), pack_data, data.clone(), writer_clone.clone()).await;
             offset += META_HEADER_LEN + head.length as usize;
         }
@@ -231,7 +232,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
                     // wait all player state loaded. once ready send back to start racing.
                     tokio::spawn(wait_all_players_loaded(state.token.clone(), data.clone(), writer.clone()));
                 }
-                RaceState::RaceRetired | RaceState::RaceFinished => {
+                RaceState::RaceStarted => {
                     // wait all player state finish or retire, once ready send back race result to show.
                     tokio::spawn(wait_all_players_finish(state.token, data.clone(), writer.clone()));
                 }
@@ -260,7 +261,8 @@ async fn wait_all_players_ready(token: String, server: Arc<Mutex<RacingServer>>,
                 break;
             }
         }
-        tokio::time::sleep(tokio::time::Duration::from_micros(500)).await;
+        drop(server);
+        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
     }
 
     let body = bincode::serialize(&UserUpdate{token: token, state: RaceState::RaceLoad}).unwrap();
@@ -281,6 +283,7 @@ async fn wait_all_players_loaded(token: String, server: Arc<Mutex<RacingServer>>
                 break;
             }
         }
+        drop(server);
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     }
 
@@ -321,7 +324,8 @@ async fn wait_all_players_finish(token: String, server: Arc<Mutex<RacingServer>>
             let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceData}).unwrap();
             writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
         }
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        drop(server);
+        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
     }
 
     // send final result to show.
