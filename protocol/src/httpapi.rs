@@ -103,7 +103,6 @@ pub struct MetaHeader {
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaRaceData {
     pub token: String,
-    pub profile_name: String,
     pub racetime: f32,
     pub process: f32,
     pub splittime1: f32,
@@ -113,6 +112,11 @@ pub struct MetaRaceData {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaRaceResult {
-    pub state: RaceState,
-    pub board: Vec<MetaRaceData>,
+    pub profile_name: String,
+    pub racetime: f32,
+    pub process: f32,
+    pub splittime1: f32,
+    pub splittime2: f32,
+    pub finishtime: f32,
+    pub difffirst: f32,
 }

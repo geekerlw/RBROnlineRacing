@@ -19,7 +19,7 @@ struct Args {
     port: u16,
 
     /// Port of the meta data service port
-    #[arg(short, long, default_value_t = 20556)]
+    #[arg(short, long, default_value_t = 23556)]
     data: u16,
 }
 
@@ -303,10 +303,19 @@ async fn wait_all_players_finish(token: String, server: Arc<Mutex<RacingServer>>
                 break;
             }
 
-            let mut response = MetaRaceResult::default();
+            let mut response = Vec::<MetaRaceResult>::new();
             players.sort_by(|a, b| a.sort_by_time(b));
+            let leader = players.first().unwrap().clone();
             for player in players {
-                response.board.push(player.race_data);
+                let mut result = MetaRaceResult::default();
+                result.profile_name = player.profile_name.clone();
+                result.racetime = player.race_data.racetime;
+                result.process = player.race_data.process;
+                result.splittime1 = player.race_data.splittime1;
+                result.splittime2 = player.race_data.splittime2;
+                result.finishtime = player.race_data.finishtime;
+                result.difffirst = player.race_data.racetime - leader.race_data.racetime;
+                response.push(result);
             }
             let body = bincode::serialize(&response).unwrap();
             let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceData}).unwrap();
@@ -318,12 +327,20 @@ async fn wait_all_players_finish(token: String, server: Arc<Mutex<RacingServer>>
     // send final result to show.
     let mut server = server.lock().await;
     if let Some(mut players) = server.get_room_all_players(&token) {
-        let mut response = MetaRaceResult::default();
+        let mut response = Vec::<MetaRaceResult>::new();
         players.sort_by(|a, b| a.sort_by_time(b));
+        let leader = players.first().unwrap().clone();
         for player in players {
-            response.board.push(player.race_data);
+                let mut result = MetaRaceResult::default();
+                result.profile_name = player.profile_name.clone();
+                result.racetime = player.race_data.racetime;
+                result.process = player.race_data.process;
+                result.splittime1 = player.race_data.splittime1;
+                result.splittime2 = player.race_data.splittime2;
+                result.finishtime = player.race_data.finishtime;
+                result.difffirst = player.race_data.racetime - leader.race_data.racetime;
+                response.push(result);
         }
-
         let body = bincode::serialize(&response).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceResult}).unwrap();
         writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();

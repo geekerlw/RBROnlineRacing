@@ -30,9 +30,9 @@ impl RacePlayer {
     }
 
     pub fn sort_by_time(&self, player: &RacePlayer) -> std::cmp::Ordering {
-        if self.race_data.process > player.race_data.process {
+        if self.race_data.racetime > player.race_data.racetime {
             return std::cmp::Ordering::Greater;
-        } else if self.race_data.process == player.race_data.process {
+        } else if self.race_data.racetime == player.race_data.racetime {
             return std::cmp::Ordering::Equal;
         } else {
             return std::cmp::Ordering::Less;

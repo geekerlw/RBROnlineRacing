@@ -1,6 +1,6 @@
 use eframe::egui;
 use egui::{FontDefinitions, FontData};
-use protocol::httpapi::{UserAccess, RaceState};
+use protocol::httpapi::UserAccess;
 use crate::ui;
 use crate::ui::{UiPageCtx, UiMsg, UiPageState};
 

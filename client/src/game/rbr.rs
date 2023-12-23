@@ -286,11 +286,11 @@ impl RBRGame {
         return data;
     }
 
-    pub fn set_race_data(&mut self, result: &MetaRaceResult) {
+    pub fn set_race_data(&mut self, result: &Vec<MetaRaceResult>) {
         
     }
 
-    pub fn set_race_result(&mut self, result: &MetaRaceResult) {
+    pub fn set_race_result(&mut self, result: &Vec<MetaRaceResult>) {
         
     }
 

@@ -35,8 +35,8 @@ impl RacingStore {
             let conf_file = appdata + r"\RBROnlineRacing\Config.ini";
             if let Ok(conf) = Ini::load_from_file(conf_file) {
                 self.server_addr = conf.get_from_or(Some("server"), "address", "127.0.0.1").to_string();
-                self.server_port = conf.get_from_or(Some("server"), "http_port", "20555").parse::<u16>().unwrap();
-                self.meta_port = conf.get_from_or(Some("server"), "data_port", "20556").parse::<u16>().unwrap();
+                self.server_port = conf.get_from_or(Some("server"), "http_port", "23555").parse::<u16>().unwrap();
+                self.meta_port = conf.get_from_or(Some("server"), "data_port", "23556").parse::<u16>().unwrap();
 
                 self.game_path = conf.get_from_or(Some("game"), "path", r"E:\\Richard Burns Rally").to_string();
                 self.user_name = RBRGame::new(&self.game_path).get_user().to_string();
