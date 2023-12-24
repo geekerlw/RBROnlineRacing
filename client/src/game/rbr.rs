@@ -1,5 +1,5 @@
 use std::io::Read;
-use libc::{c_char, c_float};
+use libc::{c_uchar, c_float, c_uint};
 use unicode_normalization::UnicodeNormalization;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::io::SeekFrom;
@@ -59,35 +59,37 @@ pub struct RBRCarData {
     pub audio_hash: String,
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct RBRRaceItem {
-    pub name: [c_char; 32],
+    pub name: [c_uchar; 32],
     pub process: c_float,
     pub difffirst: c_float,
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct RBRRaceData {
-    pub count: usize,
-    pub data: Vec<RBRRaceItem>
+    pub count: c_uint,
+    pub data: [RBRRaceItem; 8],
 }
 
 impl RBRRaceData {
     fn from_result(result: &Vec<MetaRaceResult>) -> Self {
-        let mut racedata = RBRRaceData {count: 0, data: vec![]};
-        for item in result.iter() {
-            let mut raceitem: RBRRaceItem = RBRRaceItem {
-                name: [0i8; 32],
-                process: item.process,
-                difffirst: item.difffirst,
-            };
+        let mut racedata = RBRRaceData::default();
+        for (index, item) in result.iter().enumerate() {
+            if index >= 8 {
+                break;
+            }
+
+            racedata.count += 1;
             let bytes = item.profile_name.as_bytes();
             for i in 0..bytes.len() {
-                raceitem.name[i] = bytes[i] as i8;
+                racedata.data[index].name[i] = bytes[i];
             }
-            racedata.data.push(raceitem);
+            racedata.data[index].process = item.process.clone();
+            racedata.data[index].difffirst = item.difffirst.clone();
         }
-        racedata.count = racedata.data.len();
         racedata
     }
 
@@ -206,11 +208,13 @@ impl RBRGame {
         let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
         let game_mode_addr = DataMember::<i32>::new_offset(handle, vec![0x7EAC48, 0x728]);
         let loading_mode_addr = DataMember::<i32>::new_offset(handle, vec![0x7EA678, 0x70, 0x10]);
+        let startcount_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x244]);
         let game_mode: i32 = unsafe {game_mode_addr.read().unwrap()};
         let loading_mode: i32 = unsafe {loading_mode_addr.read().unwrap()};
-        if game_mode == 0x01 {
+        let start_count: f32 = unsafe {startcount_addr.read().unwrap()};
+        if game_mode == 0x01 && start_count < 0f32 {
             return RaceState::RaceRunning;
-        } else if game_mode == 0x0A && loading_mode == 0x08 {
+        } else if game_mode == 0x0A && loading_mode == 0x08 && start_count == 7f32 {
             return RaceState::RaceLoaded;
         } else if game_mode == 0x0C {
             return RaceState::RaceFinished;

@@ -226,7 +226,7 @@ async fn start_game_load(gamepath: String, token: String, writer: Arc<Mutex<Owne
                 RaceState::RaceLoaded => {
                     if !loaded {
                         loaded = true;
-                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                         let update = UserUpdate {token: user_token.clone(), state: RaceState::RaceLoaded};
                         let body = bincode::serialize(&update).unwrap();
                         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
