@@ -1,6 +1,6 @@
 use eframe::egui;
 use egui::{FontDefinitions, FontData};
-use protocol::httpapi::UserAccess;
+use protocol::httpapi::{RaceLeave, UserLogout};
 use crate::ui;
 use crate::ui::{UiPageCtx, UiMsg, UiPageState};
 
@@ -73,13 +73,14 @@ impl RacingClient {
 impl eframe::App for RacingClient {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         if !self.ctx.store.user_token.is_empty() {
-            let user: UserAccess = UserAccess{token: self.ctx.store.user_token.clone()};
+            let user: UserLogout = UserLogout{token: self.ctx.store.user_token.clone()};
+            let leave = RaceLeave{token: self.ctx.store.user_token.clone(), room: self.ctx.store.curr_room.clone()};
             let url_leave = self.ctx.store.get_http_url("api/race/leave");
             let url_logout = self.ctx.store.get_http_url("api/user/logout");
             let is_inroom = !self.ctx.store.curr_room.is_empty();
             tokio::spawn(async move {
                 if is_inroom {
-                    let _res = reqwest::Client::new().post(url_leave).json(&user).send().await.unwrap();
+                    let _res = reqwest::Client::new().post(url_leave).json(&leave).send().await.unwrap();
                 }
                 let _res = reqwest::Client::new().post(url_logout).json(&user).send().await.unwrap();
             });

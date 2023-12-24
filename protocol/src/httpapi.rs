@@ -23,8 +23,15 @@ pub enum RoomState {
     #[default]
     RoomDefault,
     RoomFree,
+    RoomFull,
     RoomLocked,
-    RoomRaceOn,
+    RoomRaceBegin,
+    RoomRaceReady,
+    RoomRaceLoading,
+    RoomRaceLoaded,
+    RoomRaceRunning,
+    RoomRaceFinished,
+    RoomRaceEnd,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -47,7 +54,7 @@ pub struct UserLogin {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct UserAccess {
+pub struct UserLogout {
     pub token: String,
 }
 
@@ -57,7 +64,7 @@ pub struct RaceQuery {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct RaceItem {
+pub struct RaceBrief {
     pub name: String,
     pub stage: String,
     pub owner: String,
@@ -65,32 +72,52 @@ pub struct RaceItem {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct RaceList {
-    pub room: Vec<RaceItem>,
-}
-
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct RaceInfo {
-    pub token: String,
     pub name: String,
     pub stage: String,
     pub stage_id: u32,
     pub car: Option<String>,
     pub car_id: Option<u32>,
     pub damage: u32,
-    pub state: RoomState,
-    pub players: Vec<String>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct UserJoin {
+pub struct RaceUserState {
+    pub name: String,
+    pub state: RaceState,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct RaceCreate {
+    pub token: String,
+    pub info: RaceInfo,
+}
+
+///
+/// Race meta data socket protocols.
+/// 
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct RaceJoin {
     pub token: String,
     pub room: String,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct UserUpdate {
+pub struct RaceAccess {
     pub token: String,
+    pub room: String,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct RaceLeave {
+    pub token: String,
+    pub room: String,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct RaceUpdate {
+    pub token: String,
+    pub room: String,
     pub state: RaceState,
 }
 
@@ -104,6 +131,7 @@ pub struct MetaHeader {
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaRaceData {
     pub token: String,
+    pub room: String,
     pub racetime: f32,
     pub process: f32,
     pub splittime1: f32,
@@ -120,4 +148,9 @@ pub struct MetaRaceResult {
     pub splittime2: f32,
     pub finishtime: f32,
     pub difffirst: f32,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct MetaRaceCmd {
+    pub state: RaceState,
 }

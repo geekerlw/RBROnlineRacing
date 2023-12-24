@@ -1,28 +1,37 @@
 use eframe::egui;
 use egui::Grid;
-use protocol::httpapi::{RaceQuery, RaceInfo, UserAccess};
+use protocol::httpapi::{RaceQuery, RaceInfo, RaceLeave, RaceUserState, RaceState};
 use reqwest::StatusCode;
 use crate::{ui::UiPageState, game::rbr::RBRGame};
 use super::{UiView, UiPageCtx};
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::{sync::mpsc::{channel, Receiver, Sender}, task::JoinHandle};
+
+enum UiInRoomMsg {
+   MsgInRoomRaceInfo(RaceInfo),
+   MsgInRoomUserState(Vec<RaceUserState>),
+}
 
 pub struct UiInRoom {
     pub room_name: String,
     pub raceinfo: RaceInfo,
+    pub userstates: Vec<RaceUserState>,
     pub damages: Vec<&'static str>,
-    rx: Receiver<RaceInfo>,
-    tx: Sender<RaceInfo>,
+    rx: Receiver<UiInRoomMsg>,
+    tx: Sender<UiInRoomMsg>,
+    pub timed_task: Option<JoinHandle<()>>,
 }
 
 impl Default for UiInRoom {
     fn default() -> Self {
-        let (tx, rx) = channel::<RaceInfo>(8);
+        let (tx, rx) = channel::<UiInRoomMsg>(8);
         Self { 
             room_name: "No Room Info".to_string(),
             raceinfo: RaceInfo::default(),
+            userstates: vec![],
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             rx,
             tx,
+            timed_task: None,
         }
     }
 }
@@ -30,22 +39,52 @@ impl Default for UiInRoom {
 impl UiView for UiInRoom {
     fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         self.room_name = page.store.curr_room.clone();
-        let url = page.store.get_http_url("api/race/info");
-        let tx = self.tx.clone();
-        let query = RaceQuery {name: self.room_name.clone()};
+        let info_url = page.store.get_http_url("api/race/info");
+        let info_tx = self.tx.clone();
+        let info_query = RaceQuery {name: self.room_name.clone()};
         tokio::spawn(async move {
-            let res = reqwest::Client::new().get(url).json(&query).send().await.unwrap();
+            let res = reqwest::Client::new().get(info_url).json(&info_query).send().await.unwrap();
             if res.status() == StatusCode::OK {
                 let text = res.text().await.unwrap();
                 let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
-                tx.send(raceinfo).await.unwrap();
+                info_tx.send(UiInRoomMsg::MsgInRoomRaceInfo(raceinfo)).await.unwrap();
             }
         });
+
+        let state_url = page.store.get_http_url("api/race/state");
+        let state_tx = self.tx.clone();
+        let state_query = RaceQuery {name: self.room_name.clone()};
+        let task = tokio::spawn(async move {
+            loop {
+                let res = reqwest::Client::new().get(&state_url).json(&state_query).send().await.unwrap();
+                if res.status() == StatusCode::OK {
+                    let text = res.text().await.unwrap();
+                    let userstate: Vec<RaceUserState> = serde_json::from_str(text.as_str()).unwrap();
+                    state_tx.send(UiInRoomMsg::MsgInRoomUserState(userstate)).await.unwrap();
+                }
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            }
+        });
+        self.timed_task = Some(task);
+    }
+
+    fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
+        if let Some(task) = &self.timed_task {
+            task.abort();
+            self.timed_task = None;
+        }
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         if let Ok(msg) = self.rx.try_recv() {
-            self.raceinfo = msg;
+            match msg {
+                UiInRoomMsg::MsgInRoomRaceInfo(info) => {
+                    self.raceinfo = info;
+                }
+                UiInRoomMsg::MsgInRoomUserState(states) => {
+                    self.userstates = states;
+                }
+            }
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -86,9 +125,15 @@ impl UiView for UiInRoom {
                         ui.label("序号");
                         ui.label("车手");
                         ui.end_row();
-                        for (index, player) in self.raceinfo.players.iter().enumerate() {
-                            ui.label(index.to_string());
-                            ui.label(player);
+                        for (index, player) in self.userstates.iter().enumerate() {
+                            ui.label((index+1).to_string());
+                            ui.label(&player.name);
+                            match &player.state {
+                                RaceState::RaceReady => ui.label("已就绪"),
+                                RaceState::RaceLoaded => ui.label("加载完成"),
+                                RaceState::RaceFinished | RaceState::RaceRetired => ui.label("已完成"),
+                                _ => ui.label("未就绪"),
+                            };
                             ui.end_row();
                         }
                     });
@@ -112,9 +157,13 @@ impl UiView for UiInRoom {
 }
 
 impl UiInRoom {
+    fn sync_user_state(&mut self, page: &mut UiPageCtx) {
+
+    }
+
     fn leave_raceroom(&mut self, page: &mut UiPageCtx) {
-        if !page.store.user_token.is_empty() {
-            let user: UserAccess = UserAccess{token: page.store.user_token.clone()};
+        if !page.store.user_token.is_empty() && !page.store.curr_room.is_empty() {
+            let user: RaceLeave = RaceLeave{token: page.store.user_token.clone(), room: page.store.curr_room.clone()};
             let url = page.store.get_http_url("api/race/leave");
             tokio::spawn(async move {
                 let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();

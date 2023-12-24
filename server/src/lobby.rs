@@ -1,14 +1,14 @@
 use uuid::Uuid;
 use std::collections::HashMap;
-use crate::player::RacePlayer;
+use crate::player::LobbyPlayer;
 
 #[derive(Default)]
 pub struct RaceLobby {
-    players: HashMap<Uuid, RacePlayer>,
+    players: HashMap<Uuid, LobbyPlayer>,
 }
 
 impl RaceLobby {
-    pub fn push_player(&mut self, token: Uuid, player: RacePlayer) {
+    pub fn push_player(&mut self, token: Uuid, player: LobbyPlayer) {
         if !self.players.contains_key(&token) {
             self.players.insert(token, player);
         }
@@ -31,14 +31,14 @@ impl RaceLobby {
         return false;
     }
 
-    pub fn get_player(&mut self, token: Uuid) -> Option<&mut RacePlayer> {
+    pub fn get_player(&mut self, token: Uuid) -> Option<&mut LobbyPlayer> {
         if let Some(player) = self.players.get_mut(&token) {
             return Some(player);
         }
         None
     }
 
-    pub fn get_player_by_name(&mut self, name: String) -> Option<RacePlayer> {
+    pub fn get_player_by_name(&mut self, name: String) -> Option<LobbyPlayer> {
         for (_, player) in &self.players {
             if player.profile_name == name {
                 return Some(player.clone());

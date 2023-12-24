@@ -1,8 +1,8 @@
 use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
+use protocol::httpapi::RaceCreate;
 use protocol::httpapi::RaceInfo;
-use protocol::httpapi::RoomState;
 use reqwest::StatusCode;
 use super::{UiView, UiPageCtx, UiMsg};
 use crate::game::rbr::{RBRGame, RBRStageData, RBRCarData};
@@ -111,22 +111,20 @@ impl UiView for UiCreateRace {
 impl UiCreateRace {
     fn create_room(&mut self, page: &mut UiPageCtx) {
         let raceinfo = RaceInfo{
-            token: page.store.user_token.clone(),
             name: self.room_name.clone(),
             stage: self.stages[self.select_stage].name.clone(),
             stage_id: self.stages[self.select_stage].stage_id.parse().unwrap(),
             car: Some(self.cars[self.select_car].name.clone()),
             car_id: Some(self.cars[self.select_car].id.parse().unwrap()),
             damage: self.select_damage as u32,
-            state: RoomState::default(),
-            players: Vec::<String>::new(),
         };
+        let create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo};
 
         let url = page.store.get_http_url("api/race/create");
         let tx = page.tx.clone();
         let room_name = self.room_name.clone();
         tokio::spawn(async move {
-            let res = reqwest::Client::new().post(url).json(&raceinfo).send().await.unwrap();
+            let res = reqwest::Client::new().post(url).json(&create).send().await.unwrap();
             match res.status() {
                 StatusCode::OK => {
                     tx.send(UiMsg::MsgSetRoomInfo(room_name)).await.unwrap();

@@ -1,38 +1,40 @@
 use eframe::egui;
 use egui::Grid;
-use protocol::httpapi::{RaceList, RoomState, UserJoin};
+use protocol::httpapi::{RaceBrief, RoomState, RaceJoin};
 use crate::ui::UiPageState;
 use super::{UiView, UiPageCtx, UiMsg};
 use reqwest::StatusCode;
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::{sync::mpsc::{channel, Receiver, Sender}, task::JoinHandle};
 
 pub struct UiLobby {
     pub table_head: Vec<&'static str>,
-    pub table_data: RaceList,
-    rx: Receiver<RaceList>,
-    tx: Sender<RaceList>,
+    pub table_data: Vec<RaceBrief>,
+    rx: Receiver<Vec<RaceBrief>>,
+    tx: Sender<Vec<RaceBrief>>,
+    pub timed_task: Option<JoinHandle<()>>,
 }
 
 impl Default for UiLobby {
     fn default() -> Self {
-        let (tx, rx) = channel::<RaceList>(8);
+        let (tx, rx) = channel::<Vec<RaceBrief>>(8);
         Self {
             table_head: vec!["序号", "房名", "赛道", "房主", "状态"],
-            table_data: RaceList::default(),
+            table_data: vec![],
             rx,
             tx,
+            timed_task: None,
         }
     }
 }
 
 impl UiLobby {
     pub fn join_raceroom(&mut self, room: &String, page: &mut UiPageCtx) {
-        let user_join = UserJoin {token: page.store.user_token.clone(), room: room.clone()};
+        let race_join = RaceJoin {token: page.store.user_token.clone(), room: room.clone()};
         let url = page.store.get_http_url("api/race/join");
         let tx = page.tx.clone();
         page.store.curr_room = room.clone();
         tokio::spawn(async move {
-            let res = reqwest::Client::new().post(url).json(&user_join).send().await.unwrap();
+            let res = reqwest::Client::new().post(url).json(&race_join).send().await.unwrap();
             if res.status() == StatusCode::OK {
                 tx.send(UiMsg::MsgGotoPage(UiPageState::PageInRoom)).await.unwrap();
             }
@@ -44,21 +46,31 @@ impl UiView for UiLobby {
     fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         let url = page.store.get_http_url("api/race/list");
         let tx = self.tx.clone();
-        tokio::spawn(async move {
-            let res = reqwest::Client::new().get(url).send().await.unwrap();
-            match res.status() {
-                StatusCode::OK => {
-                    let text = res.text().await.unwrap();
-                    let racelist: RaceList = serde_json::from_str(text.as_str()).unwrap();
-                    tx.send(racelist).await.unwrap();
-                },
-                StatusCode::NO_CONTENT => {
-                    let racelist = RaceList::default();
-                    tx.send(racelist).await.unwrap();
-                },
-                _ => {},
+        let task = tokio::spawn(async move {
+            loop {
+                let res = reqwest::Client::new().get(&url).send().await.unwrap();
+                match res.status() {
+                    StatusCode::OK => {
+                        let text = res.text().await.unwrap();
+                        let racelist: Vec<RaceBrief> = serde_json::from_str(text.as_str()).unwrap();
+                        tx.send(racelist).await.unwrap();
+                    },
+                    StatusCode::NO_CONTENT => {
+                        tx.send(vec![]).await.unwrap();
+                    }
+                    _ => {},
+                }
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
             }
         });
+        self.timed_task = Some(task);
+    }
+
+    fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
+        if let Some(task) = &self.timed_task {
+            task.abort();
+            self.timed_task = None;
+        }
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
@@ -77,14 +89,15 @@ impl UiView for UiLobby {
                         ui.end_row();
 
                         let table_data = self.table_data.clone();
-                        for (index, race) in table_data.room.iter().enumerate() {
+                        for (index, race) in table_data.iter().enumerate() {
                             let table = vec![index.to_string(),
                                 race.name.clone(),
                                 race.stage.clone(),
                                 race.owner.clone(),
                                 match race.state {
+                                    RoomState::RoomFree => String::from("空闲"),
                                     RoomState::RoomLocked => String::from("禁止加入"),
-                                    RoomState::RoomRaceOn => String::from("比赛中"),
+                                    RoomState::RoomRaceRunning => String::from("比赛中"),
                                     _ => String::from("空闲")
                                 }
                             ];
