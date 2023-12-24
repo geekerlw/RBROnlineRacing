@@ -157,10 +157,6 @@ impl UiView for UiInRoom {
 }
 
 impl UiInRoom {
-    fn sync_user_state(&mut self, page: &mut UiPageCtx) {
-
-    }
-
     fn leave_raceroom(&mut self, page: &mut UiPageCtx) {
         if !page.store.user_token.is_empty() && !page.store.curr_room.is_empty() {
             let user: RaceLeave = RaceLeave{token: page.store.user_token.clone(), room: page.store.curr_room.clone()};
