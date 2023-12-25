@@ -51,6 +51,7 @@ impl Default for UiRacing {
 
 impl UiView for UiRacing {
     fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        self.state = RaceState::RaceReady;
         let meta_addr = page.store.get_meta_url();
         let user_token = page.store.user_token.clone();
         let tx = self.tx.clone();
@@ -113,6 +114,7 @@ impl UiView for UiRacing {
             task.abort();
             self.rbr_task = None;
         }
+        self.state = RaceState::RaceReady;
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {

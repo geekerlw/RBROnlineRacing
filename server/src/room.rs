@@ -117,18 +117,10 @@ impl RaceRoom {
 
     fn update_room_state(&mut self) {
         match self.state {
-            RoomState::RoomDefault => {
+            RoomState::RoomDefault | RoomState::RoomFree | RoomState::RoomFull => {
                 if !self.is_empty() {
                     self.state = RoomState::RoomRaceBegin;
                 }
-            }
-            RoomState::RoomFree => {
-                if self.is_full() {
-                    self.state = RoomState::RoomFull;
-                }
-            }
-            RoomState::RoomFull => {
-                self.state = RoomState::RoomRaceBegin;
             }
             RoomState::RoomRaceBegin => {
                 if self.is_all_players_ready() {
