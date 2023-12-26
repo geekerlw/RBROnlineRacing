@@ -1,4 +1,5 @@
 use protocol::httpapi::RaceCreate;
+use protocol::httpapi::RaceJoin;
 use protocol::httpapi::RaceUpdate;
 use protocol::httpapi::RaceUserState;
 use tokio::net::tcp::OwnedWriteHalf;
@@ -122,7 +123,12 @@ impl RacingServer {
             if let Some(player) = self.lobby.get_player(token) {
                 let mut raceroom = RaceRoom::default();
                 raceroom.info = create.info.clone();
-                raceroom.state = RoomState::RoomDefault;
+                if create.locked {
+                    raceroom.room_state = RoomState::RoomLocked;
+                } else {
+                    raceroom.room_state = RoomState::RoomFree;
+                }
+                raceroom.passwd = create.passwd.clone();
                 raceroom.players.insert(0, RacePlayer::new(&player.tokenstr, &player.profile_name));
                 self.rooms.insert(create.info.name, raceroom);
                 return true;
@@ -131,10 +137,16 @@ impl RacingServer {
         return false;
     }
 
-    pub fn join_raceroom(&mut self, roomname: String, tokenstr: String) -> bool {
-        if let Ok(token) = Uuid::parse_str(&tokenstr.as_str()) {
+    pub fn join_raceroom(&mut self, join: RaceJoin) -> bool {
+        if let Ok(token) = Uuid::parse_str(&join.token.as_str()) {
             if let Some(player) = self.lobby.get_player(token) {
-                if let Some(room) = self.rooms.get_mut(&roomname) {
+                if let Some(room) = self.rooms.get_mut(&join.room) {
+                    if let Some(pass) = join.passwd {
+                        if !room.can_enter(&pass) {
+                            return false;
+                        }
+                    }
+
                     if room.is_player_exist(&player.profile_name) {
                         return true;
                     }

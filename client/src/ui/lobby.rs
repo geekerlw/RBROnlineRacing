@@ -29,7 +29,7 @@ impl Default for UiLobby {
 
 impl UiLobby {
     pub fn join_raceroom(&mut self, room: &String, page: &mut UiPageCtx) {
-        let race_join = RaceJoin {token: page.store.user_token.clone(), room: room.clone()};
+        let race_join = RaceJoin {token: page.store.user_token.clone(), room: room.clone(), passwd: None};
         let url = page.store.get_http_url("api/race/join");
         let tx = page.tx.clone();
         page.store.curr_room = room.clone();
@@ -96,9 +96,9 @@ impl UiView for UiLobby {
                                 race.owner.clone(),
                                 match race.state {
                                     RoomState::RoomFree => String::from("空闲"),
+                                    RoomState::RoomFull => String::from("满员"),
                                     RoomState::RoomLocked => String::from("禁止加入"),
-                                    RoomState::RoomRaceRunning => String::from("比赛中"),
-                                    _ => String::from("空闲")
+                                    RoomState::RoomRaceOn => String::from("比赛中"),
                                 }
                             ];
                             for content in table {

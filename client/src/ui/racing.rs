@@ -2,7 +2,7 @@ use eframe::egui;
 use egui::Grid;
 use egui::RichText;
 use protocol::httpapi::MetaHeader;
-use protocol::httpapi::MetaRaceCmd;
+use protocol::httpapi::RaceCmd;
 use protocol::httpapi::RaceAccess;
 use protocol::httpapi::RaceState;
 use protocol::httpapi::DataFormat;
@@ -202,16 +202,21 @@ impl UiRacing {
 async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGame, token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>, tx: Sender<UiRacingMsg>) {
     match head.format {
         DataFormat::FmtRaceCommand => {
-            let cmd: MetaRaceCmd = bincode::deserialize(pack_data).unwrap();
-            match cmd.state {
-                RaceState::RaceLoad => {
+            let cmd: RaceCmd = bincode::deserialize(pack_data).unwrap();
+            match cmd {
+                RaceCmd::RaceCmdLoad => {
                     println!("recv cmd to load game");
                     tokio::spawn(start_game_load(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
-                    tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoad)).await.unwrap();
+                    tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoading)).await.unwrap();
                 }
-                RaceState::RaceStart => {
+                RaceCmd::RaceCmdStart => {
                     println!("recv cmd to start game");
                     tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
+                    tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceStarting)).await.unwrap();
+                }
+                RaceCmd::RaceCmdUpload => {
+                    println!("recv cmd to upload race data");
+                    tokio::spawn(start_game_upload(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceRunning)).await.unwrap();
                 }
                 _ => {}
@@ -240,21 +245,48 @@ async fn start_game_load(gamepath: String, token: String, room: String, writer: 
     tokio::spawn(async move {
         rbr.launch().await;
         rbr.load();
-        let mut loaded = false;
 
         loop {
             let state = rbr.get_race_state();
             match state {
-                RaceState::RaceLoaded => {
-                    if !loaded {
-                        loaded = true;
-                        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                        let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: RaceState::RaceLoaded};
-                        let body = bincode::serialize(&update).unwrap();
-                        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
-                        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
-                    }
+                RaceState::RaceLoaded | RaceState::RaceRunning => {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                    let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: RaceState::RaceLoaded};
+                    let body = bincode::serialize(&update).unwrap();
+                    let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+                    writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+                    break;
                 },
+                _ => {},
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+        }
+    });
+}
+
+async fn start_game_race(gamepath: String, token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+    let mut rbr = RBRGame::new(&gamepath);
+    let user_token = token.clone();
+    let room_name = room.clone();
+    tokio::spawn(async move {
+        rbr.start();
+        let update = RaceUpdate {token: user_token.clone(), room: room_name, state: RaceState::RaceStarted};
+        let body = bincode::serialize(&update).unwrap();
+        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+    });
+}
+
+async fn start_game_upload(gamepath: String, token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+    let mut rbr: RBRGame = RBRGame::new(&gamepath);
+    let user_token = token.clone();
+    let room_name = room.clone();
+    tokio::spawn(async move {
+        rbr.attach();
+
+        loop {
+            let state = rbr.get_race_state();
+            match state {
                 RaceState::RaceRetired | RaceState::RaceFinished => {
                     let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: state.clone()};
                     let body = bincode::serialize(&update).unwrap();
@@ -274,18 +306,5 @@ async fn start_game_load(gamepath: String, token: String, room: String, writer: 
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
         }
-    });
-}
-
-async fn start_game_race(gamepath: String, token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
-    let mut rbr = RBRGame::new(&gamepath);
-    let user_token = token.clone();
-    let room_name = room.clone();
-    tokio::spawn(async move {
-        rbr.start();
-        let update = RaceUpdate {token: user_token.clone(), room: room_name, state: RaceState::RaceStarted};
-        let body = bincode::serialize(&update).unwrap();
-        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
-        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
     });
 }

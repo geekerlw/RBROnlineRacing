@@ -121,6 +121,25 @@ impl RBRGame {
         self
     }
 
+    pub fn attach(&mut self) {
+        let process_name = r"RichardBurnsRally_SSE.exe";
+        let output = Command::new("tasklist")
+        .args(&["/FO", "CSV", "/NH"])
+        .output()
+        .expect("Failed to execute command");
+
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        for line in output_str.lines() {
+            let fields: Vec<&str> = line.split(',').collect();
+            if let Some(name) = fields.get(0) {
+                if name.trim_matches('"') == process_name {
+                    self.pid = fields.get(1).unwrap().trim().trim_matches('"').parse::<u32>().unwrap();
+                    break;
+                }
+            }
+        }
+    }
+
     pub async fn launch(&mut self) {
         let rbr_sse = self.root_path.clone() + r"\RichardBurnsRally_SSE.exe";
         let process = Command::new(rbr_sse).current_dir(&self.root_path)

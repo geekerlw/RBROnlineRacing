@@ -178,7 +178,7 @@ async fn handle_http_race_join(data: web::Data<Arc<Mutex<RacingServer>>>, body: 
     println!("Received user join race info: {:?}", info);
 
     let mut server = data.lock().await;
-    if server.join_raceroom(info.room, info.token) {
+    if server.join_raceroom(info) {
         HttpResponse::Ok().body("Join race successful!")
     } else {
         HttpResponse::NotFound().body("Join race failed!")
@@ -245,7 +245,6 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
         DataFormat::FmtUpdateState => { // race update game state
             let state: RaceUpdate = bincode::deserialize(pack_data).unwrap();
             println!("recv racer state update: {:?}", state);
-
             server.update_player_state(&state);
         }
 

@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use protocol::httpapi::{RaceState, MetaRaceData, MetaRaceCmd, MetaHeader, DataFormat, MetaRaceResult};
+use protocol::httpapi::{RaceState, MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
 
 #[derive(Clone)]
@@ -38,7 +38,7 @@ impl RacePlayer {
         }
     }
 
-    pub async fn notify_user_cmd(&self, cmd: &MetaRaceCmd) {
+    pub async fn notify_user_cmd(&self, cmd: &RaceCmd) {
         let body = bincode::serialize(cmd).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtRaceCommand}).unwrap();
         if let Some(writer) = &self.writer {

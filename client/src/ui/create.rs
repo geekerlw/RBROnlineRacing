@@ -118,7 +118,7 @@ impl UiCreateRace {
             car_id: Some(self.cars[self.select_car].id.parse().unwrap()),
             damage: self.select_damage as u32,
         };
-        let create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo};
+        let create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};
 
         let url = page.store.get_http_url("api/race/create");
         let tx = page.tx.clone();

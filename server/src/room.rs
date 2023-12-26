@@ -1,10 +1,26 @@
-use protocol::httpapi::{RoomState, RaceState, MetaRaceCmd, MetaRaceResult, RaceInfo};
+use protocol::httpapi::{RoomState, RaceState, RaceCmd, MetaRaceResult, RaceInfo};
 use crate::player::RacePlayer;
+
+#[derive(Default, Clone, Debug)]
+enum RoomRaceState {
+    #[default]
+    RoomRaceBegin,
+    RoomRaceReady,
+    RoomRaceLoading,
+    RoomRaceLoaded,
+    RoomRaceStarting,
+    RoomRaceStarted,
+    RoomRaceRunning,
+    RoomRaceFinished,
+    RoomRaceEnd,
+}
 
 #[derive(Default)]
 pub struct RaceRoom {
     pub info: RaceInfo,
-    pub state: RoomState,
+    pub room_state: RoomState,
+    pub passwd: Option<String>,
+    race_state: RoomRaceState,
     pub players: Vec<RacePlayer>,
 }
 
@@ -30,12 +46,35 @@ impl RaceRoom {
         return false;
     }
 
+    pub fn can_enter(&mut self, passwd: &String) -> bool {
+        if self.is_locked() {
+            if let Some(pass) = &self.passwd {
+                return passwd == pass;
+            }
+        }
+        return true
+    }
+
     pub fn is_empty(&mut self) -> bool {
         self.players.is_empty()
     }
 
     pub fn is_full(&mut self) -> bool {
         self.players.len() > 8
+    }
+
+    pub fn is_locked(&mut self) -> bool {
+        match self.room_state {
+            RoomState::RoomLocked => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_in_racing(&mut self) -> bool {
+        match self.race_state {
+            RoomRaceState::RoomRaceBegin => false,
+            _ => true,
+        }
     }
 
     pub fn sort_players(&mut self) {
@@ -60,6 +99,16 @@ impl RaceRoom {
         })
     }
 
+
+    pub fn is_all_players_started(&mut self) -> bool {
+        self.players.iter().all(|x| {
+            match x.state {
+                RaceState::RaceStarted => true,
+                _ => false,
+            }
+        })
+    }
+
     pub fn is_all_players_finish(&mut self) -> bool {
         self.players.iter().all(|x| {
             match x.state {
@@ -70,14 +119,21 @@ impl RaceRoom {
     }
 
     pub async fn notify_all_players_load(&mut self) {
-        let cmd = MetaRaceCmd {state: RaceState::RaceLoad};
+        let cmd = RaceCmd::RaceCmdLoad;
         for player in &self.players {
             player.notify_user_cmd(&cmd).await;
         }
     }
 
     pub async fn notify_all_players_start(&mut self) {
-        let cmd = MetaRaceCmd {state: RaceState::RaceStart};
+        let cmd = RaceCmd::RaceCmdStart;
+        for player in &self.players {
+            player.notify_user_cmd(&cmd).await;
+        }
+    }
+
+    pub async fn notify_all_players_upload(&mut self) {
+        let cmd = RaceCmd::RaceCmdUpload;
         for player in &self.players {
             player.notify_user_cmd(&cmd).await;
         }
@@ -116,33 +172,45 @@ impl RaceRoom {
     }
 
     fn update_room_state(&mut self) {
-        match self.state {
-            RoomState::RoomDefault | RoomState::RoomFree | RoomState::RoomFull => {
-                if !self.is_empty() {
-                    self.state = RoomState::RoomRaceBegin;
-                }
+        if self.is_locked() {
+            return;
+        }
+
+        if self.is_in_racing() {
+            self.room_state = RoomState::RoomRaceOn;
+        } else {
+            if self.is_full() {
+                self.room_state = RoomState::RoomFull;
+            } else {
+                self.room_state = RoomState::RoomFree;
             }
-            RoomState::RoomRaceBegin => {
+        }
+    }
+
+    fn update_race_state(&mut self) {
+        match self.race_state {
+            RoomRaceState::RoomRaceBegin => {
                 if self.is_all_players_ready() {
-                    self.state = RoomState::RoomRaceReady;
+                    self.race_state = RoomRaceState::RoomRaceReady;
                 }
             }
-            RoomState::RoomRaceLoading => {
+            RoomRaceState::RoomRaceLoading => {
                 if self.is_all_players_loaded() {
-                    self.state = RoomState::RoomRaceLoaded;
+                    self.race_state = RoomRaceState::RoomRaceLoaded;
                 }
             }
-            RoomState::RoomRaceRunning => {
+            RoomRaceState::RoomRaceStarting => {
+                if self.is_all_players_started() {
+                    self.race_state = RoomRaceState::RoomRaceStarted;
+                }
+            }
+            RoomRaceState::RoomRaceRunning => {
                 if self.is_all_players_finish() {
-                    self.state = RoomState::RoomRaceFinished;
+                    self.race_state = RoomRaceState::RoomRaceFinished;
                 }
             }
-            RoomState::RoomRaceEnd => {
-                if self.is_full() {
-                    self.state = RoomState::RoomFull;
-                } else {
-                    self.state = RoomState::RoomFree;
-                }
+            RoomRaceState::RoomRaceEnd => {
+                self.race_state = RoomRaceState::RoomRaceBegin;
             }
             _ => {}
         }
@@ -150,23 +218,29 @@ impl RaceRoom {
 
     pub async fn check_room_state(&mut self) {
         self.update_room_state();
-        match self.state {
-            RoomState::RoomRaceReady => {
+        self.update_race_state();
+        match self.race_state {
+            RoomRaceState::RoomRaceReady => {
                 println!("notify load game: {}", self.info.name);
                 self.notify_all_players_load().await;
-                self.state = RoomState::RoomRaceLoading;
+                self.race_state = RoomRaceState::RoomRaceLoading;
             },
-            RoomState::RoomRaceLoaded => {
+            RoomRaceState::RoomRaceLoaded => {
                 println!("notify start game: {}", self.info.name);
                 self.notify_all_players_start().await;
-                self.state = RoomState::RoomRaceRunning;
+                self.race_state = RoomRaceState::RoomRaceStarting;
             },
-            RoomState::RoomRaceRunning => {
+            RoomRaceState::RoomRaceStarted => {
+                println!("notify exchange data: {}", self.info.name);
+                self.notify_all_players_upload().await;
+                self.race_state = RoomRaceState::RoomRaceRunning;
+            },
+            RoomRaceState::RoomRaceRunning => {
                 self.notify_all_players_race_data().await;
             },
-            RoomState::RoomRaceFinished => {
+            RoomRaceState::RoomRaceFinished => {
                 self.notify_all_players_race_result().await;
-                self.state = RoomState::RoomRaceEnd;
+                self.race_state = RoomRaceState::RoomRaceEnd;
             },
             _ => {},
         }

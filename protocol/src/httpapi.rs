@@ -8,9 +8,9 @@ pub enum RaceState {
     RaceDefault,
     RaceInit,
     RaceReady,
-    RaceLoad,
+    RaceLoading,
     RaceLoaded,
-    RaceStart,
+    RaceStarting,
     RaceStarted,
     RaceRunning,
     RaceRetired,
@@ -21,17 +21,20 @@ pub enum RaceState {
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub enum RoomState {
     #[default]
-    RoomDefault,
     RoomFree,
     RoomFull,
     RoomLocked,
-    RoomRaceBegin,
-    RoomRaceReady,
-    RoomRaceLoading,
-    RoomRaceLoaded,
-    RoomRaceRunning,
-    RoomRaceFinished,
-    RoomRaceEnd,
+    RoomRaceOn,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub enum RaceCmd {
+    #[default]
+    RaceCmdDefault,
+    RaceCmdLoad,
+    RaceCmdStart,
+    RaceCmdUpload,
+    RaceCmdFinish,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -91,6 +94,8 @@ pub struct RaceUserState {
 pub struct RaceCreate {
     pub token: String,
     pub info: RaceInfo,
+    pub locked: bool,
+    pub passwd: Option<String>,
 }
 
 ///
@@ -100,6 +105,7 @@ pub struct RaceCreate {
 pub struct RaceJoin {
     pub token: String,
     pub room: String,
+    pub passwd: Option<String>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -148,9 +154,4 @@ pub struct MetaRaceResult {
     pub splittime2: f32,
     pub finishtime: f32,
     pub difffirst: f32,
-}
-
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct MetaRaceCmd {
-    pub state: RaceState,
 }
