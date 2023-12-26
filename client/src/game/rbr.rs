@@ -15,6 +15,7 @@ use ini::Ini;
 use serde::{Serialize, Deserialize};
 use process_memory::{Architecture, Memory, DataMember, Pid, ProcessHandleExt, TryIntoProcessHandle};
 use tokio::net::UdpSocket;
+use std::mem::size_of;
 
 #[derive(Debug, Default)]
 pub struct RBRGame {
@@ -62,7 +63,7 @@ pub struct RBRCarData {
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceItem {
-    pub name: [c_uchar; 32],
+pub name: [c_uchar; 32],
     pub process: c_float,
     pub difffirst: c_float,
 }
@@ -83,7 +84,7 @@ impl RBRRaceData {
             }
 
             racedata.count += 1;
-            let bytes = item.profile_name.as_bytes();
+                        let bytes = item.profile_name.as_bytes();
             for i in 0..bytes.len() {
                 racedata.data[index].name[i] = bytes[i];
             }
@@ -93,11 +94,11 @@ impl RBRRaceData {
         racedata
     }
 
-    fn as_bytes(self) -> &'static [u8] {
-        let bytes = unsafe {
-            let ptr = &self as *const RBRRaceData;
-            let len = std::mem::size_of::<RBRRaceData>();
-            std::slice::from_raw_parts(ptr as *const u8, len)
+    fn as_bytes(self) -> [u8; size_of::<RBRRaceData>()] {
+        let mut bytes = [0; size_of::<RBRRaceData>()];
+        unsafe {
+            let ptr = &self as *const RBRRaceData as *const u8;
+            std::ptr::copy(ptr, bytes.as_mut_ptr(), size_of::<RBRRaceData>());
         };
         bytes
     }
@@ -249,7 +250,7 @@ impl RBRGame {
     pub async fn set_race_data(&mut self, result: &Vec<MetaRaceResult>) {
         if let Some(udp) = &self.udp {
             let buf = RBRRaceData::from_result(result).as_bytes();
-            udp.send(buf).await.unwrap();
+            udp.send(&buf).await.unwrap();
         }
     }
 

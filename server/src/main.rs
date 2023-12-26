@@ -62,13 +62,11 @@ async fn main() -> std::io::Result<()>{
         loop {
             let mut server = mng_clone.lock().await;
             server.remove_empty_rooms();
-            println!("steven: remain rooms count: {}", server.rooms.len());
             for (_, room) in server.rooms.iter_mut() {
-                println!("steven: room {} remain player count: {}, room state: {:?}", room.info.name, room.players.len(), room.state);
                 room.check_room_state().await;
             }
             drop(server);
-            tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
     });
 
