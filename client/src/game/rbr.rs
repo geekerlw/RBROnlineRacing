@@ -60,7 +60,7 @@ pub struct RBRCarData {
 }
 
 #[derive(Default)]
-#[repr(C)]
+#[repr(C, packed)]
 pub struct RBRRaceItem {
     pub name: [c_uchar; 32],
     pub process: c_float,
@@ -68,7 +68,7 @@ pub struct RBRRaceItem {
 }
 
 #[derive(Default)]
-#[repr(C)]
+#[repr(C, packed)]
 pub struct RBRRaceData {
     pub count: c_uint,
     pub data: [RBRRaceItem; 8],
