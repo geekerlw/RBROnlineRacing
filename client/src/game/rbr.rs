@@ -177,21 +177,21 @@ impl RBRGame {
             SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
             SendMessageW(window_handle, WM_KEYUP, VK_DOWN as usize, 0);
     
-            sleep(Duration::from_millis(100));
+            sleep(Duration::from_millis(200));
     
             // Simulate a special keyboard event (Down key)
             SetForegroundWindow(window_handle);
             SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
             SendMessageW(window_handle, WM_KEYUP, VK_DOWN as usize, 0);
     
-            sleep(Duration::from_millis(100));
+            sleep(Duration::from_millis(200));
     
             // Simulate a special keyboard event (Enter key)
             SetForegroundWindow(window_handle);
             SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
             SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
     
-            sleep(Duration::from_millis(300));
+            sleep(Duration::from_millis(500));
     
             // Simulate a special keyboard event (Enter key)
             SetForegroundWindow(window_handle);
