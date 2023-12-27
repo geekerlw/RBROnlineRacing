@@ -11,6 +11,7 @@ use crate::ui::UiPageState;
 #[derive(Clone)]
 pub struct UiCreateRace {
     pub room_name: String,
+    pub room_passwd: String,
     pub stages: Vec<RBRStageData>,
     pub select_stage: usize,
     pub cars: Vec<RBRCarData>,
@@ -23,6 +24,7 @@ impl Default for UiCreateRace {
     fn default() -> Self {
         Self { 
             room_name: "Test Room".to_string(),
+            room_passwd: String::new(),
             stages: vec![],
             select_stage: 246,
             cars: vec![],
@@ -55,6 +57,10 @@ impl UiView for UiCreateRace {
                     .show(ui, |ui| {
                         ui.label("房间名称：");
                         ui.text_edit_singleline(&mut self.room_name);
+                        ui.end_row();
+
+                        ui.label("房间密码: ");
+                        ui.text_edit_singleline(&mut self.room_passwd);
                         ui.end_row();
 
                         ui.label("比赛赛道：");
@@ -118,7 +124,11 @@ impl UiCreateRace {
             car_id: Some(self.cars[self.select_car].id.parse().unwrap()),
             damage: self.select_damage as u32,
         };
-        let create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};
+        let mut create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};
+        if !self.room_passwd.is_empty() {
+            create.locked = true;
+            create.passwd = Some(self.room_passwd.clone());
+        }
 
         let url = page.store.get_http_url("api/race/create");
         let tx = page.tx.clone();

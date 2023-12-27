@@ -89,6 +89,7 @@ impl RacingServer {
             if let Some(player) = room.players.get(0) {
                 raceitem.owner = player.profile_name.clone();
             }
+            raceitem.state = room.room_state.clone();
             racelist.push(raceitem);
         }
 

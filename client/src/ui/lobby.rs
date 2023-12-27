@@ -9,6 +9,7 @@ use tokio::{sync::mpsc::{channel, Receiver, Sender}, task::JoinHandle};
 pub struct UiLobby {
     pub table_head: Vec<&'static str>,
     pub table_data: Vec<RaceBrief>,
+    pub show_passwin: bool,
     rx: Receiver<Vec<RaceBrief>>,
     tx: Sender<Vec<RaceBrief>>,
     pub timed_task: Option<JoinHandle<()>>,
@@ -20,6 +21,7 @@ impl Default for UiLobby {
         Self {
             table_head: vec!["序号", "房名", "赛道", "房主", "状态"],
             table_data: vec![],
+            show_passwin: false,
             rx,
             tx,
             timed_task: None,
@@ -28,8 +30,8 @@ impl Default for UiLobby {
 }
 
 impl UiLobby {
-    pub fn join_raceroom(&mut self, room: &String, page: &mut UiPageCtx) {
-        let race_join = RaceJoin {token: page.store.user_token.clone(), room: room.clone(), passwd: None};
+    pub fn join_raceroom(&mut self, room: &String, passwd: Option<String>, page: &mut UiPageCtx) {
+        let race_join = RaceJoin {token: page.store.user_token.clone(), room: room.clone(), passwd};
         let url = page.store.get_http_url("api/race/join");
         let tx = page.tx.clone();
         page.store.curr_room = room.clone();
@@ -38,6 +40,33 @@ impl UiLobby {
             if res.status() == StatusCode::OK {
                 tx.send(UiMsg::MsgGotoPage(UiPageState::PageInRoom)).await.unwrap();
             }
+        });
+    }
+
+    pub fn enter_raceroom(&mut self, room: &String, passwd: Option<String>, page: &mut UiPageCtx) {
+        if room == &page.store.curr_room {
+            page.route.switch_to_page(UiPageState::PageInRoom);
+            return;
+        }
+
+        return self.join_raceroom(room, passwd, page);
+    }
+
+    pub fn show_passwindow(&mut self, room: &String, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        //egui::Window::new("pop passwd").fixed_pos(egui::pos2(frame.info().window_info.size.x + 400.0, frame.info().window_info.size.y + 200.0)).show(ctx, |ui| {
+        egui::Window::new("pop passwd").show(ctx, |ui| {
+            let mut passwd = String::new();
+            ui.text_edit_singleline(&mut passwd);
+            ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                ui.add_space(40.0);
+                if ui.button("取消").clicked() {
+                    self.show_passwin = false;
+                }
+                if ui.button("确认").clicked() {
+                    self.show_passwin = false;
+                    self.join_raceroom(room, Some(passwd), page);
+                }
+            });
         });
     }
 }
@@ -73,12 +102,13 @@ impl UiView for UiLobby {
         }
     }
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         if let Ok(msg) = self.rx.try_recv() {
             self.table_data = msg;
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            let mut select_room = String::new();
             ui.horizontal_centered(|ui| {
                 ui.add_space(120.0);
                 ui.vertical_centered(|ui| {
@@ -97,21 +127,26 @@ impl UiView for UiLobby {
                                 match race.state {
                                     RoomState::RoomFree => String::from("空闲"),
                                     RoomState::RoomFull => String::from("满员"),
-                                    RoomState::RoomLocked => String::from("禁止加入"),
+                                    RoomState::RoomLocked => String::from("需要密码"),
                                     RoomState::RoomRaceOn => String::from("比赛中"),
                                 }
                             ];
                             for content in table {
                                 ui.label(content);
                             }
-                            if &race.name != &page.store.curr_room {
-                                if ui.button("加入").clicked() {
-                                    self.join_raceroom(&race.name, page);
+
+                            match race.state {
+                                RoomState::RoomFree => {
+                                    if ui.button("加入").clicked() {
+                                        self.enter_raceroom(&race.name, None, page);
+                                    }
+                                },
+                                RoomState::RoomLocked => {
+                                    if ui.button("加入").clicked() {
+                                        self.enter_raceroom(&race.name, None, page);
+                                    }
                                 }
-                            } else {
-                                if ui.button("进入").clicked() {
-                                    page.route.switch_to_page(UiPageState::PageInRoom);
-                                }
+                                _ => {},
                             }
                             ui.end_row();
                         }
@@ -119,6 +154,10 @@ impl UiView for UiLobby {
                 });
                 ui.add_space(120.0);
             });
+
+            // if self.show_passwin {
+            //     self.show_passwindow(&select_room, ctx, frame, page);
+            // }
         });
     }
 }
