@@ -61,12 +61,13 @@ async fn main() -> std::io::Result<()>{
     let mgr_task = tokio::spawn(async move {
         loop {
             let mut server = mng_clone.lock().await;
+            server.remove_invalid_players();
             server.remove_empty_rooms();
             for (_, room) in server.rooms.iter_mut() {
                 room.check_room_state().await;
             }
             drop(server);
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
         }
     });
 

@@ -30,6 +30,12 @@ impl RacingServer {
         self.rooms.retain(|_k, v| !v.is_empty());
     }
 
+    pub fn remove_invalid_players(&mut self) {
+        for (_, room) in self.rooms.iter_mut() {
+            room.players.retain(|x| self.lobby.is_player_exist(Some(&x.token), None));
+        }
+    }
+
     pub fn find_room_by_name_mut(&mut self, name: &String) -> Option<&mut RaceRoom> {
         if let Some(room) = self.rooms.get_mut(name) {
             return Some(room);
@@ -147,14 +153,13 @@ impl RacingServer {
                         }
                     }
 
-                    if room.is_player_exist(&player.profile_name) {
-                        return true;
-                    }
-
                     if room.is_full() {
                         return false;
                     }
 
+                    if room.is_player_exist(&player.profile_name) {
+                        room.pop_player(&player.profile_name);
+                    }
                     room.push_player(RacePlayer::new(&player.tokenstr, &player.profile_name));
                     return true;
                 }

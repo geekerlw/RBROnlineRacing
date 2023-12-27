@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use protocol::httpapi::{RaceState, MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct LobbyPlayer {
@@ -10,6 +11,7 @@ pub struct LobbyPlayer {
 
 #[derive(Clone)]
 pub struct RacePlayer {
+    pub token: Uuid,
     pub tokenstr: String,
     pub profile_name: String,
     pub writer: Option<Arc<Mutex<OwnedWriteHalf>>>,
@@ -18,9 +20,10 @@ pub struct RacePlayer {
 }
 
 impl RacePlayer {
-    pub fn new(token: &String, username: &String) -> Self {
+    pub fn new(tokenstr: &String, username: &String) -> Self {
         Self {
-            tokenstr: token.clone(),
+            token: Uuid::parse_str(&tokenstr.as_str()).unwrap(),
+            tokenstr: tokenstr.clone(),
             profile_name: username.clone(),
             writer: None,
             state: RaceState::default(),
