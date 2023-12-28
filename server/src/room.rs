@@ -1,7 +1,8 @@
 use protocol::httpapi::{RoomState, RaceState, RaceCmd, MetaRaceResult, RaceInfo};
+use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 enum RoomRaceState {
     #[default]
     RoomRaceBegin,
@@ -15,7 +16,7 @@ enum RoomRaceState {
     RoomRaceEnd,
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct RaceRoom {
     pub info: RaceInfo,
     pub room_state: RoomState,

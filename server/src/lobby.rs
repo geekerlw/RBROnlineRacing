@@ -1,8 +1,9 @@
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use std::collections::HashMap;
 use crate::player::LobbyPlayer;
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct RaceLobby {
     players: HashMap<Uuid, LobbyPlayer>,
 }

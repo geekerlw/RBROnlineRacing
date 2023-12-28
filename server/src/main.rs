@@ -37,6 +37,8 @@ async fn main() -> std::io::Result<()>{
         App::new()
         .app_data(web::Data::new(server.clone()))
         .service(handle_http_api_version)
+        .service(handle_http_debug_users)
+        .service(handle_http_debug_rooms)
         .service(handle_http_user_login)
         .service(handle_http_user_logout)
         .service(handle_http_race_list)
@@ -83,7 +85,21 @@ async fn handle_http_api_version() -> HttpResponse {
     HttpResponse::Ok().body(API_VERSION_STRING)
 }
 
-#[actix_web::post("api/user/login")]
+#[actix_web::get("/api/debug/users")]
+async fn handle_http_debug_users(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+    let server = data.lock().await;
+    let response = serde_json::to_string_pretty(&server.lobby).unwrap();
+    HttpResponse::Ok().body(response)
+}
+
+#[actix_web::get("/api/debug/rooms")]
+async fn handle_http_debug_rooms(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+    let server = data.lock().await;
+    let response = serde_json::to_string_pretty(&server.rooms).unwrap();
+    HttpResponse::Ok().body(response)
+}
+
+#[actix_web::post("/api/user/login")]
 async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserLogin>) -> HttpResponse {
     let user = body.into_inner();
     println!("Received user login: {:?}", user);

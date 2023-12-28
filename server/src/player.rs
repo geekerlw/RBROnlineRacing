@@ -1,19 +1,21 @@
 use std::sync::Arc;
 use protocol::httpapi::{RaceState, MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult};
+use serde::{Serialize, Deserialize};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LobbyPlayer {
     pub tokenstr: String,
     pub profile_name: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct RacePlayer {
     pub token: Uuid,
     pub tokenstr: String,
     pub profile_name: String,
+    #[serde(skip)]
     pub writer: Option<Arc<Mutex<OwnedWriteHalf>>>,
     pub state: RaceState,
     pub race_data: MetaRaceData,

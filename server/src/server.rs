@@ -2,6 +2,8 @@ use protocol::httpapi::RaceCreate;
 use protocol::httpapi::RaceJoin;
 use protocol::httpapi::RaceUpdate;
 use protocol::httpapi::RaceUserState;
+use serde::Deserialize;
+use serde::Serialize;
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -15,7 +17,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use protocol::httpapi::RoomState;
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct RacingServer {
     pub lobby: RaceLobby,
     pub rooms: HashMap<String, RaceRoom>,
