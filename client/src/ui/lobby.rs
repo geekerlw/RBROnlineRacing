@@ -10,6 +10,8 @@ pub struct UiLobby {
     pub table_head: Vec<&'static str>,
     pub table_data: Vec<RaceBrief>,
     pub show_passwin: bool,
+    pub select_room: String,
+    pub select_room_pass: String,
     rx: Receiver<Vec<RaceBrief>>,
     tx: Sender<Vec<RaceBrief>>,
     pub timed_task: Option<JoinHandle<()>>,
@@ -22,6 +24,8 @@ impl Default for UiLobby {
             table_head: vec!["序号", "房名", "赛道", "房主", "状态"],
             table_data: vec![],
             show_passwin: false,
+            select_room: String::new(),
+            select_room_pass: String::new(),
             rx,
             tx,
             timed_task: None,
@@ -52,19 +56,17 @@ impl UiLobby {
         return self.join_raceroom(room, passwd, page);
     }
 
-    pub fn show_passwindow(&mut self, room: &String, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
-        //egui::Window::new("pop passwd").fixed_pos(egui::pos2(frame.info().window_info.size.x + 400.0, frame.info().window_info.size.y + 200.0)).show(ctx, |ui| {
-        egui::Window::new("pop passwd").show(ctx, |ui| {
-            let mut passwd = String::new();
-            ui.text_edit_singleline(&mut passwd);
-            ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                ui.add_space(40.0);
-                if ui.button("取消").clicked() {
-                    self.show_passwin = false;
-                }
+    pub fn show_passwindow(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
+        egui::Window::new("pop pass window").fixed_pos(egui::pos2(350.0, 200.0)).fixed_size([200.0, 80.0])
+        .title_bar(false)
+        .show(ctx, |ui| {
+            ui.label("请输入房间密码: ");   
+            ui.horizontal_centered(|ui| {
+                ui.text_edit_singleline(&mut self.select_room_pass);
                 if ui.button("确认").clicked() {
                     self.show_passwin = false;
-                    self.join_raceroom(room, Some(passwd), page);
+                    let pass = Some(self.select_room_pass.clone());
+                    self.join_raceroom(&self.select_room.clone(), pass, page);
                 }
             });
         });
@@ -108,7 +110,6 @@ impl UiView for UiLobby {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let mut select_room = String::new();
             ui.horizontal_centered(|ui| {
                 ui.add_space(120.0);
                 ui.vertical_centered(|ui| {
@@ -143,7 +144,8 @@ impl UiView for UiLobby {
                                 },
                                 RoomState::RoomLocked => {
                                     if ui.button("加入").clicked() {
-                                        self.enter_raceroom(&race.name, None, page);
+                                        self.select_room = race.name.clone();
+                                        self.show_passwin = true;
                                     }
                                 }
                                 _ => {},
@@ -155,9 +157,9 @@ impl UiView for UiLobby {
                 ui.add_space(120.0);
             });
 
-            // if self.show_passwin {
-            //     self.show_passwindow(&select_room, ctx, frame, page);
-            // }
+            if self.show_passwin {
+                self.show_passwindow(ctx, frame, page);
+            }
         });
     }
 }
