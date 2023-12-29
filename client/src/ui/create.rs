@@ -87,12 +87,12 @@ impl UiView for UiCreateRace {
                         popup_below_widget(ui, popup_stage, &filter_stage, |ui| {
                             let patten = self.filter_stage.clone().to_lowercase();
                             egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                for (index, stage) in self.stages.iter()
-                                .filter(|x| x.name.to_lowercase().contains(patten.as_str()))
-                                .enumerate() {
-                                    if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
-                                        self.filter_stage = stage.name.clone();
-                                        self.select_stage = index;
+                                for (index, stage) in self.stages.iter().enumerate() {
+                                    if stage.name.to_lowercase().contains(patten.as_str()) {
+                                        if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
+                                            self.filter_stage = stage.name.clone();
+                                            self.select_stage = index;
+                                        }
                                     }
                                 }
                             });
@@ -108,12 +108,12 @@ impl UiView for UiCreateRace {
                         popup_below_widget(ui, popup_car, &filter_car, |ui| {
                             let patten = self.filter_car.clone().to_lowercase();
                             egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                for (index, car) in self.cars.iter()
-                                .filter(|x| x.name.to_lowercase().contains(patten.as_str()))
-                                .enumerate() {
-                                    if ui.selectable_label(self.select_car == index, &car.name).clicked() {
-                                        self.filter_car = car.name.clone();
-                                        self.select_car = index;
+                                for (index, car) in self.cars.iter().enumerate() {
+                                    if car.name.to_lowercase().contains(patten.as_str()) {
+                                        if ui.selectable_label(self.select_car == index, &car.name).clicked() {
+                                            self.filter_car = car.name.clone();
+                                            self.select_car = index;
+                                        }
                                     }
                                 }
                             });
