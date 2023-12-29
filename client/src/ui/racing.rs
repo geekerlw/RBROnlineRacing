@@ -4,10 +4,13 @@ use egui::RichText;
 use protocol::httpapi::MetaHeader;
 use protocol::httpapi::RaceCmd;
 use protocol::httpapi::RaceAccess;
+use protocol::httpapi::RaceQuery;
 use protocol::httpapi::RaceState;
 use protocol::httpapi::DataFormat;
 use protocol::httpapi::RaceUpdate;
 use protocol::httpapi::META_HEADER_LEN;
+use protocol::httpapi::RaceUserState;
+use reqwest::StatusCode;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
@@ -23,16 +26,20 @@ use tokio::sync::Mutex;
 
 enum UiRacingMsg {
     MsgRaceState(RaceState),
+    MsgRaceUserState(Vec<RaceUserState>),
     MsgRaceResult(Vec<MetaRaceResult>),
+    MsgRaceAllReady,
 }
 
 pub struct UiRacing {
     pub state: RaceState,
+    pub userstates: Vec<RaceUserState>,
     tx: Sender<UiRacingMsg>,
     rx: Receiver<UiRacingMsg>,
     pub table_head: Vec<&'static str>,
     pub table_data: Vec<MetaRaceResult>,
     pub rbr_task: Option<JoinHandle<()>>,
+    pub timed_task: Option<JoinHandle<()>>,
 }
 
 impl Default for UiRacing {
@@ -40,11 +47,13 @@ impl Default for UiRacing {
         let (tx, rx) = tokio::sync::mpsc::channel::<UiRacingMsg>(16);
         Self {
             state: RaceState::RaceReady,
+            userstates: vec![],
             tx,
             rx,
             table_head: vec!["排名", "车手", "分段1", "分段2", "完成时间", "头佬差距"],
             table_data: vec![],
             rbr_task: None,
+            timed_task: None,
         }
     }
 }
@@ -57,6 +66,22 @@ impl UiView for UiRacing {
         let tx = self.tx.clone();
         let game_path = page.store.game_path.clone();
         let room_name = page.store.curr_room.clone();
+
+        let state_url = page.store.get_http_url("api/race/state");
+        let state_tx = self.tx.clone();
+        let state_query = RaceQuery {name: room_name.clone()};
+        let task = tokio::spawn(async move {
+            loop {
+                let res = reqwest::Client::new().get(&state_url).json(&state_query).send().await.unwrap();
+                if res.status() == StatusCode::OK {
+                    let text = res.text().await.unwrap();
+                    let userstate: Vec<RaceUserState> = serde_json::from_str(text.as_str()).unwrap();
+                    state_tx.send(UiRacingMsg::MsgRaceUserState(userstate)).await.unwrap();
+                }
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            }
+        });
+        self.timed_task = Some(task);
 
         let task = tokio::spawn(async move {
             let stream = TcpStream::connect(meta_addr).await.unwrap();
@@ -114,6 +139,10 @@ impl UiView for UiRacing {
             task.abort();
             self.rbr_task = None;
         }
+        if let Some(task) = &self.timed_task {
+            task.abort();
+            self.timed_task = None;
+        }
         self.state = RaceState::RaceReady;
     }
 
@@ -121,19 +150,57 @@ impl UiView for UiRacing {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {
                 UiRacingMsg::MsgRaceState(state) => self.state = state,
+                UiRacingMsg::MsgRaceUserState(state) => self.userstates = state,
                 UiRacingMsg::MsgRaceResult(result) => self.table_data = result,
+                UiRacingMsg::MsgRaceAllReady => {
+                    if let Some(task) = &self.timed_task {
+                        task.abort();
+                    }
+                },
             };
         }
 
         match self.state {
+            RaceState::RaceReady => self.show_waiting(ctx, frame, page),
+            RaceState::RaceLoading => self.show_loading(ctx, frame, page),
             RaceState::RaceRunning => self.show_racing(ctx, frame, page),
             RaceState::RaceFinished | RaceState::RaceRetired => self.show_result(ctx, frame, page),
-            _ => self.show_loading(ctx, frame, page),
+            _ => {},
         }
     }
 }
 
 impl UiRacing {
+    fn show_waiting(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.add_space(360.0);
+                ui.label(RichText::new("等待玩家就绪...").size(32.0));
+            });
+            ui.add_space(60.0);
+            ui.horizontal(|ui| {
+                ui.add_space(400.0);
+                ui.vertical(|ui| {
+                    Grid::new("race players state table")
+                    .min_col_width(80.0)
+                    .min_row_height(24.0)
+                    .show(ui, |ui| {
+                        for player in self.userstates.iter() {
+                            ui.label(&player.name);
+                            match &player.state {
+                                RaceState::RaceReady => ui.label("已就绪"),
+                                RaceState::RaceLoaded => ui.label("加载完成"),
+                                RaceState::RaceFinished | RaceState::RaceRetired => ui.label("已完成"),
+                                _ => ui.label("未就绪"),
+                            };
+                        }
+                        ui.end_row();
+                    });
+                });
+            });
+        });
+    }
+
     fn show_loading(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.centered_and_justified(|ui| {
@@ -208,6 +275,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
                     println!("recv cmd to load game");
                     tokio::spawn(start_game_load(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoading)).await.unwrap();
+                    tx.send(UiRacingMsg::MsgRaceAllReady).await.unwrap();
                 }
                 RaceCmd::RaceCmdStart => {
                     println!("recv cmd to start game");
