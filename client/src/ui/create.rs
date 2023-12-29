@@ -1,6 +1,8 @@
 use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
+use egui::RichText;
+use egui::containers::popup::popup_below_widget;
 use protocol::httpapi::RaceCreate;
 use protocol::httpapi::RaceInfo;
 use reqwest::StatusCode;
@@ -14,8 +16,10 @@ pub struct UiCreateRace {
     pub room_passwd: String,
     pub stages: Vec<RBRStageData>,
     pub select_stage: usize,
+    pub filter_stage: String,
     pub cars: Vec<RBRCarData>,
     pub select_car: usize,
+    pub filter_car: String,
     pub damages: Vec<&'static str>,
     pub select_damage: usize,
 }
@@ -27,8 +31,10 @@ impl Default for UiCreateRace {
             room_passwd: String::new(),
             stages: vec![],
             select_stage: 246,
+            filter_stage: String::new(),
             cars: vec![],
             select_car: 36,
+            filter_car: String::new(),
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
         }
@@ -55,33 +61,62 @@ impl UiView for UiCreateRace {
                     .min_col_width(80.0)
                     .min_row_height(24.0)
                     .show(ui, |ui| {
+                        ui.add_space(-20.0);
+                        ui.label(RichText::new("房间设定").size(14.0));
+                        ui.end_row();
+
                         ui.label("房间名称：");
-                        ui.text_edit_singleline(&mut self.room_name);
+                        ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.room_name));
                         ui.end_row();
 
                         ui.label("房间密码: ");
-                        ui.text_edit_singleline(&mut self.room_passwd);
+                        ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.room_passwd));
+
+                        ui.end_row();
+
+                        ui.add_space(-20.0);
+                        ui.label(RichText::new("比赛设定").size(14.0));
                         ui.end_row();
 
                         ui.label("比赛赛道：");
-                        ComboBox::from_id_source("select stage").selected_text(self.stages[self.select_stage].name.clone())
-                        .show_ui(ui, |ui| {
-                            for (index, stage) in self.stages.iter().enumerate() {
-                                if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
-                                    self.select_stage = index;
+                        let filter_stage = ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.filter_stage));
+                        let popup_stage = ui.make_persistent_id("filter stage");
+                        if filter_stage.changed() || filter_stage.clicked() {
+                            ui.memory_mut(|mem| mem.open_popup(popup_stage));
+                        }
+                        popup_below_widget(ui, popup_stage, &filter_stage, |ui| {
+                            let patten = self.filter_stage.clone().to_lowercase();
+                            egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
+                                for (index, stage) in self.stages.iter()
+                                .filter(|x| x.name.to_lowercase().contains(patten.as_str()))
+                                .enumerate() {
+                                    if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
+                                        self.filter_stage = stage.name.clone();
+                                        self.select_stage = index;
+                                    }
                                 }
-                            }
+                            });
                         });
                         ui.end_row();
 
                         ui.label("比赛车辆: ");
-                        ComboBox::from_id_source("select car").selected_text(self.cars[self.select_car].name.clone())
-                        .show_ui(ui, |ui| {
-                            for (index, car) in self.cars.iter().enumerate() {
-                                if ui.selectable_label(self.select_car == index, &car.name).clicked() {
-                                    self.select_car = index;
+                        let filter_car = ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.filter_car));
+                        let popup_car = ui.make_persistent_id("filter car");
+                        if filter_car.changed() || filter_car.clicked() {
+                            ui.memory_mut(|mem| mem.open_popup(popup_car));
+                        }
+                        popup_below_widget(ui, popup_car, &filter_car, |ui| {
+                            let patten = self.filter_car.clone().to_lowercase();
+                            egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
+                                for (index, car) in self.cars.iter()
+                                .filter(|x| x.name.to_lowercase().contains(patten.as_str()))
+                                .enumerate() {
+                                    if ui.selectable_label(self.select_car == index, &car.name).clicked() {
+                                        self.filter_car = car.name.clone();
+                                        self.select_car = index;
+                                    }
                                 }
-                            }
+                            });
                         });
                         ui.end_row();
 
