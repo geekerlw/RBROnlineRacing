@@ -17,6 +17,6 @@ async fn main() {
         native_options.icon_data = Some(icon);
     }
     
-    eframe::run_native("SimRallyCN Online Racing", native_options, Box::new(|cc| 
+    eframe::run_native("模拟拉力对战平台", native_options, Box::new(|cc| 
         Box::new(app.configure_font(&cc.egui_ctx)))).unwrap();
 }
