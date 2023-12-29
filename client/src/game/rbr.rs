@@ -64,7 +64,7 @@ pub struct RBRCarData {
 #[repr(C, packed)]
 pub struct RBRRaceItem {
 pub name: [c_uchar; 32],
-    pub process: c_float,
+    pub progress: c_float,
     pub difffirst: c_float,
 }
 
@@ -88,7 +88,7 @@ impl RBRRaceData {
             for i in 0..bytes.len() {
                 racedata.data[index].name[i] = bytes[i];
             }
-            racedata.data[index].process = item.process.clone();
+            racedata.data[index].progress = item.progress.clone();
             racedata.data[index].difffirst = item.difffirst.clone();
         }
         racedata
@@ -246,14 +246,14 @@ impl RBRGame {
         let mut data = MetaRaceData::default();
         let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
         let racetime_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x140]);
-        let process_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x13C]);
+        let progress_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x13C]);
         let split1_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x258]);
         let split2_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x25C]);
         let finished_addr = DataMember::<i32>::new_offset(handle, vec![0x165FC68, 0x2C4]);
 
         unsafe {
             data.racetime = racetime_addr.read().unwrap();
-            data.process = process_addr.read().unwrap();
+            data.progress = progress_addr.read().unwrap();
             data.splittime1 = split1_addr.read().unwrap();
             data.splittime2 = split2_addr.read().unwrap();
             if finished_addr.read().unwrap() == 1 {

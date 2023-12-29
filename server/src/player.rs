@@ -33,6 +33,16 @@ impl RacePlayer {
         }
     }
 
+    pub fn sort_by_progress(&self, player: &RacePlayer) -> std::cmp::Ordering {
+        if self.race_data.progress > player.race_data.progress {
+            return std::cmp::Ordering::Greater;
+        } else if self.race_data.progress == player.race_data.progress {
+            return std::cmp::Ordering::Equal;
+        } else {
+            return std::cmp::Ordering::Less;
+        }
+    }
+
     pub fn sort_by_time(&self, player: &RacePlayer) -> std::cmp::Ordering {
         if self.race_data.racetime > player.race_data.racetime {
             return std::cmp::Ordering::Greater;

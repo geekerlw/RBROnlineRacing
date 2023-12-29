@@ -139,7 +139,7 @@ pub struct MetaRaceData {
     pub token: String,
     pub room: String,
     pub racetime: f32,
-    pub process: f32,
+    pub progress: f32,
     pub splittime1: f32,
     pub splittime2: f32,
     pub finishtime: f32,
@@ -149,7 +149,7 @@ pub struct MetaRaceData {
 pub struct MetaRaceResult {
     pub profile_name: String,
     pub racetime: f32,
-    pub process: f32,
+    pub progress: f32,
     pub splittime1: f32,
     pub splittime2: f32,
     pub finishtime: f32,

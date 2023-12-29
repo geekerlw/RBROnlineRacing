@@ -78,7 +78,11 @@ impl RaceRoom {
         }
     }
 
-    pub fn sort_players(&mut self) {
+    pub fn sort_players_by_progress(&mut self) {
+        self.players.sort_by(|a, b| a.sort_by_progress(b));
+    }
+
+    pub fn sort_players_by_time(&mut self) {
         self.players.sort_by(|a, b| a.sort_by_time(b));
     }
 
@@ -142,13 +146,12 @@ impl RaceRoom {
 
     pub fn get_race_result(&mut self) -> Vec::<MetaRaceResult> {
         let mut results = Vec::<MetaRaceResult>::new();
-        self.sort_players();
         let leader = self.players.first().unwrap().clone();
         for player in &self.players {
             let mut result = MetaRaceResult::default();
             result.profile_name = player.profile_name.clone();
             result.racetime = player.race_data.racetime;
-            result.process = player.race_data.process;
+            result.progress = player.race_data.progress;
             result.splittime1 = player.race_data.splittime1;
             result.splittime2 = player.race_data.splittime2;
             result.finishtime = player.race_data.finishtime;
@@ -159,6 +162,7 @@ impl RaceRoom {
     }
 
     pub async fn notify_all_players_race_data(&mut self) {
+        self.sort_players_by_progress();
         let results = self.get_race_result();
         for player in &self.players {
             player.notify_racedata(&results).await;
@@ -166,6 +170,7 @@ impl RaceRoom {
     }
 
     pub async fn notify_all_players_race_result(&mut self) {
+        self.sort_players_by_time();
         let results = self.get_race_result();
         for player in &self.players {
             player.notify_result(&results).await;
