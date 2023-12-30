@@ -1,6 +1,8 @@
 #![windows_subsystem = "windows"]
 
+use std::path::Path;
 use client::RacingClient;
+use simplelog::WriteLogger;
 
 mod ui;
 mod game;
@@ -9,7 +11,16 @@ mod client;
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    if let Ok(appdata) = std::env::var("AppData") {
+        let log_path = appdata + r"\RBROnlineRacing";
+        let log_file = log_path.clone() + r"\Debug.log";
+        let path = Path::new(&log_path);
+        if !path.exists() {
+            std::fs::create_dir(path).unwrap();
+        }
+        WriteLogger::init(log::LevelFilter::Info, 
+            simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();
+    }
 
     let app = RacingClient::default().init();
     let mut native_options: eframe::NativeOptions = eframe::NativeOptions::default();
