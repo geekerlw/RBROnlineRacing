@@ -260,7 +260,6 @@ impl RBRGame {
         let mut data = MetaRaceData::default();
         let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
         let racetime_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x140]);
-        let race_finish_addr = DataMember::<i32>::new_offset(handle, vec![0x165FC68, 0x140]);
         let progress_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x13C]);
         let split1_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x258]);
         let split2_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x25C]);
@@ -271,7 +270,7 @@ impl RBRGame {
             data.progress = progress_addr.read().unwrap();
             data.splittime1 = split1_addr.read().unwrap();
             data.splittime2 = split2_addr.read().unwrap();
-            if race_finish_addr.read().unwrap() == 1 && line_finished_addr.read().unwrap() == 1 {
+            if line_finished_addr.read().unwrap() == 1 {
                 data.finishtime = racetime_addr.read().unwrap();
             } else {
                 data.finishtime = 3600.0;
