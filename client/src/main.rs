@@ -1,5 +1,3 @@
-#![windows_subsystem = "windows"]
-
 use std::path::Path;
 use client::RacingClient;
 use simplelog::WriteLogger;
