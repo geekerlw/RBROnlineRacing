@@ -23,6 +23,7 @@ use super::{UiView, UiPageCtx};
 use protocol::httpapi::MetaRaceResult;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use log::info;
 
 enum UiRacingMsg {
     MsgRaceState(RaceState),
@@ -108,7 +109,7 @@ impl UiView for UiRacing {
 
                 // 处理接收的数据
                 // 这里只是简单地将接收到的数据打印出来
-                // println!("Received data: {:?}", &recvbuf[..n]);
+                // trace!("Received data: {:?}", &recvbuf[..n]);
 
                 let buffer = [&remain[..], &recvbuf[..n]].concat();
                 let datalen = buffer.len();
@@ -272,17 +273,17 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
             let cmd: RaceCmd = bincode::deserialize(pack_data).unwrap();
             match cmd {
                 RaceCmd::RaceCmdLoad => {
-                    println!("recv cmd to load game");
+                    info!("recv cmd to load game");
                     tokio::spawn(start_game_load(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoading)).await.unwrap();
                     tx.send(UiRacingMsg::MsgRaceAllReady).await.unwrap();
                 }
                 RaceCmd::RaceCmdStart => {
-                    println!("recv cmd to start game");
+                    info!("recv cmd to start game");
                     tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
                 }
                 RaceCmd::RaceCmdUpload => {
-                    println!("recv cmd to upload race data");
+                    info!("recv cmd to upload race data");
                     tokio::spawn(start_game_upload(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceRunning)).await.unwrap();
                 }

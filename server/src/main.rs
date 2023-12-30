@@ -5,6 +5,7 @@ use tokio::io::AsyncReadExt;
 use clap::Parser;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use log::{info, trace};
 
 use rust_rbrserver::server::RacingServer;
 use protocol::httpapi::{UserLogin, MetaHeader, DataFormat, RaceQuery, MetaRaceData, RaceCreate, UserLogout, RaceAccess, RaceLeave, RaceUpdate, RaceJoin};
@@ -25,6 +26,8 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()>{
+    env_logger::init();
+
     let args = Args::parse();
     let http_addr = "0.0.0.0:".to_string() + &args.port.to_string();
     let meta_addr = "0.0.0.0:".to_string() + &args.data.to_string();
@@ -73,8 +76,8 @@ async fn main() -> std::io::Result<()>{
         }
     });
 
-    println!("Http server listening on port {}", args.port);
-    println!("Data listener listening on port {}", args.data);
+    info!("Http server listening on port {}", args.port);
+    info!("Data listener listening on port {}", args.data);
 
     let _ = tokio::join!(http_server, data_task, mgr_task);
     Ok(())
@@ -102,7 +105,7 @@ async fn handle_http_debug_rooms(data: web::Data<Arc<Mutex<RacingServer>>>) -> H
 #[actix_web::post("/api/user/login")]
 async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserLogin>) -> HttpResponse {
     let user = body.into_inner();
-    println!("Received user login: {:?}", user);
+    trace!("Received user login: {:?}", user);
 
     let mut server = data.lock().await;
     if let Some(tokenstr) = server.player_login(user) {
@@ -115,7 +118,7 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
 #[actix_web::post("/api/user/logout")]
 async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserLogout>) -> HttpResponse {
     let user: UserLogout = body.into_inner();
-    println!("Received user logout: {:?}", user);
+    trace!("Received user logout: {:?}", user);
 
     let mut server = data.lock().await;
     if server.player_logout(user) {
@@ -127,7 +130,7 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
 
 #[actix_web::get("/api/race/list")]
 async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
-    println!("Received user query race list");
+    trace!("Received user query race list");
 
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_list() {
@@ -140,7 +143,7 @@ async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> Htt
 #[actix_web::get("/api/race/info")]
 async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
     let query = body.into_inner();
-    println!("Received user query race info: {:?}", query);
+    trace!("Received user query race info: {:?}", query);
 
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_info(&query.name) {
@@ -153,7 +156,7 @@ async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: 
 #[actix_web::get("/api/race/state")]
 async fn handle_http_race_get_state(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
     let query = body.into_inner();
-    println!("Received user query race users state: {:?}", query);
+    trace!("Received user query race users state: {:?}", query);
 
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_userstate(&query.name) {
@@ -166,7 +169,7 @@ async fn handle_http_race_get_state(data: web::Data<Arc<Mutex<RacingServer>>>, b
 #[actix_web::put("/api/race/state")]
 async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceUpdate>) -> HttpResponse {
     let info: RaceUpdate = body.into_inner();
-    println!("Received user logout: {:?}", info);
+    trace!("Received user update race state: {:?}", info);
 
     let mut server = data.lock().await;
     if server.update_player_state(&info) {
@@ -179,7 +182,7 @@ async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>
 #[actix_web::post("/api/race/create")]
 async fn handle_http_race_create(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceCreate>) -> HttpResponse {
     let info = body.into_inner();
-    println!("Received user create race info: {:?}", info);
+    trace!("Received user create race info: {:?}", info);
 
     let mut server = data.lock().await;
     if server.create_raceroom(info) {
@@ -192,7 +195,7 @@ async fn handle_http_race_create(data: web::Data<Arc<Mutex<RacingServer>>>, body
 #[actix_web::post("/api/race/join")]
 async fn handle_http_race_join(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceJoin>) -> HttpResponse {
     let info = body.into_inner();
-    println!("Received user join race info: {:?}", info);
+    trace!("Received user join race info: {:?}", info);
 
     let mut server = data.lock().await;
     if server.join_raceroom(info) {
@@ -205,7 +208,7 @@ async fn handle_http_race_join(data: web::Data<Arc<Mutex<RacingServer>>>, body: 
 #[actix_web::post("/api/race/leave")]
 async fn handle_http_race_leave(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceLeave>) -> HttpResponse {
     let info: RaceLeave = body.into_inner();
-    println!("Received user leave race info: {:?}", info);
+    trace!("Received user leave race info: {:?}", info);
 
     let mut server = data.lock().await;
     if server.leave_raceroom(info.room, info.token) {
@@ -227,7 +230,7 @@ async fn handle_data_stream(stream: TcpStream, data: Arc<Mutex<RacingServer>>) {
 
         // 处理接收的数据
         // 这里只是简单地将接收到的数据打印出来
-        // println!("Received data: {:?}", &recvbuf[..n]);
+        // trace!("Received data: {:?}", &recvbuf[..n]);
 
         let buffer = [&remain[..], &recvbuf[..n]].concat();
         let datalen = buffer.len();
@@ -256,12 +259,12 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
     match head.format {
         DataFormat::FmtUserAccess => {
             let user: RaceAccess = bincode::deserialize(pack_data).unwrap();
-            println!("recv racer access: {:?}", user);
+            info!("recv racer access: {:?}", user);
             server.race_player_access(&user, writer);
         }
         DataFormat::FmtUpdateState => { // race update game state
             let state: RaceUpdate = bincode::deserialize(pack_data).unwrap();
-            println!("recv racer state update: {:?}", state);
+            info!("recv racer state update: {:?}", state);
             server.update_player_state(&state);
         }
 

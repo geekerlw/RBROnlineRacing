@@ -16,6 +16,7 @@ use serde::{Serialize, Deserialize};
 use process_memory::{Architecture, Memory, DataMember, Pid, ProcessHandleExt, TryIntoProcessHandle};
 use tokio::net::UdpSocket;
 use std::mem::size_of;
+use log::info;
 
 #[derive(Debug, Default)]
 pub struct RBRGame {
@@ -164,7 +165,7 @@ impl RBRGame {
                 let mut content = String::new();
                 file.read_to_string(&mut content).await.unwrap();
                 if target == content.as_str() {
-                    println!("RBR Game automic login complete.");
+                    info!("RBR Game automic login complete.");
                     break;
                 }
             }

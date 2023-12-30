@@ -1,6 +1,7 @@
 use protocol::httpapi::{RoomState, RaceState, RaceCmd, MetaRaceResult, RaceInfo};
 use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
+use log::info;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 enum RoomRaceState {
@@ -234,17 +235,17 @@ impl RaceRoom {
         self.update_race_state();
         match self.race_state {
             RoomRaceState::RoomRaceReady => {
-                println!("notify load game: {}", self.info.name);
+                info!("notify load game: {}", self.info.name);
                 self.notify_all_players_load().await;
                 self.race_state = RoomRaceState::RoomRaceLoading;
             },
             RoomRaceState::RoomRaceLoaded => {
-                println!("notify start game: {}", self.info.name);
+                info!("notify start game: {}", self.info.name);
                 self.notify_all_players_start().await;
                 self.race_state = RoomRaceState::RoomRaceStarting;
             },
             RoomRaceState::RoomRaceStarted => {
-                println!("notify exchange data: {}", self.info.name);
+                info!("notify exchange data: {}", self.info.name);
                 self.notify_all_players_upload().await;
                 self.race_state = RoomRaceState::RoomRaceRunning;
             },

@@ -2,6 +2,7 @@ use std::env;
 use egui::Ui;
 use ini::Ini;
 use std::path::Path;
+use log::info;
 
 use crate::game::rbr::RBRGame;
 
@@ -40,6 +41,7 @@ impl RacingStore {
 
                 self.game_path = conf.get_from_or(Some("game"), "path", r"E:\\Richard Burns Rally").to_string();
                 self.user_name = RBRGame::new(&self.game_path).get_user().to_string();
+                info!("Parsed game user [{}] success", self.user_name);
                 self.user_passwd = String::from("simrallycn");
             }
         }
