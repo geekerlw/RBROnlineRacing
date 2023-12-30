@@ -57,7 +57,7 @@ impl RacePlayer {
         let body = bincode::serialize(cmd).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtRaceCommand}).unwrap();
         if let Some(writer) = &self.writer {
-            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
         }
     }
 
@@ -65,7 +65,7 @@ impl RacePlayer {
         let body = bincode::serialize(result).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceData}).unwrap();
         if let Some(writer) = &self.writer {
-            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
         }
     }
 
@@ -73,7 +73,7 @@ impl RacePlayer {
         let body = bincode::serialize(result).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceResult}).unwrap();
         if let Some(writer) = &self.writer {
-            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap();
+            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
         }
     }
 }

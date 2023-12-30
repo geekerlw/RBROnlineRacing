@@ -79,6 +79,7 @@ pub struct RaceInfo {
     pub name: String,
     pub stage: String,
     pub stage_id: u32,
+    pub stage_len: u32,
     pub car: Option<String>,
     pub car_id: Option<u32>,
     pub damage: u32,
@@ -138,8 +139,10 @@ pub struct MetaHeader {
 pub struct MetaRaceData {
     pub token: String,
     pub room: String,
+    pub speed: f32,
     pub racetime: f32,
     pub progress: f32,
+    pub stagelen: f32,
     pub splittime1: f32,
     pub splittime2: f32,
     pub finishtime: f32,
@@ -154,4 +157,5 @@ pub struct MetaRaceResult {
     pub splittime2: f32,
     pub finishtime: f32,
     pub difffirst: f32,
+    pub difftime: f32,
 }

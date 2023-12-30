@@ -155,6 +155,7 @@ impl UiCreateRace {
             name: self.room_name.clone(),
             stage: self.stages[self.select_stage].name.clone(),
             stage_id: self.stages[self.select_stage].stage_id.parse().unwrap(),
+            stage_len: self.stages[self.select_stage].length.parse().unwrap(),
             car: Some(self.cars[self.select_car].name.clone()),
             car_id: Some(self.cars[self.select_car].id.parse().unwrap()),
             damage: self.select_damage as u32,

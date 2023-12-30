@@ -155,7 +155,14 @@ impl RaceRoom {
             result.splittime1 = player.race_data.splittime1;
             result.splittime2 = player.race_data.splittime2;
             result.finishtime = player.race_data.finishtime;
-            result.difffirst = player.race_data.racetime - leader.race_data.racetime;
+            let difflength = (leader.race_data.progress - player.race_data.progress / player.race_data.stagelen) * self.info.stage_len as f32;
+            if player.race_data.speed != 0f32 {
+                result.difffirst = difflength / player.race_data.speed;
+            }
+            else {
+                result.difffirst = difflength / 1.0;
+            }
+            result.difffirst = player.race_data.finishtime - leader.race_data.finishtime;
             results.push(result);
         }
         results

@@ -63,7 +63,7 @@ pub struct RBRCarData {
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceItem {
-pub name: [c_uchar; 32],
+    pub name: [c_uchar; 32],
     pub progress: c_float,
     pub difffirst: c_float,
 }
@@ -179,6 +179,8 @@ impl RBRGame {
             let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
             let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
 
+            sleep(Duration::from_millis(200));
+
             // Simulate a special keyboard event (Down key)
             SetForegroundWindow(window_handle);
             SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
@@ -259,15 +261,19 @@ impl RBRGame {
     pub fn get_race_data(&mut self) -> MetaRaceData {
         let mut data = MetaRaceData::default();
         let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
+        let speed_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x0C]);
         let racetime_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x140]);
         let progress_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x13C]);
+        let stagelen_addr = DataMember::<i32>::new_offset(handle, vec![0x1659184, 0x75310]);
         let split1_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x258]);
         let split2_addr = DataMember::<f32>::new_offset(handle, vec![0x165FC68, 0x25C]);
         let line_finished_addr = DataMember::<i32>::new_offset(handle, vec![0x165FC68, 0x2C4]);
 
         unsafe {
+            data.speed = speed_addr.read().unwrap();
             data.racetime = racetime_addr.read().unwrap();
             data.progress = progress_addr.read().unwrap();
+            data.stagelen = stagelen_addr.read().unwrap() as f32;
             data.splittime1 = split1_addr.read().unwrap();
             data.splittime2 = split2_addr.read().unwrap();
             if line_finished_addr.read().unwrap() == 1 {
