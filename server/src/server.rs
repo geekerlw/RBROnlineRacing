@@ -38,6 +38,16 @@ impl RacingServer {
         }
     }
 
+    pub fn force_leave_lobby(&mut self, token: &Uuid) {
+        self.lobby.pop_player(token);
+    }
+
+    pub fn force_leave_room(&mut self, token: &Uuid) {
+        for (_, room) in self.rooms.iter_mut() {
+            room.pop_player_by_token(&token.to_string());
+        }
+    }
+
     pub fn find_room_by_name_mut(&mut self, name: &String) -> Option<&mut RaceRoom> {
         if let Some(room) = self.rooms.get_mut(name) {
             return Some(room);
@@ -51,7 +61,8 @@ impl RacingServer {
         }
 
         if let Some(token) = &self.lobby.get_token_by_name(user.name.clone()) {
-            return Some(token.to_string());
+            self.force_leave_room(token);
+            self.force_leave_lobby(token);
         }
 
         let token = Uuid::new_v4();
@@ -125,10 +136,7 @@ impl RacingServer {
         }
 
         if let Ok(token) = Uuid::parse_str(&create.token.as_str()) {
-            if !self.lobby.is_player_exist(Some(&token), None) {
-                return false;
-            }
-
+            self.force_leave_room(&token);
             if let Some(player) = self.lobby.get_player(token) {
                 let mut raceroom = RaceRoom::default();
                 raceroom.info = create.info.clone();
@@ -148,6 +156,7 @@ impl RacingServer {
 
     pub fn join_raceroom(&mut self, join: RaceJoin) -> bool {
         if let Ok(token) = Uuid::parse_str(&join.token.as_str()) {
+            self.force_leave_room(&token);
             if let Some(player) = self.lobby.get_player(token) {
                 if let Some(room) = self.rooms.get_mut(&join.room) {
                     if let Some(pass) = join.passwd {
