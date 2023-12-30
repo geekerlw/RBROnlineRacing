@@ -193,8 +193,8 @@ impl UiRacing {
                                 RaceState::RaceFinished | RaceState::RaceRetired => ui.label("已完成"),
                                 _ => ui.label("未就绪"),
                             };
+                            ui.end_row();
                         }
-                        ui.end_row();
                     });
                 });
             });
