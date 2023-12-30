@@ -312,7 +312,7 @@ async fn start_game_load(gamepath: String, token: String, room: String, writer: 
     let room_name = room.clone();
     tokio::spawn(async move {
         rbr.launch().await;
-        rbr.load();
+        rbr.enter_practice();
 
         loop {
             let state = rbr.get_race_state();

@@ -121,7 +121,7 @@ impl RBRGame {
         self
     }
 
-    pub fn attach(&mut self) {
+    pub fn attach(&mut self) -> bool {
         let process_name = r"RichardBurnsRally_SSE.exe";
         let output = Command::new("tasklist")
         .args(&["/FO", "CSV", "/NH"])
@@ -134,13 +134,19 @@ impl RBRGame {
             if let Some(name) = fields.get(0) {
                 if name.trim_matches('"') == process_name {
                     self.pid = fields.get(1).unwrap().trim().trim_matches('"').parse::<u32>().unwrap();
-                    break;
+                    return true;
                 }
             }
         }
+
+        return false;
     }
 
     pub async fn launch(&mut self) {
+        if self.attach() {
+            return;
+        }
+
         let rbr_sse = self.root_path.clone() + r"\RichardBurnsRally_SSE.exe";
         let process = Command::new(rbr_sse).current_dir(&self.root_path)
             .spawn().expect("failed to execute command");
@@ -161,11 +167,12 @@ impl RBRGame {
                     println!("RBR Game automic login complete.");
                     break;
                 }
-            }            
+            }
         };
+        self.load_practice();
     }
 
-    pub fn load(&mut self) {
+    pub fn load_practice(&mut self) {
         unsafe {
             // Find the handle of the target window
             let window_title = "Richard Burns Rally - DirectX9\0";
@@ -183,21 +190,28 @@ impl RBRGame {
             SetForegroundWindow(window_handle);
             SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
             SendMessageW(window_handle, WM_KEYUP, VK_DOWN as usize, 0);
-    
+        }
+    }
+
+    pub fn enter_practice(&mut self) {
+        unsafe {
+            // Find the handle of the target window
+            let window_title = "Richard Burns Rally - DirectX9\0";
+            let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
+            let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
+
             sleep(Duration::from_millis(200));
-    
-            // Simulate a special keyboard event (Enter key)
-            SetForegroundWindow(window_handle);
-            SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
-            SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
-    
-            sleep(Duration::from_millis(500));
-    
+
             // Simulate a special keyboard event (Enter key)
             SetForegroundWindow(window_handle);
             SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
             SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
 
+            sleep(Duration::from_millis(500));
+            // Simulate a special keyboard event (Enter key)
+            SetForegroundWindow(window_handle);
+            SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
+            SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
         }
     }
 
