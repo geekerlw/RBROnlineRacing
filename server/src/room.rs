@@ -158,12 +158,12 @@ impl RaceRoom {
             result.finishtime = player.race_data.finishtime;
             let difflength = (leader.race_data.progress - player.race_data.progress) / player.race_data.stagelen * self.info.stage_len as f32;
             if player.race_data.speed != 0f32 {
-                result.difffirst = difflength / player.race_data.speed;
+                result.difffirst = difflength / player.race_data.speed * 3.6;
             }
             else {
-                result.difffirst = difflength / 1.0;
+                result.difffirst = difflength * 3.6; // default 1km/h as 3.6m/s.
             }
-            result.difffirst = player.race_data.finishtime - leader.race_data.finishtime;
+            result.difftime = player.race_data.finishtime - leader.race_data.finishtime;
             results.push(result);
         }
         results

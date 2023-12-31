@@ -86,7 +86,7 @@ impl RBRRaceData {
             }
 
             racedata.count += 1;
-                        let bytes = item.profile_name.as_bytes();
+            let bytes = item.profile_name.as_bytes();
             for i in 0..bytes.len() {
                 racedata.data[index].name[i] = bytes[i];
             }
