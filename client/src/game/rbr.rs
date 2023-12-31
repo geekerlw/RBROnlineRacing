@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::os::windows::process::CommandExt;
 use libc::{c_uchar, c_float, c_uint};
 use unicode_normalization::UnicodeNormalization;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
@@ -126,6 +127,7 @@ impl RBRGame {
         let process_name = r"RichardBurnsRally_SSE.exe";
         let output = Command::new("tasklist")
         .args(&["/FO", "CSV", "/NH"])
+        .creation_flags(0x08000000)
         .output()
         .expect("Failed to execute command");
 
@@ -150,6 +152,7 @@ impl RBRGame {
 
         let rbr_sse = self.root_path.clone() + r"\RichardBurnsRally_SSE.exe";
         let process = Command::new(rbr_sse).current_dir(&self.root_path)
+            .creation_flags(0x08000000)
             .spawn().expect("failed to execute command");
         self.pid = process.id();
 
