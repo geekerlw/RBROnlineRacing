@@ -5,7 +5,7 @@ use tokio::io::AsyncReadExt;
 use clap::Parser;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use log::info;
+use log::{info, trace};
 
 use rust_rbrserver::server::RacingServer;
 use protocol::httpapi::{UserLogin, MetaHeader, DataFormat, RaceQuery, MetaRaceData, RaceCreate, UserLogout, RaceAccess, RaceLeave, RaceUpdate, RaceJoin};
@@ -130,7 +130,7 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
 
 #[actix_web::get("/api/race/list")]
 async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
-    info!("Received user query race list");
+    trace!("Received user query race list");
 
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_list() {
@@ -143,7 +143,7 @@ async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> Htt
 #[actix_web::get("/api/race/info")]
 async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
     let query = body.into_inner();
-    info!("Received user query race info: {:?}", query);
+    trace!("Received user query race info: {:?}", query);
 
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_info(&query.name) {
@@ -156,7 +156,7 @@ async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: 
 #[actix_web::get("/api/race/state")]
 async fn handle_http_race_get_state(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
     let query = body.into_inner();
-    info!("Received user query race users state: {:?}", query);
+    trace!("Received user query race users state: {:?}", query);
 
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_userstate(&query.name) {
@@ -230,7 +230,7 @@ async fn handle_data_stream(stream: TcpStream, data: Arc<Mutex<RacingServer>>) {
 
         // 处理接收的数据
         // 这里只是简单地将接收到的数据打印出来
-        // info!("Received data: {:?}", &recvbuf[..n]);
+        // trace!("Received data: {:?}", &recvbuf[..n]);
 
         let buffer = [&remain[..], &recvbuf[..n]].concat();
         let datalen = buffer.len();
