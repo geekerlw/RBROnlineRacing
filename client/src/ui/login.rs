@@ -22,8 +22,6 @@ impl UiLogin {
                     let version = res.text().await.unwrap();
                     if version != API_VERSION_STRING {
                         tx.send(UiMsg::MsgSetErrState("客户端版本不匹配，请更新版本!".to_string())).await.unwrap();
-                        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-                        tx.send(UiMsg::MsgQuitApp).await.unwrap();
                     }
                 }
 
@@ -45,7 +43,6 @@ impl UiView for UiLogin {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add_space(100.0);
                     ui.label(RichText::new("致每一位热爱理查德伯恩斯拉力赛的小伙伴：").size(24.0));
                     ui.add_space(10.0);
                     ui.label(RichText::new("翻得开心，寄得愉快！").size(32.0));
@@ -53,7 +50,12 @@ impl UiView for UiLogin {
                     ui.label(RichText::new("SimRallyCN 中国总群: 658110104").size(24.0));
                     ui.add_space(10.0);
                     ui.label(RichText::new("作者：子夜(Lw_Ziye), Copyright (c) 2023, 有疑问请进群@Lw_Ziye。").size(16.0));
-                    ui.add_space(50.0);
+                    ui.add_space(20.0);
+                    ui.add(egui::Image::new(egui::include_image!("../../appreciate.png"))
+                        .max_size(egui::vec2(230.0, 230.0))
+                        .rounding(10.0)
+                    );
+                    ui.add_space(30.0);
                     if !page.store.user_name.is_empty() && !page.store.user_passwd.is_empty() {
                         if ui.button("知道了啦").clicked() {
                             self.login(ctx, frame, page);

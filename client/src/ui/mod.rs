@@ -26,7 +26,6 @@ pub enum UiMsg {
     MsgSetRoomInfo(String),
     MsgSetErrState(String),
     MsgReInitApp,
-    MsgQuitApp,
 }
 
 pub struct UiPageCtx {

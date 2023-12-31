@@ -34,6 +34,7 @@ impl RacingClient {
         fonts.font_data.insert("msyh".to_owned(), FontData::from_static(include_bytes!("C:\\Windows\\Fonts\\msyh.ttc")));
         fonts.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "msyh".to_owned());
         ctx.set_fonts(fonts);
+        egui_extras::install_image_loaders(ctx);
         self
     }
 
@@ -41,7 +42,7 @@ impl RacingClient {
         self.ctx.route.switch_to_page(page);
     }
 
-    pub fn handle_async_uimsg(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    pub fn handle_async_uimsg(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let Ok(msg) = self.ctx.rx.try_recv() {
             match msg {
                 UiMsg::MsgGotoPage(state) => {
@@ -62,9 +63,6 @@ impl RacingClient {
                         page.init(&mut self.ctx);
                     }           
                 },
-                UiMsg::MsgQuitApp => {
-                    frame.close();
-                }
             };
         }
         ctx.request_repaint();
