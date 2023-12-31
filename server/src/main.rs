@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 use log::{info, trace};
 
 use rust_rbrserver::server::RacingServer;
-use protocol::httpapi::{UserLogin, MetaHeader, DataFormat, RaceQuery, MetaRaceData, RaceCreate, UserLogout, RaceAccess, RaceLeave, RaceUpdate, RaceJoin};
+use protocol::httpapi::{UserLogin, MetaHeader, DataFormat, RaceQuery, MetaRaceData, RaceCreate, UserLogout, RaceAccess, RaceLeave, RaceUpdate, RaceJoin, RaceInfoUpdate};
 use protocol::httpapi::{API_VERSION_STRING, META_HEADER_LEN};
 
 /// Set http and metadata ports.
@@ -45,7 +45,8 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_user_login)
         .service(handle_http_user_logout)
         .service(handle_http_race_list)
-        .service(handle_http_race_info)
+        .service(handle_http_get_race_info)
+        .service(handle_http_update_race_info)
         .service(handle_http_race_get_state)
         .service(handle_http_race_update_state)
         .service(handle_http_race_create)
@@ -141,13 +142,26 @@ async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> Htt
 }
 
 #[actix_web::get("/api/race/info")]
-async fn handle_http_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
+async fn handle_http_get_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
     let query = body.into_inner();
     trace!("Received user query race info: {:?}", query);
 
     let server = data.lock().await;
     if let Some(response) = server.get_raceroom_info(&query.name) {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
+    } else {
+        HttpResponse::NoContent().body("Get Race info failed!")
+    }
+}
+
+#[actix_web::put("/api/race/info")]
+async fn handle_http_update_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceInfoUpdate>) -> HttpResponse {
+    let update = body.into_inner();
+    trace!("Received user update race info: {:?}", update);
+
+    let mut server = data.lock().await;
+    if server.update_raceroom_info(update) {
+        HttpResponse::Ok().body("Update race info successful!")
     } else {
         HttpResponse::NoContent().body("Get Race info failed!")
     }

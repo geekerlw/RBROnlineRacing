@@ -1,4 +1,5 @@
 use protocol::httpapi::RaceCreate;
+use protocol::httpapi::RaceInfoUpdate;
 use protocol::httpapi::RaceJoin;
 use protocol::httpapi::RaceUpdate;
 use protocol::httpapi::RaceUserState;
@@ -115,6 +116,18 @@ impl RacingServer {
         }
 
         None
+    }
+
+    pub fn update_raceroom_info(&mut self, update: RaceInfoUpdate) -> bool {
+        if let Ok(token) = Uuid::parse_str(&update.token) {
+            if self.lobby.is_player_exist(Some(&token), None) {
+                if let Some(room) = self.rooms.get_mut(&update.info.name) {
+                    room.info = update.info;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     pub fn get_raceroom_userstate(&self, name: &String) -> Option<Vec<RaceUserState>> {

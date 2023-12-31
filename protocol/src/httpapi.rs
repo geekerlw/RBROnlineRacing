@@ -80,8 +80,9 @@ pub struct RaceInfo {
     pub stage: String,
     pub stage_id: u32,
     pub stage_len: u32,
-    pub car: Option<String>,
-    pub car_id: Option<u32>,
+    pub car_fixed: bool,
+    pub car: String,
+    pub car_id: u32,
     pub damage: u32,
 }
 
@@ -97,6 +98,12 @@ pub struct RaceCreate {
     pub info: RaceInfo,
     pub locked: bool,
     pub passwd: Option<String>,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct RaceInfoUpdate {
+    pub token: String,
+    pub info: RaceInfo,
 }
 
 ///

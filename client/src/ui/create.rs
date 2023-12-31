@@ -17,6 +17,7 @@ pub struct UiCreateRace {
     pub stages: Vec<RBRStageData>,
     pub select_stage: usize,
     pub filter_stage: String,
+    pub fixed_car: bool,
     pub cars: Vec<RBRCarData>,
     pub select_car: usize,
     pub filter_car: String,
@@ -32,6 +33,7 @@ impl Default for UiCreateRace {
             stages: vec![],
             select_stage: 246,
             filter_stage: String::new(),
+            fixed_car: true,
             cars: vec![],
             select_car: 36,
             filter_car: String::new(),
@@ -66,11 +68,11 @@ impl UiView for UiCreateRace {
                         ui.end_row();
 
                         ui.label("房间名称：");
-                        ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.room_name));
+                        ui.add_sized([200.0, 25.0], egui::TextEdit::singleline(&mut self.room_name));
                         ui.end_row();
 
                         ui.label("房间密码: ");
-                        ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.room_passwd));
+                        ui.add_sized([200.0, 25.0], egui::TextEdit::singleline(&mut self.room_passwd));
 
                         ui.end_row();
 
@@ -79,7 +81,7 @@ impl UiView for UiCreateRace {
                         ui.end_row();
 
                         ui.label("比赛赛道：");
-                        let filter_stage = ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.filter_stage));
+                        let filter_stage = ui.add_sized([200.0, 25.0], egui::TextEdit::singleline(&mut self.filter_stage));
                         let popup_stage = ui.make_persistent_id("filter stage");
                         if filter_stage.changed() || filter_stage.clicked() {
                             ui.memory_mut(|mem| mem.open_popup(popup_stage));
@@ -99,27 +101,6 @@ impl UiView for UiCreateRace {
                         });
                         ui.end_row();
 
-                        ui.label("比赛车辆: ");
-                        let filter_car = ui.add_sized([180.0, 25.0], egui::TextEdit::singleline(&mut self.filter_car));
-                        let popup_car = ui.make_persistent_id("filter car");
-                        if filter_car.changed() || filter_car.clicked() {
-                            ui.memory_mut(|mem| mem.open_popup(popup_car));
-                        }
-                        popup_below_widget(ui, popup_car, &filter_car, |ui| {
-                            let patten = self.filter_car.clone().to_lowercase();
-                            egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                for (index, car) in self.cars.iter().enumerate() {
-                                    if car.name.to_lowercase().contains(patten.as_str()) {
-                                        if ui.selectable_label(self.select_car == index, &car.name).clicked() {
-                                            self.filter_car = car.name.clone();
-                                            self.select_car = index;
-                                        }
-                                    }
-                                }
-                            });
-                        });
-                        ui.end_row();
-
                         ui.label("车辆损坏：");
                         ComboBox::from_id_source("select damage").selected_text(self.damages[self.select_damage])
                         .show_ui(ui, |ui| {
@@ -130,12 +111,36 @@ impl UiView for UiCreateRace {
                             }
                         });
                         ui.end_row();
+
+                        ui.label("比赛车辆: ");
+                        ui.horizontal(|ui| {
+                            let filter_car = ui.add_sized([150.0, 25.0], egui::TextEdit::singleline(&mut self.filter_car));
+                            let popup_car = ui.make_persistent_id("filter car");
+                            if filter_car.changed() || filter_car.clicked() {
+                                ui.memory_mut(|mem| mem.open_popup(popup_car));
+                            }
+                            popup_below_widget(ui, popup_car, &filter_car, |ui| {
+                                let patten = self.filter_car.clone().to_lowercase();
+                                egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
+                                    for (index, car) in self.cars.iter().enumerate() {
+                                        if car.name.to_lowercase().contains(patten.as_str()) {
+                                            if ui.selectable_label(self.select_car == index, &car.name).clicked() {
+                                                self.filter_car = car.name.clone();
+                                                self.select_car = index;
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+                            ui.add_sized([25.0, 25.0], egui::Checkbox::new(&mut self.fixed_car, "限定"));
+                        });
+                        ui.end_row();
                     });
 
                     ui.add_space(20.0);
 
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                        ui.add_space(80.0);
+                        ui.add_space(120.0);
                         if ui.button("取消").clicked() {
                             page.route.back_from_page(UiPageState::PageCreate);
                         }
@@ -156,8 +161,9 @@ impl UiCreateRace {
             stage: self.stages[self.select_stage].name.clone(),
             stage_id: self.stages[self.select_stage].stage_id.parse().unwrap(),
             stage_len: self.stages[self.select_stage].length.parse().unwrap(),
-            car: Some(self.cars[self.select_car].name.clone()),
-            car_id: Some(self.cars[self.select_car].id.parse().unwrap()),
+            car_fixed: self.fixed_car,
+            car: self.cars[self.select_car].name.clone(),
+            car_id: self.cars[self.select_car].id.parse().unwrap(),
             damage: self.select_damage as u32,
         };
         let mut create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};

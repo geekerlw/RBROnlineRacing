@@ -301,12 +301,9 @@ impl RBRGame {
         self.set_race_data(result).await;
     }
 
-    pub fn set_race_info(&mut self, info: &RaceInfo) {
+    pub fn set_race_stage(&mut self, info: &RaceInfo) {
         let recent_filepath = self.root_path.clone() + r"\rsfdata\cache\recent.ini";
         if let Ok(mut conf) = Ini::load_from_file(&recent_filepath) {
-            if let Some(car_id) = &info.car_id {
-                conf.with_section(Some("PracticeCar")).set("id", car_id.to_string());
-            }
             conf.with_section(Some("PracticeStage")).set("id", info.stage_id.to_string());
             conf.write_to_file(recent_filepath).unwrap();
         }
@@ -314,6 +311,14 @@ impl RBRGame {
         if let Ok(mut conf) = Ini::load_from_file(&conf_path) {
             conf.with_section(Some("drive")).set("practice_damage", info.damage.to_string());
             conf.write_to_file(conf_path).unwrap();
+        }
+    }
+
+    pub fn set_race_car(&mut self, car_id: &u32) {
+        let recent_filepath = self.root_path.clone() + r"\rsfdata\cache\recent.ini";
+        if let Ok(mut conf) = Ini::load_from_file(&recent_filepath) {
+            conf.with_section(Some("PracticeCar")).set("id", car_id.to_string());
+            conf.write_to_file(recent_filepath).unwrap();
         }
     }
 

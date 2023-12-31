@@ -4,6 +4,7 @@ use egui::RichText;
 use protocol::httpapi::MetaHeader;
 use protocol::httpapi::RaceCmd;
 use protocol::httpapi::RaceAccess;
+use protocol::httpapi::RaceInfo;
 use protocol::httpapi::RaceQuery;
 use protocol::httpapi::RaceState;
 use protocol::httpapi::DataFormat;
@@ -84,10 +85,19 @@ impl UiView for UiRacing {
         });
         self.timed_task = Some(task);
 
+        let info_url = page.store.get_http_url("api/race/info");
         let task = tokio::spawn(async move {
-            let stream = TcpStream::connect(meta_addr).await.unwrap();
-            let (mut reader, mut writer) = stream.into_split();
             let mut rbr = RBRGame::new(&game_path).open_udp().await;
+            let info_query = RaceQuery {name: room_name.clone()};
+            let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
+            if res.status() == StatusCode::OK {
+                let text = res.text().await.unwrap();
+                let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
+                rbr.set_race_stage(&raceinfo);
+            }
+
+            let stream = TcpStream::connect(meta_addr).await.unwrap();
+            let (mut reader, mut writer) = stream.into_split();            
 
             let access = RaceAccess {token: user_token.clone(), room: room_name.clone()};
             let body = bincode::serialize(&access).unwrap();
