@@ -48,13 +48,11 @@ impl RaceRoom {
         return false;
     }
 
-    pub fn can_enter(&mut self, passwd: &String) -> bool {
-        if self.is_locked() {
-            if let Some(pass) = &self.passwd {
-                return passwd == pass;
-            }
+    pub fn pass_match(&mut self, passwd: &String) -> bool {
+        if let Some(pass) = &self.passwd {
+            return passwd == pass;
         }
-        return true
+        return false;
     }
 
     pub fn is_empty(&mut self) -> bool {

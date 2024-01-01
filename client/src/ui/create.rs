@@ -28,15 +28,15 @@ pub struct UiCreateRace {
 impl Default for UiCreateRace {
     fn default() -> Self {
         Self { 
-            room_name: "Test Room".to_string(),
+            room_name: "请输入房间名称".to_string(),
             room_passwd: String::new(),
             stages: vec![],
             select_stage: 246,
-            filter_stage: String::new(),
+            filter_stage: String::from("Lyon - Gerland"),
             fixed_car: true,
             cars: vec![],
             select_car: 36,
-            filter_car: String::new(),
+            filter_car: String::from("Ford Fiesta WRC 2019"),
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
         }

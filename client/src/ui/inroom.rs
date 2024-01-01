@@ -44,11 +44,11 @@ impl Default for UiInRoom {
             show_updatewin: false,
             stages: vec![],
             select_stage: 246,
-            filter_stage: String::new(),
+            filter_stage: String::from("Lyon - Gerland"),
             fixed_car: false,
             cars: vec![],
             select_car: 36,
-            filter_car: String::new(),
+            filter_car: String::from("Ford Fiesta WRC 2019"),
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
             rx,
@@ -138,10 +138,11 @@ impl UiView for UiInRoom {
                         ui.label(self.damages[self.raceinfo.damage as usize]);
                         ui.end_row();
 
-                        ui.label("比赛车辆: ");
                         if self.raceinfo.car_fixed {
+                            ui.label("比赛车辆: ");
                             ui.label(&self.raceinfo.car);
                         } else {
+                            ui.label("自选车辆: ");
                             let filter_car = ui.add_sized([150.0, 25.0], egui::TextEdit::singleline(&mut self.filter_car));
                             let popup_car = ui.make_persistent_id("filter car");
                             if filter_car.changed() || filter_car.clicked() {
@@ -171,30 +172,42 @@ impl UiView for UiInRoom {
                     .show(ui, |ui| {
                         ui.label("序号");
                         ui.label("车手");
+                        ui.label("权限");
+                        ui.label("状态");
+                        ui.label("操作");
                         ui.end_row();
                         for (index, player) in self.userstates.iter().enumerate() {
                             ui.label((index+1).to_string());
                             ui.label(&player.name);
+                            if index == 0 {
+                                ui.label("房主");
+                            } else {
+                                ui.label("玩家");
+                            }
+
                             match &player.state {
                                 RaceState::RaceReady => ui.label("已就绪"),
                                 RaceState::RaceLoaded => ui.label("加载完成"),
                                 RaceState::RaceFinished | RaceState::RaceRetired => ui.label("已完成"),
                                 _ => ui.label("未就绪"),
                             };
+
+                            if index == 0 {
+                                if ui.button("更新房间").clicked() {
+                                    self.show_updatewin = true;
+                                }
+                            }
                             ui.end_row();
                         }
                     });
 
                     ui.add_space(20.0);
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                        ui.add_space(60.0);
+                        ui.add_space(80.0);
                         if ui.button("退出").clicked() {
                             self.leave_raceroom(page);
                             page.route.switch_to_page(UiPageState::PageLobby);
-                        }
-                        if ui.button("更新").clicked() {
-                            self.show_updatewin = true;
-                        }
+                        }                        
                         if ui.button("准备").clicked() {
                             self.start_game_racing(page);
                             page.route.switch_to_page(UiPageState::PageRacing);

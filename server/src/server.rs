@@ -172,19 +172,20 @@ impl RacingServer {
             self.force_leave_room(&token);
             if let Some(player) = self.lobby.get_player(token) {
                 if let Some(room) = self.rooms.get_mut(&join.room) {
-                    if let Some(pass) = join.passwd {
-                        if !room.can_enter(&pass) {
+                    if room.is_full() || room.is_in_racing() {
+                        return false;
+                    }
+                  
+                    if room.is_locked() {
+                        if let Some(passwd) = join.passwd {
+                            if !room.pass_match(&passwd) {
+                                return false;
+                            }
+                        } else {
                             return false;
                         }
                     }
 
-                    if room.is_full() {
-                        return false;
-                    }
-
-                    if room.is_player_exist(&player.profile_name) {
-                        room.pop_player(&player.profile_name);
-                    }
                     room.push_player(RacePlayer::new(&player.tokenstr, &player.profile_name));
                     return true;
                 }
