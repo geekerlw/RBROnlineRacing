@@ -21,7 +21,7 @@ impl Default for UiLobby {
     fn default() -> Self {
         let (tx, rx) = channel::<Vec<RaceBrief>>(8);
         Self {
-            table_head: vec!["序号", "房名", "赛道", "房主", "状态"],
+            table_head: vec!["序号", "房名", "赛道", "房主", "人数", "状态"],
             table_data: vec![],
             show_passwin: false,
             select_room: String::new(),
@@ -111,7 +111,7 @@ impl UiView for UiLobby {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
-                ui.add_space(120.0);
+                ui.add_space(80.0);
                 ui.vertical_centered(|ui| {
                     Grid::new("race rooms").min_col_width(120.0).show(ui, |ui| {
                         for content in &self.table_head {
@@ -121,10 +121,12 @@ impl UiView for UiLobby {
 
                         let table_data = self.table_data.clone();
                         for (index, race) in table_data.iter().enumerate() {
-                            let table = vec![index.to_string(),
+                            let table = vec![
+                                (index+1).to_string(),
                                 race.name.clone(),
                                 race.stage.clone(),
                                 race.owner.clone(),
+                                race.players.to_string() + "/8", 
                                 match race.state {
                                     RoomState::RoomFree => String::from("空闲"),
                                     RoomState::RoomFull => String::from("满员"),

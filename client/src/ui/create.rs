@@ -158,6 +158,7 @@ impl UiCreateRace {
     fn create_room(&mut self, page: &mut UiPageCtx) {
         let raceinfo = RaceInfo{
             name: self.room_name.clone(),
+            owner: page.store.user_name.clone(),
             stage: self.stages[self.select_stage].name.clone(),
             stage_id: self.stages[self.select_stage].stage_id.parse().unwrap(),
             stage_len: self.stages[self.select_stage].length.parse().unwrap(),

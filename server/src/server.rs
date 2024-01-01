@@ -100,9 +100,8 @@ impl RacingServer {
             let mut raceitem = RaceBrief::default();
             raceitem.name = name.clone();
             raceitem.stage = room.info.stage.clone();
-            if let Some(player) = room.players.get(0) {
-                raceitem.owner = player.profile_name.clone();
-            }
+            raceitem.owner = room.info.owner.clone();
+            raceitem.players = room.players.len() as u32;
             raceitem.state = room.room_state.clone();
             racelist.push(raceitem);
         }
@@ -123,6 +122,26 @@ impl RacingServer {
             if self.lobby.is_player_exist(Some(&token), None) {
                 if let Some(room) = self.rooms.get_mut(&update.info.name) {
                     room.info = update.info;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    pub fn get_raceroom_started(&self, name: &String) -> Option<bool> {
+        if let Some(room) = self.rooms.get(name) {
+            return Some(room.is_racing_started());
+        }
+
+        None
+    }
+
+    pub fn set_raceroom_started(&mut self, access: &RaceAccess) -> bool {
+        if let Ok(token) = Uuid::parse_str(&access.token) {
+            if self.lobby.is_player_exist(Some(&token), None) {
+                if let Some(room) = self.rooms.get_mut(&access.room) {
+                    room.set_racing_started();
                     return true;
                 }
             }
@@ -172,7 +191,7 @@ impl RacingServer {
             self.force_leave_room(&token);
             if let Some(player) = self.lobby.get_player(token) {
                 if let Some(room) = self.rooms.get_mut(&join.room) {
-                    if room.is_full() || room.is_in_racing() {
+                    if room.is_full() || room.is_racing_started() {
                         return false;
                     }
                   

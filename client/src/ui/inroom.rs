@@ -2,6 +2,7 @@ use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
 use egui::containers::popup::popup_below_widget;
+use protocol::httpapi::RaceAccess;
 use protocol::httpapi::RaceInfoUpdate;
 use protocol::httpapi::{RaceQuery, RaceInfo, RaceLeave, RaceUserState, RaceState};
 use reqwest::StatusCode;
@@ -13,6 +14,8 @@ use tokio::{sync::mpsc::{channel, Receiver, Sender}, task::JoinHandle};
 enum UiInRoomMsg {
     MsgInRoomRaceInfo(RaceInfo),
     MsgInRoomUserState(Vec<RaceUserState>),
+    MsgInRoomSetRoomReady,
+    MsgInRoomStartRacing,
 }
 
 pub struct UiInRoom {
@@ -20,6 +23,7 @@ pub struct UiInRoom {
     pub raceinfo: RaceInfo,
     pub userstates: Vec<RaceUserState>,
     pub show_updatewin: bool,
+    pub room_started: bool,
     pub stages: Vec<RBRStageData>,
     pub select_stage: usize,
     pub filter_stage: String,
@@ -42,6 +46,7 @@ impl Default for UiInRoom {
             raceinfo: RaceInfo::default(),
             userstates: vec![],
             show_updatewin: false,
+            room_started: false,
             stages: vec![],
             select_stage: 246,
             filter_stage: String::from("Lyon - Gerland"),
@@ -71,6 +76,7 @@ impl UiView for UiInRoom {
 
     fn enter(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         self.room_name = page.store.curr_room.clone();
+        self.room_started = false;
         let info_url = page.store.get_http_url("api/race/info");
         let info_tx = self.tx.clone();
         let info_query = RaceQuery {name: self.room_name.clone()};
@@ -104,6 +110,7 @@ impl UiView for UiInRoom {
             task.abort();
             self.timed_task = None;
         }
+        self.room_started = false;
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
@@ -114,6 +121,13 @@ impl UiView for UiInRoom {
                 }
                 UiInRoomMsg::MsgInRoomUserState(states) => {
                     self.userstates = states;
+                }
+                UiInRoomMsg::MsgInRoomSetRoomReady => {
+                    self.room_started = true;
+                }
+                UiInRoomMsg::MsgInRoomStartRacing => {
+                    self.start_game_racing(page);
+                    page.route.switch_to_page(UiPageState::PageRacing);
                 }
             }
         }
@@ -163,9 +177,21 @@ impl UiView for UiInRoom {
                             });
                         };
                     });
+                    ui.add_space(10.0);
+
+                    if (&self.raceinfo.owner == &page.store.user_name) && !self.room_started {
+                        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                            ui.add_space(60.0);
+                            if ui.button("更新比赛").clicked() {
+                                self.show_updatewin = true;
+                            }
+                            if ui.button("开始比赛").clicked() {
+                                self.start_room_racing(page);
+                            }
+                        });
+                    }
 
                     ui.add_space(20.0);
-
                     Grid::new("race players table")
                     .min_col_width(80.0)
                     .min_row_height(24.0)
@@ -174,12 +200,11 @@ impl UiView for UiInRoom {
                         ui.label("车手");
                         ui.label("权限");
                         ui.label("状态");
-                        ui.label("操作");
                         ui.end_row();
                         for (index, player) in self.userstates.iter().enumerate() {
                             ui.label((index+1).to_string());
                             ui.label(&player.name);
-                            if index == 0 {
+                            if &self.raceinfo.owner == &page.store.user_name {
                                 ui.label("房主");
                             } else {
                                 ui.label("玩家");
@@ -191,12 +216,6 @@ impl UiView for UiInRoom {
                                 RaceState::RaceFinished | RaceState::RaceRetired => ui.label("已完成"),
                                 _ => ui.label("未就绪"),
                             };
-
-                            if index == 0 {
-                                if ui.button("更新房间").clicked() {
-                                    self.show_updatewin = true;
-                                }
-                            }
                             ui.end_row();
                         }
                     });
@@ -209,8 +228,7 @@ impl UiView for UiInRoom {
                             page.route.switch_to_page(UiPageState::PageLobby);
                         }                        
                         if ui.button("准备").clicked() {
-                            self.start_game_racing(page);
-                            page.route.switch_to_page(UiPageState::PageRacing);
+                            self.set_game_ready(page);
                         }
                     });
                 });
@@ -224,6 +242,42 @@ impl UiView for UiInRoom {
 }
 
 impl UiInRoom {
+    fn start_room_racing(&mut self, page: &mut UiPageCtx) {
+        let url = page.store.get_http_url("api/race/start");
+        let access = RaceAccess {token: page.store.user_token.clone(), room: self.room_name.clone()};
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let res = reqwest::Client::new().put(url).json(&access).send().await.unwrap();
+            match res.status() {
+                StatusCode::OK => {
+                    tx.send(UiInRoomMsg::MsgInRoomSetRoomReady).await.unwrap();
+                },
+                _ => {},
+            }
+        });
+    }
+
+    fn set_game_ready(&mut self, page: &mut UiPageCtx) {
+        let url = page.store.get_http_url("api/race/start");
+        let query = RaceQuery {name: self.room_name.clone()};
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let res = reqwest::Client::new().get(url).json(&query).send().await.unwrap();
+            match res.status() {
+                StatusCode::OK => {
+                    let text = res.text().await.unwrap();
+                    if let Ok(started) = serde_json::from_str::<bool>(text.as_str()) {
+                        if started {
+                            tx.send(UiInRoomMsg::MsgInRoomStartRacing).await.unwrap();
+                        }
+                    }
+                },
+                _ => {},
+            }
+
+        });
+    }
+
     fn start_game_racing(&mut self, page: &mut UiPageCtx) {
         let mut rbr = RBRGame::new(&page.store.game_path);
         if self.raceinfo.car_fixed {

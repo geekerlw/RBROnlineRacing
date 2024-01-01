@@ -71,12 +71,14 @@ pub struct RaceBrief {
     pub name: String,
     pub stage: String,
     pub owner: String,
+    pub players: u32,
     pub state: RoomState,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct RaceInfo {
     pub name: String,
+    pub owner: String,
     pub stage: String,
     pub stage_id: u32,
     pub stage_len: u32,

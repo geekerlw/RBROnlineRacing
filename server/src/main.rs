@@ -49,6 +49,8 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_update_race_info)
         .service(handle_http_race_get_state)
         .service(handle_http_race_update_state)
+        .service(handle_http_get_room_start)
+        .service(handle_http_set_room_start)
         .service(handle_http_race_create)
         .service(handle_http_race_join)
         .service(handle_http_race_leave)
@@ -190,6 +192,32 @@ async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>
         HttpResponse::Ok().body("Update race player state successful!")
     } else {
         HttpResponse::NotAcceptable().body("Update race player state failed!")
+    }
+}
+
+#[actix_web::get("/api/race/start")]
+async fn handle_http_get_room_start(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
+    let query = body.into_inner();
+    trace!("Received user query room race start state: {:?}", query);
+
+    let server = data.lock().await;
+    if let Some(response) = server.get_raceroom_started(&query.name) {
+        HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
+    } else {
+        HttpResponse::NoContent().body("Get Race started state failed!")
+    }
+}
+
+#[actix_web::put("/api/race/start")]
+async fn handle_http_set_room_start(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceAccess>) -> HttpResponse {
+    let access = body.into_inner();
+    trace!("Received user set room race start: {:?}", access);
+
+    let mut server = data.lock().await;
+    if server.set_raceroom_started(&access) {
+        HttpResponse::Ok().body("Update Race started state successful!")
+    } else {
+        HttpResponse::NoContent().body("Update Race started state failed!")
     }
 }
 

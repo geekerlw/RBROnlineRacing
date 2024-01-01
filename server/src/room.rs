@@ -6,6 +6,7 @@ use log::info;
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 enum RoomRaceState {
     #[default]
+    RoomRaceInit,
     RoomRaceBegin,
     RoomRaceReady,
     RoomRaceLoading,
@@ -60,7 +61,7 @@ impl RaceRoom {
     }
 
     pub fn is_full(&mut self) -> bool {
-        self.players.len() > 8
+        self.players.len() >= 8
     }
 
     pub fn is_locked(&mut self) -> bool {
@@ -70,10 +71,16 @@ impl RaceRoom {
         }
     }
 
-    pub fn is_in_racing(&mut self) -> bool {
+    pub fn is_racing_started(&self) -> bool {
         match self.race_state {
-            RoomRaceState::RoomRaceBegin => false,
+            RoomRaceState::RoomRaceInit => false,
             _ => true,
+        }
+    }
+
+    pub fn set_racing_started(&mut self) {
+        if !self.is_racing_started() {
+            self.race_state = RoomRaceState::RoomRaceBegin;
         }
     }
 
@@ -184,11 +191,17 @@ impl RaceRoom {
     }
 
     fn update_room_state(&mut self) {
+        if !self.is_player_exist(&self.info.owner.clone()) {
+            if let Some(owner) = self.players.get(0) {
+                self.info.owner = owner.profile_name.clone();
+            }
+        }
+
         if self.is_locked() {
             return;
         }
 
-        if self.is_in_racing() {
+        if self.is_racing_started() {
             self.room_state = RoomState::RoomRaceOn;
         } else {
             if self.is_full() {
@@ -222,7 +235,7 @@ impl RaceRoom {
                 }
             }
             RoomRaceState::RoomRaceEnd => {
-                self.race_state = RoomRaceState::RoomRaceBegin;
+                self.race_state = RoomRaceState::RoomRaceInit;
             }
             _ => {}
         }
