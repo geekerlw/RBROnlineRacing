@@ -204,7 +204,7 @@ impl UiView for UiInRoom {
                         for (index, player) in self.userstates.iter().enumerate() {
                             ui.label((index+1).to_string());
                             ui.label(&player.name);
-                            if &self.raceinfo.owner == &page.store.user_name {
+                            if &self.raceinfo.owner == &player.name {
                                 ui.label("房主");
                             } else {
                                 ui.label("玩家");

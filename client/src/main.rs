@@ -9,6 +9,8 @@ mod game;
 mod components;
 mod client;
 
+static APP_VERSION_STRING: &'static str = "V1.0.0";
+
 #[tokio::main]
 async fn main() {
     if let Ok(appdata) = std::env::var("AppData") {
@@ -28,7 +30,7 @@ async fn main() {
     if let Ok(icon) = eframe::icon_data::from_png_bytes(include_bytes!(r"..\icon.png")) {
         native_options.viewport = egui::ViewportBuilder::default()
         .with_icon(icon)
-        .with_title("模拟拉力对战平台").with_inner_size([1000.0, 600.0]);
+        .with_title("模拟拉力对战平台 - ".to_string() + APP_VERSION_STRING).with_inner_size([1000.0, 600.0]);
     }
     
     eframe::run_native("模拟拉力对战平台", native_options, Box::new(|cc| 
