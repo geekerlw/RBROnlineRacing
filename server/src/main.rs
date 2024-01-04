@@ -79,6 +79,7 @@ async fn main() -> std::io::Result<()>{
         }
     });
 
+    info!("Rust RBR Online Server Version: V{}", std::env!("CARGO_PKG_VERSION"));
     info!("Http server listening on port {}", args.port);
     info!("Data listener listening on port {}", args.data);
 
