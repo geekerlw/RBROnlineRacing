@@ -4,13 +4,15 @@ use libc::{c_uchar, c_float, c_uint};
 use unicode_normalization::UnicodeNormalization;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::io::SeekFrom;
+use winapi::shared::minwindef::WPARAM;
+use winapi::shared::windef::HWND;
 use core::time::Duration;
 use std::thread::sleep;
 use std::ffi::OsStr;
 use std::iter::once;
 use std::os::windows::ffi::OsStrExt;
 use std::process::Command;
-use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_DOWN, VK_RETURN, VK_ESCAPE};
+use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_DOWN, VK_RETURN, VK_ESCAPE, GetForegroundWindow};
 use protocol::httpapi::{RaceState, MetaRaceData, RaceInfo, MetaRaceResult};
 use ini::Ini;
 use serde::{Serialize, Deserialize};
@@ -176,26 +178,43 @@ impl RBRGame {
         self.load_practice();
     }
 
+    fn simulate_key_press(&mut self, window: HWND, key: WPARAM, delay: u64) {
+        let mut retries = 0;
+        unsafe { SetForegroundWindow(window);}
+        loop {
+            let foreground_hwnd = unsafe { GetForegroundWindow() };
+            if foreground_hwnd == window {
+                unsafe {
+                    SendMessageW(window, WM_KEYDOWN, key, 0);
+                    sleep(Duration::from_millis(delay));
+                    SendMessageW(window, WM_KEYUP, key, 0);
+                }
+                break;
+            } else {
+                retries += 1;
+                if retries >= 4 {
+                    break;
+                }
+            }
+            sleep(Duration::from_millis(50));
+        }
+    }
+
     pub fn load_practice(&mut self) {
         unsafe {
             // Find the handle of the target window
             let window_title = "Richard Burns Rally - DirectX9\0";
             let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
             let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
+            sleep(Duration::from_millis(100));
 
+            // Simulate a special keyboard event (Down key)
+            self.simulate_key_press(window_handle, VK_DOWN as usize, 10);
             sleep(Duration::from_millis(200));
 
             // Simulate a special keyboard event (Down key)
-            SetForegroundWindow(window_handle);
-            SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
-            SendMessageW(window_handle, WM_KEYUP, VK_DOWN as usize, 0);
-    
+            self.simulate_key_press(window_handle, VK_DOWN as usize, 10);
             sleep(Duration::from_millis(200));
-    
-            // Simulate a special keyboard event (Down key)
-            SetForegroundWindow(window_handle);
-            SendMessageW(window_handle, WM_KEYDOWN, VK_DOWN as usize, 0);
-            SendMessageW(window_handle, WM_KEYUP, VK_DOWN as usize, 0);
         }
     }
 
@@ -205,19 +224,15 @@ impl RBRGame {
             let window_title = "Richard Burns Rally - DirectX9\0";
             let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
             let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
+            sleep(Duration::from_millis(100));
 
+            // Simulate a special keyboard event (Enter key)
+            self.simulate_key_press(window_handle, VK_RETURN as usize, 10);
+            sleep(Duration::from_secs(1));
+
+            // Simulate a special keyboard event (Enter key)
+            self.simulate_key_press(window_handle, VK_RETURN as usize, 10);
             sleep(Duration::from_millis(200));
-
-            // Simulate a special keyboard event (Enter key)
-            SetForegroundWindow(window_handle);
-            SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
-            SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
-
-            sleep(Duration::from_millis(500));
-            // Simulate a special keyboard event (Enter key)
-            SetForegroundWindow(window_handle);
-            SendMessageW(window_handle, WM_KEYDOWN, VK_RETURN as usize, 0);
-            SendMessageW(window_handle, WM_KEYUP, VK_RETURN as usize, 0);
         }
     }
 
