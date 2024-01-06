@@ -35,6 +35,8 @@ pub struct UiInRoom {
     pub select_setup: usize,
     pub damages: Vec<&'static str>,
     pub select_damage: usize,
+    pub tyretypes: Vec<&'static str>,
+    pub select_tyretype: usize,
     rx: Receiver<UiInRoomMsg>,
     tx: Sender<UiInRoomMsg>,
     pub timed_task: Option<JoinHandle<()>>,
@@ -60,6 +62,8 @@ impl Default for UiInRoom {
             select_setup: 0,
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
+            tyretypes: vec!["Dry tarmac", "Intermediate tarmac", "Wet tarmac", "Dry gravel", "Inter gravel", "Wet gravel", "Snow"],
+            select_tyretype: 0,
             rx,
             tx,
             timed_task: None,
@@ -199,6 +203,19 @@ impl UiView for UiInRoom {
                                 }
                             });
                         }
+                        ui.end_row();
+
+                        ui.label("轮胎类型：");
+                        ComboBox::from_id_source("car tyretype select").selected_text(self.tyretypes[self.select_tyretype])
+                        .width(150.0)
+                        .show_ui(ui, |ui| {
+                            for (index, tyre) in self.tyretypes.iter().enumerate() {
+                                if ui.selectable_label(self.select_tyretype == index, tyre.to_string()).clicked() {
+                                    self.select_tyretype = index;
+                                }
+                            }
+                        });
+                        ui.end_row();
                     });
                     ui.add_space(10.0);
 
@@ -315,6 +332,7 @@ impl UiInRoom {
                 rbr.set_race_car_setup(&self.cars[self.select_car].id.parse().unwrap(), &self.setups[self.select_setup]);
             }
         }
+        page.store.curr_tyre = self.select_tyretype as u32;
     }
 
     fn update_car_setups(&mut self, page: &mut UiPageCtx) {

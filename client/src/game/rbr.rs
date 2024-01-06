@@ -64,6 +64,17 @@ pub struct RBRCarData {
     pub audio_hash: String,
 }
 
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct RBRAddtionalSettings {
+    pub tyre: u32,
+    pub weather: u32,
+    pub skycloud: u32,
+    pub wetness: u32,
+    pub age: u32,
+    pub timeofday: u32,
+    pub skytype: u32,
+}
+
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceItem {
@@ -303,6 +314,25 @@ impl RBRGame {
         }
 
         return data;
+    }
+
+    pub fn set_race_addtional_config(&mut self, cfg: &RBRAddtionalSettings) {
+        let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
+        let tyre_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x1660838]);
+        let weather_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x1660848]);
+        let skycloud_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893908]);
+        let wetness_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x89390C]);
+        let age_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893910]);
+        let timeofday_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893930]);
+        let skytype_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893934]);
+
+        tyre_addr.write(&cfg.tyre).unwrap();
+        weather_addr.write(&cfg.weather).unwrap();
+        skycloud_addr.write(&cfg.skycloud).unwrap();
+        wetness_addr.write(&cfg.wetness).unwrap();
+        age_addr.write(&cfg.age).unwrap();
+        timeofday_addr.write(&cfg.timeofday).unwrap();
+        skytype_addr.write(&cfg.skytype).unwrap();
     }
 
     pub async fn set_race_data(&mut self, result: &Vec<MetaRaceResult>) {

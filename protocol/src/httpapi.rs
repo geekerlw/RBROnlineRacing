@@ -86,6 +86,12 @@ pub struct RaceInfo {
     pub car: String,
     pub car_id: u32,
     pub damage: u32,
+    pub weather: u32,
+    pub skycloud: u32,
+    pub wetness: u32,
+    pub age: u32,
+    pub timeofday: u32,
+    pub skytype: u32,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

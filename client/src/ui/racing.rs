@@ -17,6 +17,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::mpsc::{Sender, Receiver};
 use tokio::task::JoinHandle;
+use crate::game::rbr::RBRAddtionalSettings;
 use crate::game::rbr::RBRGame;
 use crate::ui::UiPageState;
 use crate::components::time::format_seconds;
@@ -322,6 +323,7 @@ async fn start_game_load(gamepath: String, token: String, room: String, writer: 
     let room_name = room.clone();
     tokio::spawn(async move {
         rbr.launch().await;
+        //rbr.set_race_addtional_config(&RBRAddtionalSettings::default());
         rbr.enter_practice();
 
         loop {

@@ -23,6 +23,18 @@ pub struct UiCreateRace {
     pub filter_car: String,
     pub damages: Vec<&'static str>,
     pub select_damage: usize,
+    pub weathers: Vec<&'static str>,
+    pub select_weather: usize,
+    pub skyclouds: Vec<&'static str>,
+    pub select_skycloud: usize,
+    pub wetness: Vec<&'static str>,
+    pub select_wetness: usize,
+    pub ages: Vec<&'static str>,
+    pub select_age: usize,
+    pub timeofdays: Vec<&'static str>,
+    pub select_timeofdays: usize,
+    pub skytypes: Vec<&'static str>,
+    pub select_skytype: usize,
 }
 
 impl Default for UiCreateRace {
@@ -39,6 +51,18 @@ impl Default for UiCreateRace {
             filter_car: String::from("Ford Fiesta WRC 2019"),
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
+            weathers: vec!["Good", "Random", "Bad"],
+            select_weather: 0,
+            skyclouds: vec!["Clear", "PartCloud", "LightCloud", "HeavyCloud"],
+            select_skycloud: 0,
+            wetness: vec!["Dry", "Damp", "Wet"],
+            select_wetness: 0,
+            ages: vec!["New", "Normal", "Worn"],
+            select_age: 0,
+            timeofdays: vec!["Morning", "Noon", "Evening"],
+            select_timeofdays: 0,
+            skytypes: vec!["Crisp", "Hazy", "NoRain", "LightRain", "HeavyRain", "NoSnow", "LightSnow", "HeavySnow", "LightFog", "HeavyFog"],
+            select_skytype: 0,
         }
     }
 }
@@ -137,6 +161,76 @@ impl UiView for UiCreateRace {
                         ui.end_row();
                     });
 
+                    ui.add_space(-20.0);
+                    ui.label(RichText::new("天气设定").size(14.0));
+                    ui.end_row();
+
+                    ui.label("天气类型：");
+                    ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype])
+                    .show_ui(ui, |ui| {
+                        for (index, item) in self.skytypes.iter().enumerate() {
+                            if ui.selectable_label(self.select_skytype == index, item.to_string()).clicked() {
+                                self.select_skytype = index;
+                            }
+                        }
+                    });
+                    ui.end_row();
+
+                    ui.label("天气状况：");
+                        ComboBox::from_id_source("select weather").selected_text(self.weathers[self.select_weather])
+                        .show_ui(ui, |ui| {
+                            for (index, weather) in self.weathers.iter().enumerate() {
+                                if ui.selectable_label(self.select_weather == index, weather.to_string()).clicked() {
+                                    self.select_weather = index;
+                                }
+                            }
+                        });
+                    ui.end_row();
+
+                    ui.label("云雾情况：");
+                    ComboBox::from_id_source("select skycloud").selected_text(self.skyclouds[self.select_skycloud])
+                    .show_ui(ui, |ui| {
+                        for (index, skycloud) in self.skyclouds.iter().enumerate() {
+                            if ui.selectable_label(self.select_skycloud == index, skycloud.to_string()).clicked() {
+                                self.select_skycloud = index;
+                            }
+                        }
+                    });
+                    ui.end_row();
+
+                    ui.label("路面情况：");
+                    ComboBox::from_id_source("select surface age").selected_text(self.ages[self.select_age])
+                    .show_ui(ui, |ui| {
+                        for (index, item) in self.ages.iter().enumerate() {
+                            if ui.selectable_label(self.select_age == index, item.to_string()).clicked() {
+                                self.select_age = index;
+                            }
+                        }
+                    });
+                    ui.end_row();
+
+                    ui.label("湿划情况：");
+                    ComboBox::from_id_source("select wetness").selected_text(self.wetness[self.select_wetness])
+                    .show_ui(ui, |ui| {
+                        for (index, item) in self.wetness.iter().enumerate() {
+                            if ui.selectable_label(self.select_wetness == index, item.to_string()).clicked() {
+                                self.select_wetness = index;
+                            }
+                        }
+                    });
+                    ui.end_row();
+
+                    ui.label("比赛时段：");
+                    ComboBox::from_id_source("select timeofday").selected_text(self.timeofdays[self.select_timeofdays])
+                    .show_ui(ui, |ui| {
+                        for (index, item) in self.timeofdays.iter().enumerate() {
+                            if ui.selectable_label(self.select_timeofdays == index, item.to_string()).clicked() {
+                                self.select_timeofdays = index;
+                            }
+                        }
+                    });
+                    ui.end_row();
+
                     ui.add_space(20.0);
 
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
@@ -166,6 +260,12 @@ impl UiCreateRace {
             car: self.cars[self.select_car].name.clone(),
             car_id: self.cars[self.select_car].id.parse().unwrap(),
             damage: self.select_damage as u32,
+            weather: 0u32,
+            skycloud: 0u32,
+            wetness: 0u32,
+            age: 0u32,
+            timeofday: 0u32,
+            skytype: 0u32,
         };
         let mut create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};
         if !self.room_passwd.is_empty() {
