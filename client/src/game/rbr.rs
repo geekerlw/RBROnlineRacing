@@ -337,6 +337,23 @@ impl RBRGame {
         }
     }
 
+    pub fn set_race_car_setup(&mut self, car_id: &u32, setup: &String) {
+        let personal_filepath = self.root_path.clone() + r"\rallysimfans_personal.ini";
+        if let Ok(mut file) = std::fs::File::open(&personal_filepath) {
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf).unwrap();
+            let bufstr = String::from_utf8_lossy(&buf).to_string().nfc().collect::<String>();
+        
+            if let Ok(mut conf) = Ini::load_from_str(&bufstr) {
+                let section = "car".to_string() + car_id.to_string().as_str();
+                conf.with_section(Some(&section)).set("setuptarmac", setup);
+                conf.with_section(Some(&section)).set("setupgravel", setup);
+                conf.with_section(Some(&section)).set("setupsnow", setup);
+                conf.write_to_file(personal_filepath).unwrap();
+            }
+        }
+    }
+
     pub fn load_game_stages(&mut self) -> Option<Vec<RBRStageData>> {
         let filepath = self.root_path.clone() + r"\rsfdata\cache\stages_data.json";
         if let Ok(mut file) = std::fs::File::open(filepath) {
@@ -360,5 +377,22 @@ impl RBRGame {
             }
         }
         return None;
+    }
+
+    pub fn load_game_car_setups(&mut self, path: &String) -> Option<Vec<String>> {
+        let folder_path = self.root_path.clone() + r"\SavedGames\" + path;
+        if let Ok(entrys) = std::fs::read_dir(folder_path) {
+            let mut setups = vec![];
+            for entry in entrys {
+                if let Ok(entry) = entry {
+                    if entry.metadata().unwrap().is_file() && entry.file_name().to_string_lossy().ends_with(".lsp") {
+                        setups.push(entry.file_name().to_string_lossy().trim_end_matches(".lsp").to_string());
+                    }
+                }
+            }
+            return Some(setups);
+        }
+
+        None
     }
 }

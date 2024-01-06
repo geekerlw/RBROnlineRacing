@@ -31,6 +31,8 @@ pub struct UiInRoom {
     pub cars: Vec<RBRCarData>,
     pub select_car: usize,
     pub filter_car: String,
+    pub setups: Vec<String>,
+    pub select_setup: usize,
     pub damages: Vec<&'static str>,
     pub select_damage: usize,
     rx: Receiver<UiInRoomMsg>,
@@ -54,6 +56,8 @@ impl Default for UiInRoom {
             cars: vec![],
             select_car: 36,
             filter_car: String::from("Ford Fiesta WRC 2019"),
+            setups: vec!["Default".to_string()],
+            select_setup: 0,
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
             rx,
@@ -118,6 +122,7 @@ impl UiView for UiInRoom {
             match msg {
                 UiInRoomMsg::MsgInRoomRaceInfo(info) => {
                     self.raceinfo = info;
+                    self.update_car_setups(page);
                 }
                 UiInRoomMsg::MsgInRoomUserState(states) => {
                     self.userstates = states;
@@ -153,7 +158,7 @@ impl UiView for UiInRoom {
                         ui.end_row();
 
                         if self.raceinfo.car_fixed {
-                            ui.label("比赛车辆: ");
+                            ui.label("限定车辆: ");
                             ui.label(&self.raceinfo.car);
                         } else {
                             ui.label("自选车辆: ");
@@ -165,17 +170,35 @@ impl UiView for UiInRoom {
                             popup_below_widget(ui, popup_car, &filter_car, |ui| {
                                 let patten = self.filter_car.clone().to_lowercase();
                                 egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                    for (index, car) in self.cars.iter().enumerate() {
+                                    for (index, car) in self.cars.clone().iter().enumerate() {
                                         if car.name.to_lowercase().contains(patten.as_str()) {
                                             if ui.selectable_label(self.select_car == index, &car.name).clicked() {
                                                 self.filter_car = car.name.clone();
                                                 self.select_car = index;
+                                                self.update_car_setups(page);
                                             }
                                         }
                                     }
                                 });
                             });
                         };
+                        ui.end_row();
+
+                        if self.raceinfo.car_fixed {
+                            ui.label("限定调校：");
+                            ui.label("Default");
+                        } else {
+                            ui.label("车辆调校：");
+                            ComboBox::from_id_source("car setup select").selected_text(&self.setups[self.select_setup])
+                            .width(150.0)
+                            .show_ui(ui, |ui| {
+                                for (index, setup) in self.setups.iter().enumerate() {
+                                    if ui.selectable_label(self.select_setup == index, setup).clicked() {
+                                        self.select_setup = index;
+                                    }
+                                }
+                            });
+                        }
                     });
                     ui.add_space(10.0);
 
@@ -282,9 +305,30 @@ impl UiInRoom {
         let mut rbr = RBRGame::new(&page.store.game_path);
         if self.raceinfo.car_fixed {
             rbr.set_race_car(&self.raceinfo.car_id);
+            rbr.set_race_car_setup(&self.raceinfo.car_id, &"".to_string());
         }
         else {
             rbr.set_race_car(&self.cars[self.select_car].id.parse().unwrap());
+            if self.select_setup == 0 {
+                rbr.set_race_car_setup(&self.raceinfo.car_id, &"".to_string());
+            } else {
+                rbr.set_race_car_setup(&self.cars[self.select_car].id.parse().unwrap(), &self.setups[self.select_setup]);
+            }
+        }
+    }
+
+    fn update_car_setups(&mut self, page: &mut UiPageCtx) {
+        self.setups.clear();
+        self.setups.push("Default".to_string());
+        if self.raceinfo.car_fixed {
+            return;
+        }
+
+        let mut rbr = RBRGame::new(&page.store.game_path);
+        if let Some(setups) = rbr.load_game_car_setups(&self.cars[self.select_car].path) {
+            for setup in setups {
+                self.setups.push(setup);
+            }
         }
     }
 
