@@ -15,6 +15,11 @@ use super::{UiView, UiPageCtx};
 use tokio::{sync::mpsc::{channel, Receiver, Sender}, task::JoinHandle};
 use rand::{thread_rng, Rng};
 
+macro_rules! meters_to_kilometers {
+    ($meters:expr) => {
+        format!("{:.1} Km", $meters as f64 / 1000.0)
+    };
+}
 
 enum UiInRoomMsg {
     MsgInRoomRaceInfo(RaceInfo),
@@ -186,7 +191,11 @@ impl UiView for UiInRoom {
                                 ui.label("比赛赛道：");
                                 ui.label(self.raceinfo.stage.clone());
                                 ui.end_row();
-        
+
+                                ui.label("赛道长度：");
+                                ui.label(meters_to_kilometers!(self.raceinfo.stage_len));
+                                ui.end_row();
+
                                 ui.label("车辆损坏：");
                                 ui.label(self.damages[self.raceinfo.damage as usize]);
                                 ui.end_row();
@@ -260,6 +269,10 @@ impl UiView for UiInRoom {
         
                                 ui.label("天气状况：");
                                 ui.label(self.weathers[self.raceinfo.weather as usize]);
+                                ui.end_row();
+
+                                ui.label("路面类型：");
+                                ui.label(&self.raceinfo.stage_type);
                                 ui.end_row();
         
                                 ui.label("云雾情况：");
@@ -621,7 +634,7 @@ impl UiInRoom {
             ui.label("状态");
             ui.end_row();
             for (index, player) in table.iter().skip(skip).step_by(step).enumerate() {
-                ui.label((index+1).to_string());
+                ui.label((index*step + skip +1).to_string());
                 ui.label(&player.name);
                 if &self.raceinfo.owner == &player.name {
                     ui.label("房主");

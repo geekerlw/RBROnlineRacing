@@ -268,6 +268,7 @@ impl UiCreateRace {
             owner: page.store.user_name.clone(),
             stage: self.stages[self.select_stage].name.clone(),
             stage_id: self.stages[self.select_stage].stage_id.parse().unwrap(),
+            stage_type: self.stages[self.select_stage].get_surface(),
             stage_len: self.stages[self.select_stage].length.parse().unwrap(),
             car_fixed: self.fixed_car,
             car: self.cars[self.select_car].name.clone(),

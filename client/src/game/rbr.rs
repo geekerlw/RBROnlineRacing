@@ -48,6 +48,21 @@ pub struct RBRStageData {
     pub fattrib: Option<String>,
 }
 
+impl RBRStageData {
+    pub fn get_surface(&self) -> String {
+        let gravel = self.gravel.parse::<u32>().unwrap();
+        let tarmac = self.tarmac.parse::<u32>().unwrap();
+        let snow = self.snow.parse::<u32>().unwrap();
+        if gravel >= tarmac && gravel >= snow {
+            String::from("Gravel")
+        } else if tarmac >= gravel && tarmac >= snow {
+            String::from("Tarmac")
+        } else {
+            String::from("Snow")
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RBRCarData {
     pub id: String,

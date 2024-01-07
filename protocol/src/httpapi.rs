@@ -61,6 +61,7 @@ pub struct RaceInfo {
     pub owner: String,
     pub stage: String,
     pub stage_id: u32,
+    pub stage_type: String,
     pub stage_len: u32,
     pub car_fixed: bool,
     pub car: String,

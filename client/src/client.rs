@@ -1,6 +1,7 @@
 use eframe::egui;
 use egui::{FontDefinitions, FontData};
 use protocol::httpapi::UserLogout;
+use protocol::metaapi::RaceLeave;
 use crate::ui;
 use crate::ui::{UiPageCtx, UiMsg, UiPageState};
 
@@ -41,6 +42,18 @@ impl RacingClient {
     pub fn switch_to_page(&mut self, page: UiPageState) {
         self.ctx.store.user_state.clear();
         self.ctx.route.switch_to_page(page);
+    }
+
+    fn leave_race(&mut self) {
+        if !self.ctx.store.user_token.is_empty() && !self.ctx.store.curr_room.is_empty() {
+            let user: RaceLeave = RaceLeave{token: self.ctx.store.user_token.clone(), room: self.ctx.store.curr_room.clone()};
+            let url = self.ctx.store.get_http_url("api/race/leave");
+            tokio::spawn(async move {
+                let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
+            });
+        }
+
+        self.ctx.store.curr_room.clear();
     }
 
     pub fn handle_async_uimsg(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -104,6 +117,11 @@ impl eframe::App for RacingClient {
                             }
                             if ui.button("创建比赛").clicked() {
                                 self.switch_to_page(UiPageState::PageCreate);
+                                ui.close_menu();
+                            }
+                            if ui.button("退出比赛").clicked() {
+                                self.leave_race();
+                                self.switch_to_page(UiPageState::PageLobby);
                                 ui.close_menu();
                             }
                         });
