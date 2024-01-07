@@ -40,7 +40,6 @@ impl RacingClient {
     }
 
     pub fn switch_to_page(&mut self, page: UiPageState) {
-        self.ctx.store.user_state.clear();
         self.ctx.route.switch_to_page(page);
     }
 
@@ -60,7 +59,6 @@ impl RacingClient {
         if let Ok(msg) = self.ctx.rx.try_recv() {
             match msg {
                 UiMsg::MsgGotoPage(state) => {
-                    self.ctx.store.user_state.clear();
                     self.ctx.route.switch_to_page(state);
                 },
                 UiMsg::MsgUserLogined(token) => {
@@ -71,7 +69,15 @@ impl RacingClient {
                 },
                 UiMsg::MsgSetErrState(err) => {
                     self.ctx.store.user_state = err;
+                    let tx = self.ctx.tx.clone();
+                    tokio::spawn(async move {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                        tx.send(UiMsg::MsgClearErrState).await.unwrap();
+                    });
                 },
+                UiMsg::MsgClearErrState => {
+                    self.ctx.store.user_state.clear();
+                }
                 UiMsg::MsgReInitApp => {
                     self.ctx.store.init();
                     for (_, page) in self.pages.iter_mut().enumerate() {
