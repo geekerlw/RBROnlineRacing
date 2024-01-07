@@ -42,8 +42,13 @@ impl UiLobby {
         page.store.curr_room = room.clone();
         tokio::spawn(async move {
             let res = reqwest::Client::new().post(url).json(&race_join).send().await.unwrap();
-            if res.status() == StatusCode::OK {
-                tx.send(UiMsg::MsgGotoPage(UiPageState::PageInRoom)).await.unwrap();
+            match res.status() {
+                StatusCode::OK => {
+                    tx.send(UiMsg::MsgGotoPage(UiPageState::PageInRoom)).await.unwrap();
+                }
+                _ => {
+                    tx.send(UiMsg::MsgSetErrState("加入房间失败, 请稍后重试。".to_string())).await.unwrap();
+                }
             }
         });
     }

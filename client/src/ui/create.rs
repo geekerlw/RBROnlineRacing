@@ -297,7 +297,7 @@ impl UiCreateRace {
                     tx.send(UiMsg::MsgGotoPage(UiPageState::PageInRoom)).await.unwrap();
                 }
                 _ => {
-                    tx.send(UiMsg::MsgSetErrState("Failed to create race room".to_string())).await.unwrap();
+                    tx.send(UiMsg::MsgSetErrState("创建比赛房间失败".to_string())).await.unwrap();
                 }
             }
         });

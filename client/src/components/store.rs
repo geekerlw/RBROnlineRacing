@@ -1,5 +1,5 @@
 use std::env;
-use egui::Ui;
+use egui::{Ui, RichText};
 use ini::Ini;
 use std::path::Path;
 use log::info;
@@ -67,7 +67,7 @@ impl RacingStore {
         if self.user_state.is_empty() {
             ui.label("正常");
         } else {
-            ui.label(&self.user_state);
+            ui.label(RichText::new(&self.user_state).color(egui::Color32::from_rgb(255, 0, 0)));
         }
     }
 

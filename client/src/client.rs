@@ -39,6 +39,7 @@ impl RacingClient {
     }
 
     pub fn switch_to_page(&mut self, page: UiPageState) {
+        self.ctx.store.user_state.clear();
         self.ctx.route.switch_to_page(page);
     }
 

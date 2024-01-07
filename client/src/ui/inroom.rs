@@ -361,6 +361,7 @@ impl UiInRoom {
         let start_url = page.store.get_http_url("api/race/start");
         let query = RaceQuery {name: self.room_name.clone()};
         let tx = self.tx.clone();
+        let ui_tx = page.tx.clone();
         tokio::spawn(async move {
             let _res = reqwest::Client::new().put(config_url).json(&update).send().await.unwrap();
             let res = reqwest::Client::new().get(start_url).json(&query).send().await.unwrap();
@@ -370,12 +371,15 @@ impl UiInRoom {
                     if let Ok(started) = serde_json::from_str::<bool>(text.as_str()) {
                         if started {
                             tx.send(UiInRoomMsg::MsgInRoomStartRacing).await.unwrap();
+                        } else {
+                            ui_tx.send(UiMsg::MsgSetErrState("比赛未开始，请等待房主开始比赛。".to_string())).await.unwrap();
                         }
                     }
                 },
-                _ => {},
+                _ => {
+                    ui_tx.send(UiMsg::MsgSetErrState("比赛未开始，请等待房主开始比赛。".to_string())).await.unwrap();
+                },
             }
-
         });
     }
 
@@ -434,7 +438,7 @@ impl UiInRoom {
             match res.status() {
                 StatusCode::OK => {}
                 _ => {
-                    tx.send(UiMsg::MsgSetErrState("Failed to change race info".to_string())).await.unwrap();
+                    tx.send(UiMsg::MsgSetErrState("更新比赛信息失败".to_string())).await.unwrap();
                 }
             }
         });
