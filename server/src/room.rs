@@ -1,5 +1,5 @@
 use protocol::httpapi::{RoomState, RaceState, RaceInfo};
-use protocol::metaapi::{RaceCmd, MetaRaceResult};
+use protocol::metaapi::{RaceCmd, MetaRaceResult, MetaRaceProgress};
 use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
 use log::info;
@@ -39,6 +39,15 @@ impl RaceRoom {
 
     pub fn pop_player_by_token(&mut self, tokenstr: &String) {
         self.players.retain(|x| &x.tokenstr != tokenstr);
+    }
+
+    pub fn get_player(&mut self, tokenstr: &String) -> Option<&mut RacePlayer> {
+        for (_, player) in self.players.iter_mut().enumerate() {
+            if &player.tokenstr == tokenstr {
+                return Some(player);
+            }
+        }
+        None
     }
 
     pub fn is_player_exist(&mut self, name: &String) -> bool {
@@ -151,17 +160,13 @@ impl RaceRoom {
         }
     }
 
-    pub fn get_race_result(&mut self) -> Vec::<MetaRaceResult> {
-        let mut results = Vec::<MetaRaceResult>::new();
+    pub fn get_race_progress(&mut self) -> Vec::<MetaRaceProgress> {
+        let mut results = Vec::<MetaRaceProgress>::new();
         let leader = self.players.first().unwrap().clone();
         for player in &self.players {
-            let mut result = MetaRaceResult::default();
+            let mut result = MetaRaceProgress::default();
             result.profile_name = player.profile_name.clone();
-            result.racetime = player.race_data.racetime;
             result.progress = player.race_data.progress;
-            result.splittime1 = player.race_data.splittime1;
-            result.splittime2 = player.race_data.splittime2;
-            result.finishtime = player.race_data.finishtime;
             let difflength = (leader.race_data.progress - player.race_data.progress) / player.race_data.stagelen * self.info.stage_len as f32;
             if player.race_data.speed != 0f32 {
                 result.difffirst = difflength / player.race_data.speed * 3.6;
@@ -169,6 +174,21 @@ impl RaceRoom {
             else {
                 result.difffirst = difflength / 10.0 * 3.6; // default 10km/h as 3.6m/s.
             }
+            results.push(result);
+        }
+        results
+    }
+
+    pub fn get_race_result(&mut self) -> Vec::<MetaRaceResult> {
+        let mut results = Vec::<MetaRaceResult>::new();
+        let leader = self.players.first().unwrap().clone();
+        for player in &self.players {
+            let mut result = MetaRaceResult::default();
+            result.profile_name = player.profile_name.clone();
+            result.racecar = player.race_cfg.car.clone();
+            result.splittime1 = player.race_data.splittime1;
+            result.splittime2 = player.race_data.splittime2;
+            result.finishtime = player.race_data.finishtime;
             result.difftime = player.race_data.finishtime - leader.race_data.finishtime;
             results.push(result);
         }
@@ -177,7 +197,7 @@ impl RaceRoom {
 
     pub async fn notify_all_players_race_data(&mut self) {
         self.sort_players_by_progress();
-        let results = self.get_race_result();
+        let results = self.get_race_progress();
         for player in &self.players {
             player.notify_racedata(&results).await;
         }

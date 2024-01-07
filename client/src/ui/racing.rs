@@ -1,6 +1,7 @@
 use eframe::egui;
 use egui::Grid;
 use egui::RichText;
+use protocol::metaapi::MetaRaceProgress;
 use protocol::metaapi::{MetaHeader, RaceCmd, RaceAccess, DataFormat, RaceUpdate, META_HEADER_LEN, MetaRaceResult};
 use protocol::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, RaceUserState, UserQuery};
 use reqwest::StatusCode;
@@ -43,7 +44,7 @@ impl Default for UiRacing {
             userstates: vec![],
             tx,
             rx,
-            table_head: vec!["排名", "车手", "分段1", "分段2", "完成时间", "头佬差距"],
+            table_head: vec!["排名", "车手", "比赛用车", "分段1", "分段2", "完成时间", "头佬差距"],
             table_data: vec![],
             rbr_task: None,
             timed_task: None,
@@ -214,9 +215,12 @@ impl UiRacing {
     fn show_result(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.add_space(120.0);
+                ui.add_space(80.0);
                 ui.vertical(|ui| {
-                    Grid::new("race result").min_col_width(120.0).show(ui, |ui| {
+                    Grid::new("race result")
+                    .min_col_width(120.0)
+                    .max_col_width(120.0)
+                    .show(ui, |ui| {
                         for content in &self.table_head {
                             ui.label(*content);
                         }
@@ -225,6 +229,7 @@ impl UiRacing {
                         for (index, result) in self.table_data.iter().enumerate() {
                             let table = vec![(index+1).to_string(),
                                 result.profile_name.clone(),
+                                result.racecar.clone(),
                                 format_seconds(result.splittime1),
                                 format_seconds(result.splittime2),
                                 format_seconds(result.finishtime),
@@ -239,7 +244,7 @@ impl UiRacing {
 
                     ui.add_space(40.0);
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                        ui.add_space(250.0);
+                        ui.add_space(380.0);
                         if ui.button("确认").clicked() {
                             self.reset_user_state(page);
                             page.route.switch_to_page(UiPageState::PageInRoom);
@@ -285,13 +290,12 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
         }
 
         DataFormat::FmtSyncRaceData => {
-            let result: Vec<MetaRaceResult> = bincode::deserialize(pack_data).unwrap();
-            rbr.set_race_data(&result).await;
+            let progress: Vec<MetaRaceProgress> = bincode::deserialize(pack_data).unwrap();
+            rbr.set_race_data(&progress).await;
         }
 
         DataFormat::FmtSyncRaceResult => {
             let result: Vec<MetaRaceResult> = bincode::deserialize(pack_data).unwrap();
-            rbr.set_race_result(&result).await;
             tx.send(UiRacingMsg::MsgRaceResult(result)).await.unwrap();
             tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceFinished)).await.unwrap();
         }

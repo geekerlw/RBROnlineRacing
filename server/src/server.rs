@@ -65,7 +65,7 @@ impl RacingServer {
 
         let token = Uuid::new_v4();
         let tokenstr = token.to_string();
-        let player: LobbyPlayer = LobbyPlayer {tokenstr: token.to_string(), profile_name: user.name, race_cfg: RaceConfig::default()};
+        let player: LobbyPlayer = LobbyPlayer {tokenstr: token.to_string(), profile_name: user.name};
         self.lobby.push_player(token, player);
         return Some(tokenstr);
     }
@@ -127,8 +127,8 @@ impl RacingServer {
     }
 
     pub fn get_player_race_config(&mut self, query: &UserQuery) -> Option<RaceConfig> {
-        if let Ok(token) = Uuid::parse_str(query.token.as_str()) {
-            if let Some(player) = self.lobby.get_player(token) {
+        for (_, room) in self.rooms.iter_mut() {
+            if let Some(player) = room.get_player(&query.token) {
                 return Some(player.race_cfg.clone());
             }
         }
@@ -136,8 +136,8 @@ impl RacingServer {
     }
 
     pub fn update_player_race_config(&mut self, update: RaceConfigUpdate) -> bool {
-        if let Ok(token) = Uuid::parse_str(&update.token) {
-            if let Some(player) = self.lobby.get_player(token) {
+        for (_, room) in self.rooms.iter_mut() {
+            if let Some(player) = room.get_player(&update.token) {
                 player.race_cfg = update.cfg;
                 return true;
             }

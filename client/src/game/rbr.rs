@@ -14,7 +14,7 @@ use std::os::windows::ffi::OsStrExt;
 use std::process::Command;
 use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_DOWN, VK_RETURN, VK_ESCAPE, GetForegroundWindow};
 use protocol::httpapi::{RaceState, RaceInfo, RaceConfig};
-use protocol::metaapi::{MetaRaceData, MetaRaceResult};
+use protocol::metaapi::{MetaRaceData, MetaRaceProgress};
 use ini::Ini;
 use serde::{Serialize, Deserialize};
 use process_memory::{Architecture, Memory, DataMember, Pid, ProcessHandleExt, TryIntoProcessHandle};
@@ -122,7 +122,7 @@ pub struct RBRRaceData {
 }
 
 impl RBRRaceData {
-    fn from_result(result: &Vec<MetaRaceResult>) -> Self {
+    fn from_result(result: &Vec<MetaRaceProgress>) -> Self {
         let mut racedata = RBRRaceData::default();
         racedata.datatype = 2;
         racedata.external = 1;
@@ -368,15 +368,11 @@ impl RBRGame {
         }
     }
 
-    pub async fn set_race_data(&mut self, result: &Vec<MetaRaceResult>) {
+    pub async fn set_race_data(&mut self, result: &Vec<MetaRaceProgress>) {
         if let Some(udp) = &self.udp {
             let buf = RBRRaceData::from_result(result).as_bytes();
             udp.send(&buf).await.unwrap();
         }
-    }
-
-    pub async fn set_race_result(&mut self, result: &Vec<MetaRaceResult>) {
-        self.set_race_data(result).await;
     }
 
     pub fn set_race_stage(&mut self, stage_id: &u32) {

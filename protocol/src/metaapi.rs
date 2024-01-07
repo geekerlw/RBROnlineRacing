@@ -74,13 +74,18 @@ pub struct MetaRaceData {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct MetaRaceProgress {
+    pub profile_name: String,
+    pub progress: f32,
+    pub difffirst: f32,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MetaRaceResult {
     pub profile_name: String,
-    pub racetime: f32,
-    pub progress: f32,
+    pub racecar: String,
     pub splittime1: f32,
     pub splittime2: f32,
     pub finishtime: f32,
-    pub difffirst: f32,
     pub difftime: f32,
 }

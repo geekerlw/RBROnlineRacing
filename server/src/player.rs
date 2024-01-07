@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use protocol::httpapi::{RaceState, RaceConfig};
-use protocol::metaapi::{MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult};
+use protocol::metaapi::{MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult, MetaRaceProgress};
 use serde::{Serialize, Deserialize};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
 use uuid::Uuid;
@@ -9,7 +9,6 @@ use uuid::Uuid;
 pub struct LobbyPlayer {
     pub tokenstr: String,
     pub profile_name: String,
-    pub race_cfg: RaceConfig,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -21,6 +20,7 @@ pub struct RacePlayer {
     pub writer: Option<Arc<Mutex<OwnedWriteHalf>>>,
     pub state: RaceState,
     pub race_data: MetaRaceData,
+    pub race_cfg: RaceConfig,
 }
 
 impl RacePlayer {
@@ -32,6 +32,7 @@ impl RacePlayer {
             writer: None,
             state: RaceState::default(),
             race_data: MetaRaceData::default(),
+            race_cfg: RaceConfig::default(),
         }
     }
 
@@ -63,7 +64,7 @@ impl RacePlayer {
         }
     }
 
-    pub async fn notify_racedata(&self, result: &Vec::<MetaRaceResult>) {
+    pub async fn notify_racedata(&self, result: &Vec::<MetaRaceProgress>) {
         let body = bincode::serialize(result).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceData}).unwrap();
         if let Some(writer) = &self.writer {
