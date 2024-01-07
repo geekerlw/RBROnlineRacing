@@ -60,6 +60,7 @@ impl RacingClient {
         if let Ok(msg) = self.ctx.rx.try_recv() {
             match msg {
                 UiMsg::MsgGotoPage(state) => {
+                    self.ctx.store.user_state.clear();
                     self.ctx.route.switch_to_page(state);
                 },
                 UiMsg::MsgUserLogined(token) => {
