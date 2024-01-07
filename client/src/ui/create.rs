@@ -9,6 +9,7 @@ use reqwest::StatusCode;
 use super::{UiView, UiPageCtx, UiMsg};
 use crate::game::rbr::{RBRGame, RBRStageData, RBRCarData};
 use crate::ui::UiPageState;
+use rand::{thread_rng, Rng};
 
 #[derive(Clone)]
 pub struct UiCreateRace {
@@ -81,7 +82,7 @@ impl UiView for UiCreateRace {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.add_space(120.0);
+                ui.add_space(300.0);
                 ui.vertical(|ui| {
                     Grid::new("race create table")
                     .min_col_width(80.0)
@@ -105,23 +106,30 @@ impl UiView for UiCreateRace {
                         ui.end_row();
 
                         ui.label("比赛赛道：");
-                        let filter_stage = ui.add_sized([200.0, 25.0], egui::TextEdit::singleline(&mut self.filter_stage));
-                        let popup_stage = ui.make_persistent_id("filter stage");
-                        if filter_stage.changed() || filter_stage.clicked() {
-                            ui.memory_mut(|mem| mem.open_popup(popup_stage));
-                        }
-                        popup_below_widget(ui, popup_stage, &filter_stage, |ui| {
-                            let patten = self.filter_stage.clone().to_lowercase();
-                            egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                for (index, stage) in self.stages.iter().enumerate() {
-                                    if stage.name.to_lowercase().contains(patten.as_str()) {
-                                        if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
-                                            self.filter_stage = stage.name.clone();
-                                            self.select_stage = index;
+                        ui.horizontal(|ui| {
+                            let filter_stage = ui.add_sized([150.0, 25.0], egui::TextEdit::singleline(&mut self.filter_stage));
+                            let popup_stage = ui.make_persistent_id("filter stage");
+                            if filter_stage.changed() || filter_stage.clicked() {
+                                ui.memory_mut(|mem| mem.open_popup(popup_stage));
+                            }
+                            popup_below_widget(ui, popup_stage, &filter_stage, |ui| {
+                                let patten = self.filter_stage.clone().to_lowercase();
+                                egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
+                                    for (index, stage) in self.stages.iter().enumerate() {
+                                        if stage.name.to_lowercase().contains(patten.as_str()) {
+                                            if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
+                                                self.filter_stage = stage.name.clone();
+                                                self.select_stage = index;
+                                            }
                                         }
                                     }
-                                }
+                                });
                             });
+                            ui.add_space(12.0);
+                            if ui.button("随机").clicked() {
+                                self.select_stage = thread_rng().gen_range(0..self.stages.len());
+                                self.filter_stage = self.stages[self.select_stage].name.clone();
+                            };
                         });
                         ui.end_row();
 
@@ -166,6 +174,7 @@ impl UiView for UiCreateRace {
 
                         ui.label("天气类型：");
                         ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.skytypes.iter().enumerate() {
                                 if ui.selectable_label(self.select_skytype == index, item.to_string()).clicked() {
@@ -177,17 +186,19 @@ impl UiView for UiCreateRace {
 
                         ui.label("天气状况：");
                         ComboBox::from_id_source("select weather").selected_text(self.weathers[self.select_weather])
-                            .show_ui(ui, |ui| {
-                                for (index, weather) in self.weathers.iter().enumerate() {
-                                    if ui.selectable_label(self.select_weather == index, weather.to_string()).clicked() {
-                                        self.select_weather = index;
-                                    }
+                        .width(150.0)
+                        .show_ui(ui, |ui| {
+                            for (index, weather) in self.weathers.iter().enumerate() {
+                                if ui.selectable_label(self.select_weather == index, weather.to_string()).clicked() {
+                                    self.select_weather = index;
                                 }
-                            });
+                            }
+                        });
                         ui.end_row();
 
                         ui.label("云雾情况：");
                         ComboBox::from_id_source("select skycloud").selected_text(self.skyclouds[self.select_skycloud])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, skycloud) in self.skyclouds.iter().enumerate() {
                                 if ui.selectable_label(self.select_skycloud == index, skycloud.to_string()).clicked() {
@@ -199,6 +210,7 @@ impl UiView for UiCreateRace {
 
                         ui.label("路面情况：");
                         ComboBox::from_id_source("select surface age").selected_text(self.ages[self.select_age])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.ages.iter().enumerate() {
                                 if ui.selectable_label(self.select_age == index, item.to_string()).clicked() {
@@ -210,6 +222,7 @@ impl UiView for UiCreateRace {
 
                         ui.label("湿滑情况：");
                         ComboBox::from_id_source("select wetness").selected_text(self.wetness[self.select_wetness])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.wetness.iter().enumerate() {
                                 if ui.selectable_label(self.select_wetness == index, item.to_string()).clicked() {
@@ -221,6 +234,7 @@ impl UiView for UiCreateRace {
 
                         ui.label("比赛时段：");
                         ComboBox::from_id_source("select timeofday").selected_text(self.timeofdays[self.select_timeofdays])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.timeofdays.iter().enumerate() {
                                 if ui.selectable_label(self.select_timeofdays == index, item.to_string()).clicked() {
@@ -233,7 +247,7 @@ impl UiView for UiCreateRace {
 
                     ui.add_space(20.0);
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                        ui.add_space(120.0);
+                        ui.add_space(140.0);
                         if ui.button("取消").clicked() {
                             page.route.back_from_page(UiPageState::PageCreate);
                         }

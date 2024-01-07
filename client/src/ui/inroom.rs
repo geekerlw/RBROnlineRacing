@@ -1,6 +1,7 @@
 use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
+use egui::Ui;
 use egui::containers::popup::popup_below_widget;
 use protocol::metaapi::{RaceAccess, RaceLeave};
 use protocol::httpapi::RaceConfig;
@@ -12,6 +13,8 @@ use crate::{ui::UiPageState, game::rbr::{RBRGame, RBRStageData, RBRCarData}};
 use super::UiMsg;
 use super::{UiView, UiPageCtx};
 use tokio::{sync::mpsc::{channel, Receiver, Sender}, task::JoinHandle};
+use rand::{thread_rng, Rng};
+
 
 enum UiInRoomMsg {
     MsgInRoomRaceInfo(RaceInfo),
@@ -167,86 +170,122 @@ impl UiView for UiInRoom {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.add_space(120.0);
-                ui.vertical(|ui| {
-                    Grid::new("race room table")
-                    .min_col_width(80.0)
-                    .min_row_height(24.0)
-                    .show(ui, |ui| {
-                        ui.label("比赛房间：");
-                        ui.label(&self.room_name);
-                        ui.end_row();
-
-                        ui.label("比赛赛道：");
-                        ui.label(self.raceinfo.stage.clone());
-                        ui.end_row();
-
-                        ui.label("车辆损坏：");
-                        ui.label(self.damages[self.raceinfo.damage as usize]);
-                        ui.end_row();
-
-                        if self.raceinfo.car_fixed {
-                            ui.label("限定车辆: ");
-                            ui.label(&self.raceinfo.car);
-                        } else {
-                            ui.label("自选车辆: ");
-                            let filter_car = ui.add_sized([150.0, 25.0], egui::TextEdit::singleline(&mut self.filter_car));
-                            let popup_car = ui.make_persistent_id("filter car");
-                            if filter_car.changed() || filter_car.clicked() {
-                                ui.memory_mut(|mem| mem.open_popup(popup_car));
-                            }
-                            popup_below_widget(ui, popup_car, &filter_car, |ui| {
-                                let patten = self.filter_car.clone().to_lowercase();
-                                egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                    for (index, car) in self.cars.clone().iter().enumerate() {
-                                        if car.name.to_lowercase().contains(patten.as_str()) {
-                                            if ui.selectable_label(self.select_car == index, &car.name).clicked() {
-                                                self.filter_car = car.name.clone();
-                                                self.select_car = index;
-                                                self.update_car_setups(page);
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(120.0);
+                    ui.horizontal(|ui| {
+                        ui.vertical(|ui| {
+                            Grid::new("race room table")
+                            .min_col_width(80.0)
+                            .min_row_height(24.0)
+                            .show(ui, |ui| {
+                                ui.label("房间名称：");
+                                ui.label(&self.room_name);
+                                ui.end_row();
+        
+                                ui.label("比赛赛道：");
+                                ui.label(self.raceinfo.stage.clone());
+                                ui.end_row();
+        
+                                ui.label("车辆损坏：");
+                                ui.label(self.damages[self.raceinfo.damage as usize]);
+                                ui.end_row();
+        
+                                if self.raceinfo.car_fixed {
+                                    ui.label("限定车辆: ");
+                                    ui.label(&self.raceinfo.car);
+                                } else {
+                                    ui.label("自选车辆: ");
+                                    let filter_car = ui.add_sized([150.0, 25.0], egui::TextEdit::singleline(&mut self.filter_car));
+                                    let popup_car = ui.make_persistent_id("filter car");
+                                    if filter_car.changed() || filter_car.clicked() {
+                                        ui.memory_mut(|mem| mem.open_popup(popup_car));
+                                    }
+                                    popup_below_widget(ui, popup_car, &filter_car, |ui| {
+                                        let patten = self.filter_car.clone().to_lowercase();
+                                        egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
+                                            for (index, car) in self.cars.clone().iter().enumerate() {
+                                                if car.name.to_lowercase().contains(patten.as_str()) {
+                                                    if ui.selectable_label(self.select_car == index, &car.name).clicked() {
+                                                        self.filter_car = car.name.clone();
+                                                        self.select_car = index;
+                                                        self.update_car_setups(page);
+                                                    }
+                                                }
                                             }
+                                        });
+                                    });
+                                };
+                                ui.end_row();
+        
+                                if self.raceinfo.car_fixed {
+                                    ui.label("限定调校：");
+                                    ui.label("default");
+                                } else {
+                                    ui.label("车辆调校：");
+                                    ComboBox::from_id_source("car setup select").selected_text(&self.setups[self.select_setup])
+                                    .width(150.0)
+                                    .show_ui(ui, |ui| {
+                                        for (index, setup) in self.setups.iter().enumerate() {
+                                            if ui.selectable_label(self.select_setup == index, setup).clicked() {
+                                                self.select_setup = index;
+                                            }
+                                        }
+                                    });
+                                }
+                                ui.end_row();
+        
+                                ui.label("轮胎类型：");
+                                ComboBox::from_id_source("car tyretype select").selected_text(self.tyretypes[self.select_tyretype])
+                                .width(150.0)
+                                .show_ui(ui, |ui| {
+                                    for (index, tyre) in self.tyretypes.iter().enumerate() {
+                                        if ui.selectable_label(self.select_tyretype == index, tyre.to_string()).clicked() {
+                                            self.select_tyretype = index;
                                         }
                                     }
                                 });
+                                ui.end_row();
                             });
-                        };
-                        ui.end_row();
-
-                        if self.raceinfo.car_fixed {
-                            ui.label("限定调校：");
-                            ui.label("default");
-                        } else {
-                            ui.label("车辆调校：");
-                            ComboBox::from_id_source("car setup select").selected_text(&self.setups[self.select_setup])
-                            .width(150.0)
-                            .show_ui(ui, |ui| {
-                                for (index, setup) in self.setups.iter().enumerate() {
-                                    if ui.selectable_label(self.select_setup == index, setup).clicked() {
-                                        self.select_setup = index;
-                                    }
-                                }
-                            });
-                        }
-                        ui.end_row();
-
-                        ui.label("轮胎类型：");
-                        ComboBox::from_id_source("car tyretype select").selected_text(self.tyretypes[self.select_tyretype])
-                        .width(150.0)
-                        .show_ui(ui, |ui| {
-                            for (index, tyre) in self.tyretypes.iter().enumerate() {
-                                if ui.selectable_label(self.select_tyretype == index, tyre.to_string()).clicked() {
-                                    self.select_tyretype = index;
-                                }
-                            }
                         });
-                        ui.end_row();
+                        ui.add_space(120.0);
+                        ui.vertical(|ui| {
+                            Grid::new("race room table")
+                            .min_col_width(80.0)
+                            .min_row_height(24.0)
+                            .show(ui, |ui| {
+                                ui.label("天气类型：");
+                                ui.label(self.skytypes[self.raceinfo.skytype as usize]);
+                                ui.end_row();
+        
+                                ui.label("天气状况：");
+                                ui.label(self.weathers[self.raceinfo.weather as usize]);
+                                ui.end_row();
+        
+                                ui.label("云雾情况：");
+                                ui.label(self.skyclouds[self.raceinfo.skycloud as usize]);
+                                ui.end_row();
+        
+                                ui.label("路面情况：");
+                                ui.label(self.ages[self.raceinfo.age as usize]);
+                                ui.end_row();
+        
+                                ui.label("湿滑情况：");
+                                ui.label(self.wetness[self.raceinfo.wetness as usize]);
+                                ui.end_row();
+        
+                                ui.label("比赛时段：");
+                                ui.label(self.timeofdays[self.raceinfo.timeofday as usize]);
+                                ui.end_row();
+                            });
+                        });
                     });
-                    ui.add_space(10.0);
-
+                });
+                ui.add_space(20.0);
+                ui.horizontal(|ui| {
                     if (&self.raceinfo.owner == &page.store.user_name) && !self.room_started {
                         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                            ui.add_space(60.0);
+                            ui.add_space(400.0);
                             if ui.button("更新比赛").clicked() {
                                 self.show_updatewin = true;
                             }
@@ -255,43 +294,26 @@ impl UiView for UiInRoom {
                             }
                         });
                     }
+                });
 
-                    ui.add_space(20.0);
-                    Grid::new("race players table")
-                    .min_col_width(80.0)
-                    .min_row_height(24.0)
-                    .show(ui, |ui| {
-                        ui.label("序号");
-                        ui.label("车手");
-                        ui.label("权限");
-                        ui.label("状态");
-                        ui.end_row();
-                        for (index, player) in self.userstates.iter().enumerate() {
-                            ui.label((index+1).to_string());
-                            ui.label(&player.name);
-                            if &self.raceinfo.owner == &player.name {
-                                ui.label("房主");
-                            } else {
-                                ui.label("玩家");
-                            }
-
-                            match &player.state {
-                                RaceState::RaceReady => ui.label("已就绪"),
-                                RaceState::RaceLoaded => ui.label("加载完成"),
-                                RaceState::RaceFinished | RaceState::RaceRetired => ui.label("已完成"),
-                                _ => ui.label("未就绪"),
-                            };
-                            ui.end_row();
-                        }
-                    });
-
-                    ui.add_space(20.0);
-                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                ui.add_space(40.0);
+                ui.horizontal(|ui| {
+                    ui.add_space(120.0);
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                        self.show_player_table("race player left", ui, self.userstates.clone(), 0, 2);
                         ui.add_space(80.0);
+                        self.show_player_table("race player right", ui, self.userstates.clone(), 1, 2);
+                    });
+                });
+                ui.add_space(40.0);
+                ui.horizontal(|ui| {
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        ui.add_space(420.0);
                         if ui.button("退出").clicked() {
                             self.leave_raceroom(page);
                             page.route.switch_to_page(UiPageState::PageLobby);
-                        }                        
+                        }
+                        ui.add_space(10.0);             
                         if ui.button("准备").clicked() {
                             self.set_game_ready(page);
                         }
@@ -419,33 +441,42 @@ impl UiInRoom {
     }
 
     fn show_updatewindow(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, page: &mut UiPageCtx) {
-        egui::Window::new("pop update window").fixed_pos(egui::pos2(320.0, 200.0)).fixed_size([350.0, 450.0])
+        egui::Window::new("pop update window").fixed_pos(egui::pos2(300.0, 200.0)).fixed_size([600.0, 460.0])
         .title_bar(false)
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
+                ui.add_space(20.0);
                 ui.vertical(|ui| {
+                    ui.add_space(10.0);
                     Grid::new("race room table")
                     .min_col_width(80.0)
                     .min_row_height(24.0)
                     .show(ui, |ui| {
                         ui.label("比赛赛道：");
-                        let filter_stage = ui.add_sized([200.0, 25.0], egui::TextEdit::singleline(&mut self.filter_stage));
-                        let popup_stage = ui.make_persistent_id("filter stage");
-                        if filter_stage.changed() || filter_stage.clicked() {
-                            ui.memory_mut(|mem| mem.open_popup(popup_stage));
-                        }
-                        popup_below_widget(ui, popup_stage, &filter_stage, |ui| {
-                            let patten = self.filter_stage.clone().to_lowercase();
-                            egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                for (index, stage) in self.stages.iter().enumerate() {
-                                    if stage.name.to_lowercase().contains(patten.as_str()) {
-                                        if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
-                                            self.filter_stage = stage.name.clone();
-                                            self.select_stage = index;
+                        ui.horizontal(|ui| {
+                            let filter_stage = ui.add_sized([150.0, 25.0], egui::TextEdit::singleline(&mut self.filter_stage));
+                            let popup_stage = ui.make_persistent_id("filter stage");
+                            if filter_stage.changed() || filter_stage.clicked() {
+                                ui.memory_mut(|mem| mem.open_popup(popup_stage));
+                            }
+                            popup_below_widget(ui, popup_stage, &filter_stage, |ui| {
+                                let patten = self.filter_stage.clone().to_lowercase();
+                                egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
+                                    for (index, stage) in self.stages.iter().enumerate() {
+                                        if stage.name.to_lowercase().contains(patten.as_str()) {
+                                            if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
+                                                self.filter_stage = stage.name.clone();
+                                                self.select_stage = index;
+                                            }
                                         }
                                     }
-                                }
+                                });
                             });
+                            ui.add_space(12.0);
+                            if ui.button("随机").clicked() {
+                                self.select_stage = thread_rng().gen_range(0..self.stages.len());
+                                self.filter_stage = self.stages[self.select_stage].name.clone();
+                            };
                         });
                         ui.end_row();
 
@@ -475,6 +506,7 @@ impl UiInRoom {
 
                         ui.label("车辆损坏：");
                         ComboBox::from_id_source("select damage").selected_text(self.damages[self.select_damage])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, damage) in self.damages.iter().enumerate() {
                                 if ui.selectable_label(self.select_car == index, damage.to_string()).clicked() {
@@ -486,6 +518,7 @@ impl UiInRoom {
 
                         ui.label("天气类型：");
                         ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.skytypes.iter().enumerate() {
                                 if ui.selectable_label(self.select_skytype == index, item.to_string()).clicked() {
@@ -497,17 +530,19 @@ impl UiInRoom {
 
                         ui.label("天气状况：");
                         ComboBox::from_id_source("select weather").selected_text(self.weathers[self.select_weather])
-                            .show_ui(ui, |ui| {
-                                for (index, weather) in self.weathers.iter().enumerate() {
-                                    if ui.selectable_label(self.select_weather == index, weather.to_string()).clicked() {
-                                        self.select_weather = index;
-                                    }
+                        .width(150.0)
+                        .show_ui(ui, |ui| {
+                            for (index, weather) in self.weathers.iter().enumerate() {
+                                if ui.selectable_label(self.select_weather == index, weather.to_string()).clicked() {
+                                    self.select_weather = index;
                                 }
-                            });
+                            }
+                        });
                         ui.end_row();
 
                         ui.label("云雾情况：");
                         ComboBox::from_id_source("select skycloud").selected_text(self.skyclouds[self.select_skycloud])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, skycloud) in self.skyclouds.iter().enumerate() {
                                 if ui.selectable_label(self.select_skycloud == index, skycloud.to_string()).clicked() {
@@ -519,6 +554,7 @@ impl UiInRoom {
 
                         ui.label("路面情况：");
                         ComboBox::from_id_source("select surface age").selected_text(self.ages[self.select_age])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.ages.iter().enumerate() {
                                 if ui.selectable_label(self.select_age == index, item.to_string()).clicked() {
@@ -530,6 +566,7 @@ impl UiInRoom {
 
                         ui.label("湿滑情况：");
                         ComboBox::from_id_source("select wetness").selected_text(self.wetness[self.select_wetness])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.wetness.iter().enumerate() {
                                 if ui.selectable_label(self.select_wetness == index, item.to_string()).clicked() {
@@ -541,6 +578,7 @@ impl UiInRoom {
 
                         ui.label("比赛时段：");
                         ComboBox::from_id_source("select timeofday").selected_text(self.timeofdays[self.select_timeofdays])
+                        .width(150.0)
                         .show_ui(ui, |ui| {
                             for (index, item) in self.timeofdays.iter().enumerate() {
                                 if ui.selectable_label(self.select_timeofdays == index, item.to_string()).clicked() {
@@ -551,8 +589,9 @@ impl UiInRoom {
                         ui.end_row(); 
                     });
 
+                    ui.add_space(10.0);
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                        ui.add_space(80.0);
+                        ui.add_space(100.0);
                         if ui.button("取消").clicked() {
                             self.show_updatewin = false;
                         }
@@ -562,7 +601,38 @@ impl UiInRoom {
                         }
                     });
                 });
+                ui.add_space(20.0);
             });
+        });
+    }
+
+    fn show_player_table(&mut self, name: &str, ui: &mut Ui, table: Vec<RaceUserState>, skip: usize, step: usize) {
+        Grid::new(name)
+        .min_col_width(80.0)
+        .min_row_height(24.0)
+        .show(ui, |ui| {
+            ui.label("序号");
+            ui.label("车手");
+            ui.label("权限");
+            ui.label("状态");
+            ui.end_row();
+            for (index, player) in table.iter().skip(skip).step_by(step).enumerate() {
+                ui.label((index+1).to_string());
+                ui.label(&player.name);
+                if &self.raceinfo.owner == &player.name {
+                    ui.label("房主");
+                } else {
+                    ui.label("玩家");
+                }
+
+                match &player.state {
+                    RaceState::RaceReady => ui.label("已就绪"),
+                    RaceState::RaceLoaded => ui.label("加载完成"),
+                    RaceState::RaceFinished | RaceState::RaceRetired => ui.label("已完成"),
+                    _ => ui.label("未就绪"),
+                };
+                ui.end_row();
+            }
         });
     }
 }
