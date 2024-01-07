@@ -427,6 +427,7 @@ impl UiInRoom {
     fn update_room(&mut self, page: &mut UiPageCtx) {
         self.raceinfo.stage = self.stages[self.select_stage].name.clone();
         self.raceinfo.stage_id = self.stages[self.select_stage].stage_id.parse().unwrap();
+        self.raceinfo.stage_type = self.stages[self.select_stage].get_surface();
         self.raceinfo.stage_len = self.stages[self.select_stage].length.parse().unwrap();
         self.raceinfo.car_fixed = self.fixed_car;
         self.raceinfo.car = self.cars[self.select_car].name.clone();
