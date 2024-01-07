@@ -8,8 +8,9 @@ use tokio::sync::Mutex;
 use log::{info, trace};
 
 use rust_rbrserver::server::RacingServer;
-use protocol::httpapi::{UserLogin, MetaHeader, DataFormat, RaceQuery, MetaRaceData, RaceCreate, UserLogout, RaceAccess, RaceLeave, RaceUpdate, RaceJoin, RaceInfoUpdate};
-use protocol::httpapi::{API_VERSION_STRING, META_HEADER_LEN};
+use protocol::httpapi::{UserLogin, RaceQuery, RaceCreate, UserLogout, RaceInfoUpdate, RaceConfigUpdate, UserQuery};
+use protocol::API_VERSION_STRING;
+use protocol::metaapi::{META_HEADER_LEN, RaceUpdate, RaceAccess, RaceJoin, RaceLeave, MetaHeader, DataFormat, MetaRaceData};
 
 /// Set http and metadata ports.
 #[derive(Parser, Debug)]
@@ -49,6 +50,8 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_update_race_info)
         .service(handle_http_race_get_state)
         .service(handle_http_race_update_state)
+        .service(handle_http_get_player_config)
+        .service(handle_http_update_player_config)
         .service(handle_http_get_room_start)
         .service(handle_http_set_room_start)
         .service(handle_http_race_create)
@@ -166,7 +169,33 @@ async fn handle_http_update_race_info(data: web::Data<Arc<Mutex<RacingServer>>>,
     if server.update_raceroom_info(update) {
         HttpResponse::Ok().body("Update race info successful!")
     } else {
-        HttpResponse::NoContent().body("Get Race info failed!")
+        HttpResponse::NoContent().body("Update Race info failed!")
+    }
+}
+
+#[actix_web::get("/api/player/config")]
+async fn handle_http_get_player_config(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserQuery>) -> HttpResponse {
+    let query = body.into_inner();
+    trace!("Received user query race config: {:?}", query);
+
+    let mut server = data.lock().await;
+    if let Some(response) = server.get_player_race_config(&query) {
+        HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
+    } else {
+        HttpResponse::NoContent().body("Get Race config failed!")
+    }
+}
+
+#[actix_web::put("/api/player/config")]
+async fn handle_http_update_player_config(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceConfigUpdate>) -> HttpResponse {
+    let update = body.into_inner();
+    trace!("Received user update race config: {:?}", update);
+
+    let mut server = data.lock().await;
+    if server.update_player_race_config(update) {
+        HttpResponse::Ok().body("Update race config successful!")
+    } else {
+        HttpResponse::NoContent().body("Update Race config failed!")
     }
 }
 

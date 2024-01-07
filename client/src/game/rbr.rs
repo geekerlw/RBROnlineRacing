@@ -13,7 +13,8 @@ use std::iter::once;
 use std::os::windows::ffi::OsStrExt;
 use std::process::Command;
 use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_DOWN, VK_RETURN, VK_ESCAPE, GetForegroundWindow};
-use protocol::httpapi::{RaceState, MetaRaceData, RaceInfo, MetaRaceResult};
+use protocol::httpapi::{RaceState, RaceInfo, RaceConfig};
+use protocol::metaapi::{MetaRaceData, MetaRaceResult};
 use ini::Ini;
 use serde::{Serialize, Deserialize};
 use process_memory::{Architecture, Memory, DataMember, Pid, ProcessHandleExt, TryIntoProcessHandle};
@@ -64,15 +65,43 @@ pub struct RBRCarData {
     pub audio_hash: String,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct RBRAddtionalSettings {
-    pub tyre: u32,
-    pub weather: u32,
-    pub skycloud: u32,
-    pub wetness: u32,
-    pub age: u32,
-    pub timeofday: u32,
-    pub skytype: u32,
+#[derive(Default)]
+#[repr(C, packed)]
+pub struct RBRRaceSetting {
+    pub datatype: c_uint,
+    pub external: c_uint,
+    pub weather: c_uint,
+    pub skycloud: c_uint,
+    pub wetness: c_uint,
+    pub age: c_uint,
+    pub timeofday: c_uint,
+    pub skytype: c_uint,
+    pub tyre: c_uint,
+}
+
+impl RBRRaceSetting {
+    fn from(info: &RaceInfo, cfg: &RaceConfig) -> Self {
+        let mut racesetting = RBRRaceSetting::default();
+        racesetting.datatype = 1;
+        racesetting.external = 1;
+        racesetting.weather = info.weather.clone();
+        racesetting.skycloud = info.skycloud.clone();
+        racesetting.wetness = info.wetness.clone();
+        racesetting.age = info.age.clone();
+        racesetting.timeofday = info.timeofday.clone();
+        racesetting.skytype = info.skytype.clone();
+        racesetting.tyre = cfg.tyre.clone();
+        racesetting
+    }
+
+    fn as_bytes(self) -> [u8; size_of::<RBRRaceSetting>()] {
+        let mut bytes = [0; size_of::<RBRRaceSetting>()];
+        unsafe {
+            let ptr = &self as *const RBRRaceSetting as *const u8;
+            std::ptr::copy(ptr, bytes.as_mut_ptr(), size_of::<RBRRaceSetting>());
+        };
+        bytes
+    }
 }
 
 #[derive(Default)]
@@ -86,6 +115,8 @@ pub struct RBRRaceItem {
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceData {
+    pub datatype: c_uint,
+    pub external: c_uint,
     pub count: c_uint,
     pub data: [RBRRaceItem; 8],
 }
@@ -93,6 +124,8 @@ pub struct RBRRaceData {
 impl RBRRaceData {
     fn from_result(result: &Vec<MetaRaceResult>) -> Self {
         let mut racedata = RBRRaceData::default();
+        racedata.datatype = 2;
+        racedata.external = 1;
         for (index, item) in result.iter().enumerate() {
             if index >= 8 {
                 break;
@@ -203,7 +236,7 @@ impl RBRGame {
                 break;
             } else {
                 retries += 1;
-                if retries >= 4 {
+                if retries >= 10 {
                     break;
                 }
             }
@@ -220,16 +253,16 @@ impl RBRGame {
             sleep(Duration::from_millis(100));
 
             // Simulate a special keyboard event (Down key)
-            self.simulate_key_press(window_handle, VK_DOWN as usize, 10);
+            self.simulate_key_press(window_handle, VK_DOWN as usize, 0);
             sleep(Duration::from_millis(200));
 
             // Simulate a special keyboard event (Down key)
-            self.simulate_key_press(window_handle, VK_DOWN as usize, 10);
+            self.simulate_key_press(window_handle, VK_DOWN as usize, 0);
             sleep(Duration::from_millis(200));
         }
     }
 
-    pub fn enter_practice(&mut self) {
+    pub fn enter_practice(&mut self, raceinfo: &RaceInfo, racecfg: &RaceConfig) {
         unsafe {
             // Find the handle of the target window
             let window_title = "Richard Burns Rally - DirectX9\0";
@@ -237,12 +270,15 @@ impl RBRGame {
             let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
             sleep(Duration::from_millis(100));
 
+            info!("enter practice with raceinfo {:?}", raceinfo);
+            info!("enter practice with racecfg {:?}", racecfg);
+
             // Simulate a special keyboard event (Enter key)
-            self.simulate_key_press(window_handle, VK_RETURN as usize, 10);
+            self.simulate_key_press(window_handle, VK_RETURN as usize, 0);
             sleep(Duration::from_secs(1));
 
             // Simulate a special keyboard event (Enter key)
-            self.simulate_key_press(window_handle, VK_RETURN as usize, 10);
+            self.simulate_key_press(window_handle, VK_RETURN as usize, 0);
             sleep(Duration::from_millis(200));
         }
     }
@@ -316,23 +352,20 @@ impl RBRGame {
         return data;
     }
 
-    pub fn set_race_addtional_config(&mut self, cfg: &RBRAddtionalSettings) {
-        let handle = (self.pid as Pid).try_into_process_handle().unwrap().set_arch(Architecture::Arch32Bit);
-        let tyre_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x1660838]);
-        let weather_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x1660848]);
-        let skycloud_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893908]);
-        let wetness_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x89390C]);
-        let age_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893910]);
-        let timeofday_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893930]);
-        let skytype_addr: DataMember<u32> = DataMember::<u32>::new_offset(handle, vec![0x893934]);
-
-        tyre_addr.write(&cfg.tyre).unwrap();
-        weather_addr.write(&cfg.weather).unwrap();
-        skycloud_addr.write(&cfg.skycloud).unwrap();
-        wetness_addr.write(&cfg.wetness).unwrap();
-        age_addr.write(&cfg.age).unwrap();
-        timeofday_addr.write(&cfg.timeofday).unwrap();
-        skytype_addr.write(&cfg.skytype).unwrap();
+    pub async fn set_race_config(&mut self, info: &RaceInfo, cfg: &RaceConfig) {
+        self.set_race_stage(&info.stage_id);
+        self.set_race_car_damage(&info.damage);
+        if info.car_fixed {
+            self.set_race_car(&info.car_id);
+            self.set_race_car_setup(&info.car_id, &"".to_string());
+        } else {
+            self.set_race_car(&cfg.car_id);
+            self.set_race_car_setup(&cfg.car_id, &cfg.setup);
+        }
+        if let Some(udp) = &self.udp {
+            let buf = RBRRaceSetting::from(info, cfg).as_bytes();
+            udp.send(&buf).await.unwrap();
+        }
     }
 
     pub async fn set_race_data(&mut self, result: &Vec<MetaRaceResult>) {
@@ -346,16 +379,11 @@ impl RBRGame {
         self.set_race_data(result).await;
     }
 
-    pub fn set_race_stage(&mut self, info: &RaceInfo) {
+    pub fn set_race_stage(&mut self, stage_id: &u32) {
         let recent_filepath = self.root_path.clone() + r"\rsfdata\cache\recent.ini";
         if let Ok(mut conf) = Ini::load_from_file(&recent_filepath) {
-            conf.with_section(Some("PracticeStage")).set("id", info.stage_id.to_string());
+            conf.with_section(Some("PracticeStage")).set("id", stage_id.to_string());
             conf.write_to_file(recent_filepath).unwrap();
-        }
-        let conf_path = self.root_path.clone() + r"\rallysimfans.ini";
-        if let Ok(mut conf) = Ini::load_from_file(&conf_path) {
-            conf.with_section(Some("drive")).set("practice_damage", info.damage.to_string());
-            conf.write_to_file(conf_path).unwrap();
         }
     }
 
@@ -364,6 +392,14 @@ impl RBRGame {
         if let Ok(mut conf) = Ini::load_from_file(&recent_filepath) {
             conf.with_section(Some("PracticeCar")).set("id", car_id.to_string());
             conf.write_to_file(recent_filepath).unwrap();
+        }
+    }
+
+    pub fn set_race_car_damage(&mut self, damage: &u32) {
+        let conf_path = self.root_path.clone() + r"\rallysimfans.ini";
+        if let Ok(mut conf) = Ini::load_from_file(&conf_path) {
+            conf.with_section(Some("drive")).set("practice_damage", damage.to_string());
+            conf.write_to_file(conf_path).unwrap();
         }
     }
 

@@ -2,9 +2,11 @@ use eframe::egui;
 use egui::Grid;
 use egui::ComboBox;
 use egui::containers::popup::popup_below_widget;
-use protocol::httpapi::RaceAccess;
+use protocol::metaapi::{RaceAccess, RaceLeave};
+use protocol::httpapi::RaceConfig;
+use protocol::httpapi::RaceConfigUpdate;
 use protocol::httpapi::RaceInfoUpdate;
-use protocol::httpapi::{RaceQuery, RaceInfo, RaceLeave, RaceUserState, RaceState};
+use protocol::httpapi::{RaceQuery, RaceInfo, RaceUserState, RaceState};
 use reqwest::StatusCode;
 use crate::{ui::UiPageState, game::rbr::{RBRGame, RBRStageData, RBRCarData}};
 use super::UiMsg;
@@ -37,6 +39,18 @@ pub struct UiInRoom {
     pub select_damage: usize,
     pub tyretypes: Vec<&'static str>,
     pub select_tyretype: usize,
+    pub weathers: Vec<&'static str>,
+    pub select_weather: usize,
+    pub skyclouds: Vec<&'static str>,
+    pub select_skycloud: usize,
+    pub wetness: Vec<&'static str>,
+    pub select_wetness: usize,
+    pub ages: Vec<&'static str>,
+    pub select_age: usize,
+    pub timeofdays: Vec<&'static str>,
+    pub select_timeofdays: usize,
+    pub skytypes: Vec<&'static str>,
+    pub select_skytype: usize,
     rx: Receiver<UiInRoomMsg>,
     tx: Sender<UiInRoomMsg>,
     pub timed_task: Option<JoinHandle<()>>,
@@ -58,12 +72,24 @@ impl Default for UiInRoom {
             cars: vec![],
             select_car: 36,
             filter_car: String::from("Ford Fiesta WRC 2019"),
-            setups: vec!["Default".to_string()],
+            setups: vec!["default".to_string()],
             select_setup: 0,
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
             tyretypes: vec!["Dry tarmac", "Intermediate tarmac", "Wet tarmac", "Dry gravel", "Inter gravel", "Wet gravel", "Snow"],
             select_tyretype: 0,
+            weathers: vec!["Good", "Random", "Bad"],
+            select_weather: 0,
+            skyclouds: vec!["Clear", "PartCloud", "LightCloud", "HeavyCloud"],
+            select_skycloud: 0,
+            wetness: vec!["Dry", "Damp", "Wet"],
+            select_wetness: 0,
+            ages: vec!["New", "Normal", "Worn"],
+            select_age: 0,
+            timeofdays: vec!["Morning", "Noon", "Evening"],
+            select_timeofdays: 0,
+            skytypes: vec!["Crisp", "Hazy", "NoRain", "LightRain", "HeavyRain", "NoSnow", "LightSnow", "HeavySnow", "LightFog", "HeavyFog"],
+            select_skytype: 0,
             rx,
             tx,
             timed_task: None,
@@ -135,7 +161,6 @@ impl UiView for UiInRoom {
                     self.room_started = true;
                 }
                 UiInRoomMsg::MsgInRoomStartRacing => {
-                    self.start_game_racing(page);
                     page.route.switch_to_page(UiPageState::PageRacing);
                 }
             }
@@ -190,7 +215,7 @@ impl UiView for UiInRoom {
 
                         if self.raceinfo.car_fixed {
                             ui.label("限定调校：");
-                            ui.label("Default");
+                            ui.label("default");
                         } else {
                             ui.label("车辆调校：");
                             ComboBox::from_id_source("car setup select").selected_text(&self.setups[self.select_setup])
@@ -298,11 +323,25 @@ impl UiInRoom {
     }
 
     fn set_game_ready(&mut self, page: &mut UiPageCtx) {
-        let url = page.store.get_http_url("api/race/start");
+        let config_url = page.store.get_http_url("api/player/config");
+        let mut config = RaceConfig::default();
+        if self.raceinfo.car_fixed {
+            config.car = self.raceinfo.car.clone();
+            config.car_id = self.raceinfo.car_id.clone();
+        } else {
+            config.car = self.cars[self.select_car].name.clone();
+            config.car_id = self.cars[self.select_car].id.parse().unwrap();
+        }
+        config.tyre = self.select_tyretype as u32;
+        config.setup = self.setups[self.select_setup].clone();
+        let update = RaceConfigUpdate {token: page.store.user_token.clone(), cfg: config};
+
+        let start_url = page.store.get_http_url("api/race/start");
         let query = RaceQuery {name: self.room_name.clone()};
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            let res = reqwest::Client::new().get(url).json(&query).send().await.unwrap();
+            let _res = reqwest::Client::new().put(config_url).json(&update).send().await.unwrap();
+            let res = reqwest::Client::new().get(start_url).json(&query).send().await.unwrap();
             match res.status() {
                 StatusCode::OK => {
                     let text = res.text().await.unwrap();
@@ -318,26 +357,9 @@ impl UiInRoom {
         });
     }
 
-    fn start_game_racing(&mut self, page: &mut UiPageCtx) {
-        let mut rbr = RBRGame::new(&page.store.game_path);
-        if self.raceinfo.car_fixed {
-            rbr.set_race_car(&self.raceinfo.car_id);
-            rbr.set_race_car_setup(&self.raceinfo.car_id, &"".to_string());
-        }
-        else {
-            rbr.set_race_car(&self.cars[self.select_car].id.parse().unwrap());
-            if self.select_setup == 0 {
-                rbr.set_race_car_setup(&self.raceinfo.car_id, &"".to_string());
-            } else {
-                rbr.set_race_car_setup(&self.cars[self.select_car].id.parse().unwrap(), &self.setups[self.select_setup]);
-            }
-        }
-        page.store.curr_tyre = self.select_tyretype as u32;
-    }
-
     fn update_car_setups(&mut self, page: &mut UiPageCtx) {
         self.setups.clear();
-        self.setups.push("Default".to_string());
+        self.setups.push("default".to_string());
         if self.raceinfo.car_fixed {
             return;
         }
@@ -371,6 +393,12 @@ impl UiInRoom {
         self.raceinfo.car = self.cars[self.select_car].name.clone();
         self.raceinfo.car_id = self.cars[self.select_car].id.parse().unwrap();
         self.raceinfo.damage = self.select_damage as u32;
+        self.raceinfo.weather = self.select_weather as u32;
+        self.raceinfo.skycloud = self.select_skycloud as u32;
+        self.raceinfo.wetness = self.select_wetness as u32;
+        self.raceinfo.age = self.select_age as u32;
+        self.raceinfo.timeofday = self.select_timeofdays as u32;
+        self.raceinfo.skytype = self.select_skytype as u32;
 
         let update = RaceInfoUpdate {
             token: page.store.user_token.clone(),
@@ -455,6 +483,72 @@ impl UiInRoom {
                             }
                         });
                         ui.end_row();
+
+                        ui.label("天气类型：");
+                        ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype])
+                        .show_ui(ui, |ui| {
+                            for (index, item) in self.skytypes.iter().enumerate() {
+                                if ui.selectable_label(self.select_skytype == index, item.to_string()).clicked() {
+                                    self.select_skytype = index;
+                                }
+                            }
+                        });
+                        ui.end_row();
+
+                        ui.label("天气状况：");
+                        ComboBox::from_id_source("select weather").selected_text(self.weathers[self.select_weather])
+                            .show_ui(ui, |ui| {
+                                for (index, weather) in self.weathers.iter().enumerate() {
+                                    if ui.selectable_label(self.select_weather == index, weather.to_string()).clicked() {
+                                        self.select_weather = index;
+                                    }
+                                }
+                            });
+                        ui.end_row();
+
+                        ui.label("云雾情况：");
+                        ComboBox::from_id_source("select skycloud").selected_text(self.skyclouds[self.select_skycloud])
+                        .show_ui(ui, |ui| {
+                            for (index, skycloud) in self.skyclouds.iter().enumerate() {
+                                if ui.selectable_label(self.select_skycloud == index, skycloud.to_string()).clicked() {
+                                    self.select_skycloud = index;
+                                }
+                            }
+                        });
+                        ui.end_row();
+
+                        ui.label("路面情况：");
+                        ComboBox::from_id_source("select surface age").selected_text(self.ages[self.select_age])
+                        .show_ui(ui, |ui| {
+                            for (index, item) in self.ages.iter().enumerate() {
+                                if ui.selectable_label(self.select_age == index, item.to_string()).clicked() {
+                                    self.select_age = index;
+                                }
+                            }
+                        });
+                        ui.end_row();
+
+                        ui.label("湿滑情况：");
+                        ComboBox::from_id_source("select wetness").selected_text(self.wetness[self.select_wetness])
+                        .show_ui(ui, |ui| {
+                            for (index, item) in self.wetness.iter().enumerate() {
+                                if ui.selectable_label(self.select_wetness == index, item.to_string()).clicked() {
+                                    self.select_wetness = index;
+                                }
+                            }
+                        });
+                        ui.end_row();
+
+                        ui.label("比赛时段：");
+                        ComboBox::from_id_source("select timeofday").selected_text(self.timeofdays[self.select_timeofdays])
+                        .show_ui(ui, |ui| {
+                            for (index, item) in self.timeofdays.iter().enumerate() {
+                                if ui.selectable_label(self.select_timeofdays == index, item.to_string()).clicked() {
+                                    self.select_timeofdays = index;
+                                }
+                            }
+                        });
+                        ui.end_row(); 
                     });
 
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {

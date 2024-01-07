@@ -1,14 +1,11 @@
-use protocol::httpapi::RaceCreate;
-use protocol::httpapi::RaceInfoUpdate;
-use protocol::httpapi::RaceJoin;
-use protocol::httpapi::RaceUpdate;
-use protocol::httpapi::RaceUserState;
+use protocol::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserQuery};
+use protocol::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
+use protocol::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
 use serde::Deserialize;
 use serde::Serialize;
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::Mutex;
 use uuid::Uuid;
-use protocol::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief, RaceAccess, MetaRaceData};
 
 use crate::lobby::RaceLobby;
 use crate::player::LobbyPlayer;
@@ -68,7 +65,7 @@ impl RacingServer {
 
         let token = Uuid::new_v4();
         let tokenstr = token.to_string();
-        let player: LobbyPlayer = LobbyPlayer {tokenstr: token.to_string(), profile_name: user.name};
+        let player: LobbyPlayer = LobbyPlayer {tokenstr: token.to_string(), profile_name: user.name, race_cfg: RaceConfig::default()};
         self.lobby.push_player(token, player);
         return Some(tokenstr);
     }
@@ -124,6 +121,25 @@ impl RacingServer {
                     room.info = update.info;
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    pub fn get_player_race_config(&mut self, query: &UserQuery) -> Option<RaceConfig> {
+        if let Ok(token) = Uuid::parse_str(query.token.as_str()) {
+            if let Some(player) = self.lobby.get_player(token) {
+                return Some(player.race_cfg.clone());
+            }
+        }
+        None
+    }
+
+    pub fn update_player_race_config(&mut self, update: RaceConfigUpdate) -> bool {
+        if let Ok(token) = Uuid::parse_str(&update.token) {
+            if let Some(player) = self.lobby.get_player(token) {
+                player.race_cfg = update.cfg;
+                return true;
             }
         }
         return false;

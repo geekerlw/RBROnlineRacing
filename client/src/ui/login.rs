@@ -1,6 +1,7 @@
 use eframe::egui;
 use egui::RichText;
-use protocol::httpapi::{UserLogin, API_VERSION_STRING};
+use protocol::httpapi::UserLogin;
+use protocol::API_VERSION_STRING;
 use reqwest::StatusCode;
 use crate::ui::UiPageState;
 use super::{UiMsg, UiView, UiPageCtx};

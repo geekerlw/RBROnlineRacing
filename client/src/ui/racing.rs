@@ -1,28 +1,18 @@
 use eframe::egui;
 use egui::Grid;
 use egui::RichText;
-use protocol::httpapi::MetaHeader;
-use protocol::httpapi::RaceCmd;
-use protocol::httpapi::RaceAccess;
-use protocol::httpapi::RaceInfo;
-use protocol::httpapi::RaceQuery;
-use protocol::httpapi::RaceState;
-use protocol::httpapi::DataFormat;
-use protocol::httpapi::RaceUpdate;
-use protocol::httpapi::META_HEADER_LEN;
-use protocol::httpapi::RaceUserState;
+use protocol::metaapi::{MetaHeader, RaceCmd, RaceAccess, DataFormat, RaceUpdate, META_HEADER_LEN, MetaRaceResult};
+use protocol::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, RaceUserState, UserQuery};
 use reqwest::StatusCode;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::mpsc::{Sender, Receiver};
 use tokio::task::JoinHandle;
-use crate::game::rbr::RBRAddtionalSettings;
 use crate::game::rbr::RBRGame;
 use crate::ui::UiPageState;
 use crate::components::time::format_seconds;
 use super::{UiView, UiPageCtx};
-use protocol::httpapi::MetaRaceResult;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use log::info;
@@ -69,6 +59,7 @@ impl UiView for UiRacing {
         let tx = self.tx.clone();
         let game_path = page.store.game_path.clone();
         let room_name = page.store.curr_room.clone();
+        let http_uri = page.store.get_http_uri().clone();
 
         let state_url = page.store.get_http_url("api/race/state");
         let state_tx = self.tx.clone();
@@ -86,17 +77,8 @@ impl UiView for UiRacing {
         });
         self.timed_task = Some(task);
 
-        let info_url = page.store.get_http_url("api/race/info");
         let task = tokio::spawn(async move {
             let mut rbr = RBRGame::new(&game_path).open_udp().await;
-            let info_query = RaceQuery {name: room_name.clone()};
-            let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
-            if res.status() == StatusCode::OK {
-                let text = res.text().await.unwrap();
-                let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
-                rbr.set_race_stage(&raceinfo);
-            }
-
             let stream = TcpStream::connect(meta_addr).await.unwrap();
             let (mut reader, mut writer) = stream.into_split();            
 
@@ -137,7 +119,7 @@ impl UiView for UiRacing {
                     }     
                     let pack_data = &buffer[offset+META_HEADER_LEN..offset+META_HEADER_LEN+head.length as usize];
 
-                    meta_message_handle(head.clone(), pack_data, &mut rbr, &user_token, &room_name, writer_clone.clone(), tx.clone()).await;
+                    meta_message_handle(head.clone(), pack_data, &mut rbr, &user_token, &room_name, &http_uri, writer_clone.clone(), tx.clone()).await;
                     offset += META_HEADER_LEN + head.length as usize;
                 }
                 remain = (&buffer[offset..]).to_vec();
@@ -278,24 +260,24 @@ impl UiRacing {
 }
 
 
-async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGame, token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>, tx: Sender<UiRacingMsg>) {
+async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGame, token: &String, room: &String, uri: &String, writer: Arc<Mutex<OwnedWriteHalf>>, tx: Sender<UiRacingMsg>) {
     match head.format {
         DataFormat::FmtRaceCommand => {
             let cmd: RaceCmd = bincode::deserialize(pack_data).unwrap();
             match cmd {
                 RaceCmd::RaceCmdLoad => {
                     info!("recv cmd to load game");
-                    tokio::spawn(start_game_load(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
+                    tokio::spawn(start_game_load(rbr.root_path.clone(), token.clone(), room.clone(), uri.clone(), writer.clone()));
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoading)).await.unwrap();
                     tx.send(UiRacingMsg::MsgRaceAllReady).await.unwrap();
                 }
                 RaceCmd::RaceCmdStart => {
                     info!("recv cmd to start game");
-                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
+                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), uri.clone(), writer.clone()));
                 }
                 RaceCmd::RaceCmdUpload => {
                     info!("recv cmd to upload race data");
-                    tokio::spawn(start_game_upload(rbr.root_path.clone(), token.clone(), room.clone(), writer.clone()));
+                    tokio::spawn(start_game_upload(rbr.root_path.clone(), token.clone(), room.clone(), uri.clone(), writer.clone()));
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceRunning)).await.unwrap();
                 }
                 _ => {}
@@ -317,14 +299,33 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
     }
 }
 
-async fn start_game_load(gamepath: String, token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
-    let mut rbr: RBRGame = RBRGame::new(&gamepath);
+async fn start_game_load(gamepath: String, token: String, room: String, uri: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+    let mut rbr: RBRGame = RBRGame::new(&gamepath).open_udp().await;
     let user_token = token.clone();
     let room_name = room.clone();
+    let info_url = uri.clone() + "api/race/info";
+    let config_url = uri.clone() + "api/player/config";
     tokio::spawn(async move {
+        let mut raceinfo = RaceInfo::default();
+        let mut racecfg = RaceConfig::default();
+
+        let info_query = RaceQuery {name: room_name.clone()};
+        let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
+        if res.status() == StatusCode::OK {
+            let text = res.text().await.unwrap();
+            raceinfo = serde_json::from_str(text.as_str()).unwrap();
+        }
+
+        let config_query = UserQuery {token: user_token.clone()};
+        let res = reqwest::Client::new().get(&config_url).json(&config_query).send().await.unwrap();
+        if res.status() == StatusCode::OK {
+            let text = res.text().await.unwrap();
+            racecfg = serde_json::from_str(text.as_str()).unwrap();
+        }
+
         rbr.launch().await;
-        //rbr.set_race_addtional_config(&RBRAddtionalSettings::default());
-        rbr.enter_practice();
+        rbr.set_race_config(&raceinfo, &racecfg).await;
+        rbr.enter_practice(&raceinfo, &racecfg);
 
         loop {
             let state = rbr.get_race_state();
@@ -344,7 +345,7 @@ async fn start_game_load(gamepath: String, token: String, room: String, writer: 
     });
 }
 
-async fn start_game_race(gamepath: String, token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_race(gamepath: String, token: String, room: String, _uri: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let mut rbr = RBRGame::new(&gamepath);
     let user_token = token.clone();
     let room_name = room.clone();
@@ -357,7 +358,7 @@ async fn start_game_race(gamepath: String, token: String, room: String, writer: 
     });
 }
 
-async fn start_game_upload(gamepath: String, token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_upload(gamepath: String, token: String, room: String, _uri: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let mut rbr: RBRGame = RBRGame::new(&gamepath);
     let user_token = token.clone();
     let room_name = room.clone();

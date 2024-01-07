@@ -17,7 +17,6 @@ pub struct RacingStore {
     pub user_state: String,
     pub curr_room: String,
     pub game_path: String,
-    pub curr_tyre: u32,
 }
 
 impl RacingStore {
@@ -71,6 +70,15 @@ impl RacingStore {
             ui.label(&self.user_state);
         }
     }
+
+    pub fn get_http_uri(&self) -> String {
+        let uri = "http://".to_string()
+            + self.server_addr.as_str()
+            + ":"
+            + self.server_port.to_string().as_str()
+            + "/";
+        return uri;
+    }    
 
     pub fn get_http_url(&self, uri: &str) -> String {
         let url = "http://".to_string()

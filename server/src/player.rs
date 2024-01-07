@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use protocol::httpapi::{RaceState, MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult};
+use protocol::httpapi::{RaceState, RaceConfig};
+use protocol::metaapi::{MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult};
 use serde::{Serialize, Deserialize};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
 use uuid::Uuid;
@@ -8,6 +9,7 @@ use uuid::Uuid;
 pub struct LobbyPlayer {
     pub tokenstr: String,
     pub profile_name: String,
+    pub race_cfg: RaceConfig,
 }
 
 #[derive(Clone, Serialize, Deserialize)]

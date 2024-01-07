@@ -1,4 +1,5 @@
-use protocol::httpapi::{RoomState, RaceState, RaceCmd, MetaRaceResult, RaceInfo};
+use protocol::httpapi::{RoomState, RaceState, RaceInfo};
+use protocol::metaapi::{RaceCmd, MetaRaceResult};
 use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
 use log::info;
@@ -166,7 +167,7 @@ impl RaceRoom {
                 result.difffirst = difflength / player.race_data.speed * 3.6;
             }
             else {
-                result.difffirst = difflength * 3.6; // default 1km/h as 3.6m/s.
+                result.difffirst = difflength / 10.0 * 3.6; // default 10km/h as 3.6m/s.
             }
             result.difftime = player.race_data.finishtime - leader.race_data.finishtime;
             results.push(result);
