@@ -1,6 +1,6 @@
 [package]
 name = "rust-rbronline"
-version = "1.0.1"
+version = "1.1.0"
 edition = "2021"
 description = "Richard Burns Rally (RSF) realtime online racing platform"
 authors = ["Lw_Ziye <geekerlw@gmail.com>"]
@@ -12,7 +12,7 @@ OriginalFilename = "rust-rbronline.exe"
 LegalCopyright = "Copyright © 2023 Lw_Ziye"
 FileDescription = "SimRallyCn RBR联机对战平台"
 ProductName = "SimRallyCn RBR联机对战平台"
-ProductVersion = "1.0"
+ProductVersion = "1.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
