@@ -372,10 +372,11 @@ impl RBRGame {
         self.set_race_car_damage(&info.damage);
         if info.car_fixed {
             self.set_race_car(&info.car_id);
-            self.set_race_car_setup(&info.car_id, &"".to_string());
+            let default_setup = info.car_id.to_string() + "_d_" + info.stage_type.to_lowercase().as_str();
+            self.set_race_car_setup(&info.car_id, &info.stage_type.to_lowercase().as_str(), &default_setup);
         } else {
             self.set_race_car(&cfg.car_id);
-            self.set_race_car_setup(&cfg.car_id, &cfg.setup);
+            self.set_race_car_setup(&cfg.car_id, &info.stage_type.to_lowercase().as_str(), &cfg.setup);
         }
         if let Some(udp) = &self.udp {
             let buf = RBRRaceSetting::from(info, cfg).as_bytes();
@@ -414,7 +415,7 @@ impl RBRGame {
         }
     }
 
-    pub fn set_race_car_setup(&mut self, car_id: &u32, setup: &String) {
+    pub fn set_race_car_setup(&mut self, car_id: &u32, surface: &str, setup: &String) {
         let personal_filepath = self.root_path.clone() + r"\rallysimfans_personal.ini";
         if let Ok(mut file) = std::fs::File::open(&personal_filepath) {
             let mut buf = Vec::new();
@@ -423,9 +424,7 @@ impl RBRGame {
         
             if let Ok(mut conf) = Ini::load_from_str(&bufstr) {
                 let section = "car".to_string() + car_id.to_string().as_str();
-                conf.with_section(Some(&section)).set("setuptarmac", setup);
-                conf.with_section(Some(&section)).set("setupgravel", setup);
-                conf.with_section(Some(&section)).set("setupsnow", setup);
+                conf.with_section(Some(&section)).set("setup".to_owned() + surface, setup);
                 conf.write_to_file(personal_filepath).unwrap();
             }
         }
