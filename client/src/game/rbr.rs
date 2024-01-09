@@ -370,13 +370,17 @@ impl RBRGame {
     pub async fn set_race_config(&mut self, info: &RaceInfo, cfg: &RaceConfig) {
         self.set_race_stage(&info.stage_id);
         self.set_race_car_damage(&info.damage);
+        let default_setup = info.car_id.to_string() + "_d_" + info.stage_type.to_lowercase().as_str();
         if info.car_fixed {
             self.set_race_car(&info.car_id);
-            let default_setup = info.car_id.to_string() + "_d_" + info.stage_type.to_lowercase().as_str();
             self.set_race_car_setup(&info.car_id, &info.stage_type.to_lowercase().as_str(), &default_setup);
         } else {
             self.set_race_car(&cfg.car_id);
-            self.set_race_car_setup(&cfg.car_id, &info.stage_type.to_lowercase().as_str(), &cfg.setup);
+            if cfg.setup == "default" {
+                self.set_race_car_setup(&cfg.car_id, &info.stage_type.to_lowercase().as_str(), &default_setup);
+            } else {
+                self.set_race_car_setup(&cfg.car_id, &info.stage_type.to_lowercase().as_str(), &cfg.setup);
+            }
         }
         if let Some(udp) = &self.udp {
             let buf = RBRRaceSetting::from(info, cfg).as_bytes();
