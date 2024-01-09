@@ -1,6 +1,6 @@
 [package]
 name = "rust-rbronline"
-version = "1.1.2"
+version = "1.1.4"
 edition = "2021"
 description = "Richard Burns Rally (RSF) realtime online racing platform"
 authors = ["Lw_Ziye <geekerlw@gmail.com>"]
