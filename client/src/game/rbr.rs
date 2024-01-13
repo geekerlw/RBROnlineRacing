@@ -80,6 +80,56 @@ pub struct RBRCarData {
     pub audio_hash: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RBRStageWeather {
+    pub stage_id: String,
+    pub timeofday: String,
+    pub timeofday2: String,
+    pub skytype: String,
+    pub skycloudtype: String,
+}
+
+impl RBRStageWeather {
+    pub fn get_weather_string(&self) -> String {
+        let mut fmtstr = String::new();
+        match self.timeofday2.as_str() {
+            "0" => fmtstr.push_str("Morning "),
+            "1" => fmtstr.push_str("Noon "),
+            "2" => fmtstr.push_str("Evening "),
+            _ => fmtstr.push_str("Morning "),
+        }
+        match self.skycloudtype.as_str() {
+            "0" => fmtstr.push_str("Clear "),
+            "1" => fmtstr.push_str("PartCloud "),
+            "2" => fmtstr.push_str("LightCloud "),
+            "3" => fmtstr.push_str("HeavyCloud "),
+            _ => fmtstr.push_str("Clear "),
+        }
+        match self.skytype.as_str() {
+            "0" => fmtstr.push_str("Crisp"),
+            "1" => fmtstr.push_str("Hazy"),
+            "2" => fmtstr.push_str("NoRain"),
+            "3" => fmtstr.push_str("LightRain"),
+            "4" => fmtstr.push_str("HeavyRain"),
+            "5" => fmtstr.push_str("NoSnow"),
+            "6" => fmtstr.push_str("LightSnow"),
+            "7" => fmtstr.push_str("HeaveSnow"),
+            "8" => fmtstr.push_str("LightFog"),
+            "9" => fmtstr.push_str("HeavyFog"),
+            _ => fmtstr.push_str("Crisp"),
+        }
+        fmtstr
+    }
+
+    pub fn get_weight(&self) -> u32 {
+        let timeofday2 = self.timeofday2.parse::<u32>().unwrap();
+        let skycloud = self.skycloudtype.parse::<u32>().unwrap();
+        let skytype = self.skytype.parse::<u32>().unwrap();
+
+        skycloud << 8 | skytype << 4 | timeofday2
+    }
+}
+
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceSetting {
@@ -100,10 +150,10 @@ impl RBRRaceSetting {
         racesetting.datatype = 1;
         racesetting.external = 1;
         racesetting.weather = info.weather.clone();
-        racesetting.skycloud = info.skycloud.clone();
+        racesetting.skycloud = 0;
         racesetting.wetness = info.wetness.clone();
-        racesetting.age = info.age.clone();
-        racesetting.timeofday = info.timeofday.clone();
+        racesetting.age = 0;
+        racesetting.timeofday = 0;
         racesetting.skytype = info.skytype.clone();
         racesetting.tyre = cfg.tyre.clone();
         racesetting
@@ -446,6 +496,18 @@ impl RBRGame {
             }
         }
         return None;
+    }
+
+    pub fn load_game_stage_weathers(&mut self, stage_id: &u32) -> Option<Vec<RBRStageWeather>> {
+        let filepath = self.root_path.clone() + r"\rsfdata\cache\stages_tracksettings.json";
+        if let Ok(file) = std::fs::File::open(filepath) {
+            if let Ok(mut weathers) = serde_json::from_reader::<std::fs::File, Vec<RBRStageWeather>>(file) {
+                weathers.retain(|x| &x.stage_id.parse().unwrap_or(0u32) == stage_id);
+                weathers.sort_by(|a, b| a.get_weight().cmp(&b.get_weight()));
+                return Some(weathers);
+            }
+        }
+        None
     }
 
     pub fn load_game_cars(&mut self) -> Option<Vec<RBRCarData>> {
