@@ -129,7 +129,7 @@ impl UiView for UiRacing {
         self.rbr_task = Some(task);
     }
 
-    fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
+    fn exit(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
         if let Some(task) = &self.rbr_task {
             task.abort();
             self.rbr_task = None;
@@ -139,6 +139,7 @@ impl UiView for UiRacing {
             self.timed_task = None;
         }
         self.state = RaceState::RaceReady;
+        ctx.send_viewport_cmd(egui::ViewportCommand::WindowLevel(egui::WindowLevel::Normal));
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
@@ -146,7 +147,10 @@ impl UiView for UiRacing {
             match msg {
                 UiRacingMsg::MsgRaceState(state) => self.state = state,
                 UiRacingMsg::MsgRaceUserState(state) => self.userstates = state,
-                UiRacingMsg::MsgRaceResult(result) => self.table_data = result,
+                UiRacingMsg::MsgRaceResult(result) => {
+                    self.table_data = result;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::WindowLevel(egui::WindowLevel::AlwaysOnTop));
+                },
                 UiRacingMsg::MsgRaceAllReady => {
                     if let Some(task) = &self.timed_task {
                         task.abort();
