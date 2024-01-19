@@ -12,8 +12,12 @@ const router = createRouter({
   routes: [ // 定义路由
     {
       path: '/',
+      redirect: '/lobby',
+    },
+    {
+      path: '/home',
       component: Home,
-    },  
+    }, 
     {
       path: "/lobby",
       component: Lobby
