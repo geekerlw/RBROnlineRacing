@@ -2,7 +2,7 @@
   <div class="lobby">
     <div class="title">
         <div class="left-group">
-            <el-button class="rb" type="default" @click="goHome">返回</el-button>
+            <el-button class="rb" type="default" @click="goHome"><el-icon><ArrowLeft /></el-icon>返回</el-button>
             <el-button class="cr" type="success" @click="back">创建房间</el-button>
         </div>
         {{$t('lobbyTitle')}}

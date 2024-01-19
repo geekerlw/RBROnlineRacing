@@ -8,13 +8,13 @@ const i18n = createI18n({
     // set locale messages
     // for the details, see the "Getting Started" section
     zh: {
-      hello: "欢迎来到RBN-BattleNet",
+      hello: "欢迎来到RBR-BattleNet",
       lobbyTitle: "对战大厅",
       zh: "中文",
       en: "英文",
     },
     en: {
-      hello: "Welcome to RBN-BattleNet",
+      hello: "Welcome to RBR-BattleNet",
       lobbyTitle: "BattleNet-Lobby",
       zh: "Chinese",
       en: "English",
