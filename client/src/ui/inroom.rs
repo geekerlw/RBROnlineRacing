@@ -83,7 +83,7 @@ impl Default for UiInRoom {
             select_tyretype: 0,
             wetness: vec!["Dry", "Damp", "Wet"],
             select_wetness: 0,
-            weathers: vec!["Good", "Bad"],
+            weathers: vec!["Good", "Random", "Bad"],
             select_weather: 0,
             skytypes: vec![],
             select_skytype: 0,
@@ -154,6 +154,7 @@ impl UiView for UiInRoom {
                 UiInRoomMsg::MsgInRoomRaceInfo(info) => {
                     self.raceinfo = info;
                     self.update_car_setups(page);
+                    self.update_stage_weathers(page);
                 }
                 UiInRoomMsg::MsgInRoomUserState(states) => {
                     self.userstates = states;
@@ -213,7 +214,7 @@ impl UiView for UiInRoom {
                                 ui.end_row();
         
                                 ui.label("天气类型：");
-                                ui.label(self.skytypes[self.raceinfo.skytype as usize].get_weather_string());
+                                ui.label(&self.raceinfo.skytype);
                                 ui.end_row();
 
                                 if self.raceinfo.car_fixed {
@@ -350,6 +351,7 @@ impl UiInRoom {
         }
         config.tyre = self.select_tyretype as u32;
         config.setup = self.setups[self.select_setup].clone();
+        config.setup_id = self.select_setup as u32 + 1;
         let update = RaceConfigUpdate {token: page.store.user_token.clone(), cfg: config};
 
         let start_url = page.store.get_http_url("api/race/start");
@@ -426,7 +428,8 @@ impl UiInRoom {
         self.raceinfo.damage = self.select_damage as u32;
         self.raceinfo.weather = self.select_weather as u32;
         self.raceinfo.wetness = self.select_wetness as u32;
-        self.raceinfo.skytype = self.select_skytype as u32;
+        self.raceinfo.skytype = self.skytypes[self.select_skytype].get_weather_string().clone();
+        self.raceinfo.skytype_id = self.select_skytype as u32;
 
         let update = RaceInfoUpdate {
             token: page.store.user_token.clone(),

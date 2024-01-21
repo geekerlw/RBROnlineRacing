@@ -49,7 +49,7 @@ impl Default for UiCreateRace {
             select_damage: 3,
             wetness: vec!["Dry", "Damp", "Wet"],
             select_wetness: 0,
-            weathers: vec!["Good", "Bad"],
+            weathers: vec!["Good", "Random", "Bad"],
             select_weather: 0,
             skytypes: vec![],
             select_skytype: 0,
@@ -245,7 +245,8 @@ impl UiCreateRace {
             damage: self.select_damage as u32,
             weather: self.select_weather as u32,
             wetness: self.select_wetness as u32,
-            skytype: self.select_skytype as u32,
+            skytype: self.skytypes[self.select_skytype].get_weather_string().clone(),
+            skytype_id: self.select_skytype as u32,
         };
         let mut create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};
         if !self.room_passwd.is_empty() {

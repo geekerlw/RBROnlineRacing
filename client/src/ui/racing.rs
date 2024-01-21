@@ -331,9 +331,9 @@ async fn start_game_load(gamepath: String, token: String, room: String, uri: Str
             racecfg = serde_json::from_str(text.as_str()).unwrap();
         }
 
+        rbr.prepare_game_env(&raceinfo, &racecfg);
         rbr.launch().await;
-        rbr.set_race_config(&raceinfo, &racecfg).await;
-        rbr.enter_practice(&raceinfo, &racecfg);
+        rbr.enter_practice(&raceinfo, &racecfg).await;
 
         loop {
             let state = rbr.get_race_state();
