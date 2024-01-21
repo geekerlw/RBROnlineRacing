@@ -51,19 +51,8 @@
       </el-form-item>
 
       <div class="group-title">条件设定</div>
-      <!-- 路面情况 -->
-      <el-form-item label="路面情况" prop="road">
-        <el-select v-model="form.road" placeholder="">
-          <el-option
-            v-for="item in roadList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          ></el-option>
-        </el-select>
-      </el-form-item>
       <!-- 湿滑情况选择 -->
-      <el-form-item label="湿滑情况" prop="湿滑情况">
+      <el-form-item label="湿滑情况" prop="road">
         <el-select v-model="form.road" placeholder="">
           <el-option
             v-for="item in roadList"
@@ -73,20 +62,20 @@
           ></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="比赛时段" prop="路面情况">
-        <el-select v-model="form.road" placeholder="">
+      <el-form-item label="天气状况" prop="skyinfo">
+        <el-select v-model="form.skyinfo" placeholder="">
           <el-option
-            v-for="item in roadList"
+            v-for="item in skyinfoList"
             :key="item.value"
             :label="item.label"
             :value="item.value"
           ></el-option>
         </el-select>
       </el-form-item>      
-      <el-form-item label="比赛时段" prop="路面情况">
-        <el-select v-model="form.road" placeholder="">
+      <el-form-item label="天气类型" prop="skykind">
+        <el-select v-model="form.skykind" placeholder="">
           <el-option
-            v-for="item in roadList"
+            v-for="item in skykindList"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -158,13 +147,38 @@ const roadList = [
   },
 ];
 
+const skyinfoList = [
+  {
+    label: "skyinfo1",
+    value: "skyinfo1",
+  },
+  {
+    label: "skyinfo2",
+    value: "skyinfo2",
+  },
+];
+
+const skykindList = [
+  {
+    label: "skykind1",
+    value: "skykind1",
+  },
+  {
+    label: "skykind2",
+    value: "skykind2",
+  },
+];
+
 const rules = [];
 const form = reactive({
   name: "11",
+  password: "",
   stage: "",
   damage: "",
   car: "",
   road: '',
+  skyinfo: '',
+  skykind: '',
 });
 
 const randomStage = () => {

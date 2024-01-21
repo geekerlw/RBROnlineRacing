@@ -11,23 +11,26 @@
       </div>
       {{ $t("lobbyTitle") }}
     </div>
-    <div class="block20"></div>
     <div class="racelist">
-      <div class="item" v-for="(race, index) in raceList" :key="race">
-        <div class="name line">房名: {{ race.name }}</div>
-        <div class="stage line">地图: {{ race.stage }}</div>
-        <div class="owner line">房主: {{ race.owner }}</div>
-        <div class="players line">人数: {{ race.players }}/8</div>
-        <div class="status line">状态: {{ stateText(race.state) }}</div>
-        <div class="action">
-          <el-button type="primary" v-if="race.state == '等待中'" @click="back"
-            >加入</el-button
-          >
-          <el-button type="danger" v-if="race.state == '进行中'" @click="back"
-            >退出比赛</el-button
-          >
-        </div>
+
+    <el-card class="item"  shadow="hover" v-for="(race, index) in raceList" :key="race">
+      <div class="name line">房名: {{ race.name }}</div>
+      <div class="stage line">地图: {{ race.stage }}</div>
+      <div class="owner line">房主: {{ race.owner }}</div>
+      <div class="players line">人数: {{ race.players }}/8</div>
+      <div class="status line">状态: {{ stateText(race.state) }}</div>
+      <div class="action">
+        <el-button type="primary" v-if="race.state == '等待中'" @click="back"
+          >加入房间</el-button
+        >
+        <el-button type="primary" v-if="race.state == '等待中'" @click="gorace"
+          >进入房间</el-button
+        >
+        <el-button type="danger" v-if="race.state == '进行中'" @click="back"
+          >退出比赛</el-button
+        >
       </div>
+    </el-card>
     </div>
   </div>
   <CreateOrEditRace ref="createRef"></CreateOrEditRace>
@@ -46,6 +49,9 @@ const goHome = () => {
 const back = () => {
   history.back();
 };
+const gorace = () => {
+  router.push('/room/1');
+}
 
 const roomMockList = [
   {
@@ -81,7 +87,6 @@ const ssadsds = ref(null);
 
 onMounted(() => {
   raceList.value = roomMockList;
-  showCreateRace();
 });
 </script>
 
@@ -91,12 +96,11 @@ onMounted(() => {
   cursor: default;
 }
 .title {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: bold;
   text-align: center;
-  margin-bottom: 20px;
   position: relative;
-  margin: 0 auto;
+  margin: 0 auto 30px;
   width: 90%;
   .left-group {
     left: 0;
@@ -109,12 +113,12 @@ onMounted(() => {
   margin: 0 auto;
   justify-content: flex-start;
   .item {
-    width: 200px;
-    border: 1px solid #ededed;
-    padding: 20px;
-    border-radius: 5px;
-    background: #f8f8ff;
-    box-shadow: 0 0 10px #ededed;
+    width: 240px;
+    // border: 1px solid rgb(225, 229, 250);
+    // padding: 20px;
+    // border-radius: 5px;
+    // background: #ebeeff;
+    // box-shadow: 0 0 10px #dddddd;
     .line {
       margin-bottom: 10px;
     }
