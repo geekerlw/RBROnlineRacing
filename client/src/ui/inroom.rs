@@ -154,7 +154,6 @@ impl UiView for UiInRoom {
                 UiInRoomMsg::MsgInRoomRaceInfo(info) => {
                     self.raceinfo = info;
                     self.update_car_setups(page);
-                    self.update_stage_weathers(page);
                 }
                 UiInRoomMsg::MsgInRoomUserState(states) => {
                     self.userstates = states;
@@ -428,8 +427,13 @@ impl UiInRoom {
         self.raceinfo.damage = self.select_damage as u32;
         self.raceinfo.weather = self.select_weather as u32;
         self.raceinfo.wetness = self.select_wetness as u32;
-        self.raceinfo.skytype = self.skytypes[self.select_skytype].get_weather_string().clone();
-        self.raceinfo.skytype_id = self.select_skytype as u32;
+        if let Some(skytype) = self.skytypes.get(self.select_skytype) {
+            self.raceinfo.skytype = skytype.get_weather_string().clone();
+            self.raceinfo.skytype_id = self.select_skytype as u32;
+        } else {
+            self.raceinfo.skytype = "Default".to_string();
+            self.raceinfo.skytype_id = 0u32;
+        }
 
         let update = RaceInfoUpdate {
             token: page.store.user_token.clone(),
@@ -552,15 +556,17 @@ impl UiInRoom {
                         ui.end_row();
 
                         ui.label("天气类型：");
-                        ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype].get_weather_string())
-                        .width(150.0)
-                        .show_ui(ui, |ui| {
-                            for (index, item) in self.skytypes.iter().enumerate() {
-                                if ui.selectable_label(self.select_skytype == index, item.get_weather_string()).clicked() {
-                                    self.select_skytype = index;
+                        if !self.skytypes.is_empty() {
+                            ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype].get_weather_string())
+                            .width(150.0)
+                            .show_ui(ui, |ui| {
+                                for (index, item) in self.skytypes.iter().enumerate() {
+                                    if ui.selectable_label(self.select_skytype == index, item.get_weather_string()).clicked() {
+                                        self.select_skytype = index;
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                         ui.end_row();
                     });
 

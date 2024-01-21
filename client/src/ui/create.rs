@@ -192,15 +192,17 @@ impl UiView for UiCreateRace {
                         ui.end_row();
 
                         ui.label("天气类型：");
-                        ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype].get_weather_string())
-                        .width(150.0)
-                        .show_ui(ui, |ui| {
-                            for (index, item) in self.skytypes.iter().enumerate() {
-                                if ui.selectable_label(self.select_skytype == index, item.get_weather_string()).clicked() {
-                                    self.select_skytype = index;
+                        if !self.skytypes.is_empty() {
+                            ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype].get_weather_string())
+                            .width(150.0)
+                            .show_ui(ui, |ui| {
+                                for (index, item) in self.skytypes.iter().enumerate() {
+                                    if ui.selectable_label(self.select_skytype == index, item.get_weather_string()).clicked() {
+                                        self.select_skytype = index;
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                         ui.end_row();
                     });
 
@@ -232,7 +234,7 @@ impl UiCreateRace {
     }
 
     fn create_room(&mut self, page: &mut UiPageCtx) {
-        let raceinfo = RaceInfo{
+        let mut raceinfo = RaceInfo{
             name: self.room_name.clone(),
             owner: page.store.user_name.clone(),
             stage: self.stages[self.select_stage].name.clone(),
@@ -245,9 +247,14 @@ impl UiCreateRace {
             damage: self.select_damage as u32,
             weather: self.select_weather as u32,
             wetness: self.select_wetness as u32,
-            skytype: self.skytypes[self.select_skytype].get_weather_string().clone(),
-            skytype_id: self.select_skytype as u32,
+            skytype: "Default".to_string(),
+            skytype_id: 0u32,
         };
+        if let Some(skytype) = self.skytypes.get(self.select_skytype) {
+            raceinfo.skytype = skytype.get_weather_string().clone();
+            raceinfo.skytype_id = self.select_skytype as u32;
+        }
+
         let mut create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};
         if !self.room_passwd.is_empty() {
             create.locked = true;
