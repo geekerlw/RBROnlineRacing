@@ -6,7 +6,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "rbnclient",
+    "productName": "RBR-BattleNet",
     "version": "0.0.0"
   },
   "tauri": {
@@ -32,9 +32,9 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "rbnclient",
-        "width": 900,
-        "height": 700
+        "title": "RBR-BattleNet",
+        "width": 1050,
+        "height": 750
       }
     ]
   }

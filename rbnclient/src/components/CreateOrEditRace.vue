@@ -1,7 +1,7 @@
 <template>
   <!-- 利用element-plus的弹窗组件实现 -->
-  <el-dialog title="创建房间" v-model="dialogVisible" width="90%" top="5vh" class="dlog"  modal="false">
-    <el-form :model="form" size="small" :rules="rules" label-width="80px">
+  <el-dialog title="创建房间" v-model="dialogVisible" width="800px" fullscreen="true" top="5vh" class="dlog"  modal="false">
+    <el-form :model="form" :rules="rules" label-width="80px">
       <div class="group-title">房间设定</div>
       <el-form-item label="房间名" prop="name">
         <el-input v-model="form.name"></el-input>
@@ -20,7 +20,7 @@
             :value="item.value"
           ></el-option>
         </el-select>
-        <el-button class="line-btn" @click="randomStage" type="success"
+        <el-button class="line-btn" @click="randomStage" type="primary"
           >随机一下</el-button
         >
       </el-form-item>
@@ -201,10 +201,11 @@ defineExpose({
   justify-content: space-between;
 }
 .multitem :deep(.el-select){
-  width: calc(100% - 90px);
+  width: calc(100% - 110px);
 }
 :global(.el-dialog__body){
-  padding-top: 10px;
+  padding-top: 0;
+  padding-bottom: 0px;
 }
 // .line-btn {
 //   margin-top: 10px;
