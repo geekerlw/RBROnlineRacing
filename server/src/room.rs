@@ -3,6 +3,7 @@ use protocol::metaapi::{RaceCmd, MetaRaceResult, MetaRaceProgress};
 use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
 use log::info;
+use chrono::Utc;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 enum RoomRaceState {
@@ -147,7 +148,8 @@ impl RaceRoom {
     }
 
     pub async fn notify_all_players_start(&mut self) {
-        let cmd = RaceCmd::RaceCmdStart;
+        let starttime = Utc::now().timestamp_millis() + 3 * 1000;
+        let cmd = RaceCmd::RaceCmdStart(starttime);
         for player in &self.players {
             player.notify_user_cmd(&cmd).await;
         }

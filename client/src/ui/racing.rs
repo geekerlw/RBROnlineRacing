@@ -17,6 +17,7 @@ use super::{UiView, UiPageCtx};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use log::info;
+use chrono::Utc;
 
 enum UiRacingMsg {
     MsgRaceState(RaceState),
@@ -280,9 +281,9 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoading)).await.unwrap();
                     tx.send(UiRacingMsg::MsgRaceAllReady).await.unwrap();
                 }
-                RaceCmd::RaceCmdStart => {
-                    info!("recv cmd to start game");
-                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), uri.clone(), writer.clone()));
+                RaceCmd::RaceCmdStart(time) => {
+                    info!("recv cmd to start game, race will start at: [{}]", time / 1000);
+                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), time.clone(), writer.clone()));
                 }
                 RaceCmd::RaceCmdUpload => {
                     info!("recv cmd to upload race data");
@@ -353,11 +354,18 @@ async fn start_game_load(gamepath: String, token: String, room: String, uri: Str
     });
 }
 
-async fn start_game_race(gamepath: String, token: String, room: String, _uri: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_race(gamepath: String, token: String, room: String, time: i64, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let mut rbr = RBRGame::new(&gamepath);
     let user_token = token.clone();
     let room_name = room.clone();
+    let starttime = time.clone();
     tokio::spawn(async move {
+        loop {
+            if Utc::now().timestamp_millis() > starttime {
+                break;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        }
         rbr.start();
         let update = RaceUpdate {token: user_token.clone(), room: room_name, state: RaceState::RaceStarted};
         let body = bincode::serialize(&update).unwrap();
