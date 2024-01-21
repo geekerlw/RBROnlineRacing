@@ -22,7 +22,9 @@
       "targets": "all",
       "identifier": "cn.rbn.dev",
       "icon": [
-        "icons/icon.png"
+        "icons/icon.png",
+        "icons/icon.ico",
+        "icons/favicon.ico"
       ]
     },
     "security": {
