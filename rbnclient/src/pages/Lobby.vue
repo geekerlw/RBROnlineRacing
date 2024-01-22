@@ -5,7 +5,7 @@
         <el-button class="rb" type="default" @click="goHome"
           ><el-icon><ArrowLeft /></el-icon>返回</el-button
         >
-        <el-button class="cr" type="success" @click="showCreateRace"
+        <el-button class="cr" type="primary" @click="showCreateRace"
           >创建房间</el-button
         >
       </div>

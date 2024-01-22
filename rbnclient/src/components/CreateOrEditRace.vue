@@ -1,6 +1,6 @@
 <template>
   <!-- 利用element-plus的弹窗组件实现 -->
-  <el-dialog title="创建房间" v-model="dialogVisible" width="800px" fullscreen="true" top="5vh" class="dlog"  modal="false">
+  <el-dialog title="创建房间" v-model="dialogVisible" width="800px" fullscreen top="5vh" class="dlog">
     <el-form :model="form" :rules="rules" label-width="80px">
       <div class="group-title">房间设定</div>
       <el-form-item label="房间名" prop="name">
