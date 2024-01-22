@@ -7,6 +7,7 @@ use protocol::httpapi::RaceCreate;
 use protocol::httpapi::RaceInfo;
 use reqwest::StatusCode;
 use super::{UiView, UiPageCtx, UiMsg};
+use crate::game::rbr::RBRStageWeather;
 use crate::game::rbr::{RBRGame, RBRStageData, RBRCarData};
 use crate::ui::UiPageState;
 use rand::{thread_rng, Rng};
@@ -24,17 +25,11 @@ pub struct UiCreateRace {
     pub filter_car: String,
     pub damages: Vec<&'static str>,
     pub select_damage: usize,
-    pub weathers: Vec<&'static str>,
-    pub select_weather: usize,
-    pub skyclouds: Vec<&'static str>,
-    pub select_skycloud: usize,
     pub wetness: Vec<&'static str>,
     pub select_wetness: usize,
-    pub ages: Vec<&'static str>,
-    pub select_age: usize,
-    pub timeofdays: Vec<&'static str>,
-    pub select_timeofdays: usize,
-    pub skytypes: Vec<&'static str>,
+    pub weathers: Vec<&'static str>,
+    pub select_weather: usize,
+    pub skytypes: Vec<RBRStageWeather>,
     pub select_skytype: usize,
 }
 
@@ -52,17 +47,11 @@ impl Default for UiCreateRace {
             filter_car: String::from("Ford Fiesta WRC 2019"),
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
             select_damage: 3,
-            weathers: vec!["Good", "Random", "Bad"],
-            select_weather: 0,
-            skyclouds: vec!["Clear", "PartCloud", "LightCloud", "HeavyCloud"],
-            select_skycloud: 0,
             wetness: vec!["Dry", "Damp", "Wet"],
             select_wetness: 0,
-            ages: vec!["New", "Normal", "Worn"],
-            select_age: 0,
-            timeofdays: vec!["Morning", "Noon", "Evening"],
-            select_timeofdays: 0,
-            skytypes: vec!["Crisp", "Hazy", "NoRain", "LightRain", "HeavyRain", "NoSnow", "LightSnow", "HeavySnow", "LightFog", "HeavyFog"],
+            weathers: vec!["Good", "Random", "Bad"],
+            select_weather: 0,
+            skytypes: vec![],
             select_skytype: 0,
         }
     }
@@ -73,6 +62,10 @@ impl UiView for UiCreateRace {
         let mut rbr = RBRGame::new(&page.store.game_path);
         if let Some(stages) = rbr.load_game_stages() {
             self.stages = stages;
+            let stage_id: u32 = self.stages[self.select_stage].stage_id.parse().unwrap();
+            if let Some(skytypes) = rbr.load_game_stage_weathers(&stage_id) {
+                self.skytypes = skytypes;
+            }
         }
         if let Some(cars) = rbr.load_game_cars() {
             self.cars = cars;
@@ -115,11 +108,12 @@ impl UiView for UiCreateRace {
                             popup_below_widget(ui, popup_stage, &filter_stage, |ui| {
                                 let patten = self.filter_stage.clone().to_lowercase();
                                 egui::ScrollArea::new([false, true]).max_height(240.0).show(ui, |ui| {
-                                    for (index, stage) in self.stages.iter().enumerate() {
+                                    for (index, stage) in self.stages.clone().iter().enumerate() {
                                         if stage.name.to_lowercase().contains(patten.as_str()) {
                                             if ui.selectable_label(self.select_stage == index, &stage.name).clicked() {
                                                 self.filter_stage = stage.name.clone();
                                                 self.select_stage = index;
+                                                self.update_stage_weathers(page);
                                             }
                                         }
                                     }
@@ -129,6 +123,7 @@ impl UiView for UiCreateRace {
                             if ui.button("随机").clicked() {
                                 self.select_stage = thread_rng().gen_range(0..self.stages.len());
                                 self.filter_stage = self.stages[self.select_stage].name.clone();
+                                self.update_stage_weathers(page);
                             };
                         });
                         ui.end_row();
@@ -172,13 +167,13 @@ impl UiView for UiCreateRace {
                         ui.label(RichText::new("天气设定").size(14.0));
                         ui.end_row();
 
-                        ui.label("天气类型：");
-                        ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype])
+                        ui.label("湿滑情况：");
+                        ComboBox::from_id_source("select wetness").selected_text(self.wetness[self.select_wetness])
                         .width(150.0)
                         .show_ui(ui, |ui| {
-                            for (index, item) in self.skytypes.iter().enumerate() {
-                                if ui.selectable_label(self.select_skytype == index, item.to_string()).clicked() {
-                                    self.select_skytype = index;
+                            for (index, item) in self.wetness.iter().enumerate() {
+                                if ui.selectable_label(self.select_wetness == index, item.to_string()).clicked() {
+                                    self.select_wetness = index;
                                 }
                             }
                         });
@@ -196,52 +191,18 @@ impl UiView for UiCreateRace {
                         });
                         ui.end_row();
 
-                        ui.label("云雾情况：");
-                        ComboBox::from_id_source("select skycloud").selected_text(self.skyclouds[self.select_skycloud])
-                        .width(150.0)
-                        .show_ui(ui, |ui| {
-                            for (index, skycloud) in self.skyclouds.iter().enumerate() {
-                                if ui.selectable_label(self.select_skycloud == index, skycloud.to_string()).clicked() {
-                                    self.select_skycloud = index;
+                        ui.label("天气类型：");
+                        if !self.skytypes.is_empty() {
+                            ComboBox::from_id_source("select skytype").selected_text(self.skytypes[self.select_skytype].get_weather_string())
+                            .width(150.0)
+                            .show_ui(ui, |ui| {
+                                for (index, item) in self.skytypes.iter().enumerate() {
+                                    if ui.selectable_label(self.select_skytype == index, item.get_weather_string()).clicked() {
+                                        self.select_skytype = index;
+                                    }
                                 }
-                            }
-                        });
-                        ui.end_row();
-
-                        ui.label("路面情况：");
-                        ComboBox::from_id_source("select surface age").selected_text(self.ages[self.select_age])
-                        .width(150.0)
-                        .show_ui(ui, |ui| {
-                            for (index, item) in self.ages.iter().enumerate() {
-                                if ui.selectable_label(self.select_age == index, item.to_string()).clicked() {
-                                    self.select_age = index;
-                                }
-                            }
-                        });
-                        ui.end_row();
-
-                        ui.label("湿滑情况：");
-                        ComboBox::from_id_source("select wetness").selected_text(self.wetness[self.select_wetness])
-                        .width(150.0)
-                        .show_ui(ui, |ui| {
-                            for (index, item) in self.wetness.iter().enumerate() {
-                                if ui.selectable_label(self.select_wetness == index, item.to_string()).clicked() {
-                                    self.select_wetness = index;
-                                }
-                            }
-                        });
-                        ui.end_row();
-
-                        ui.label("比赛时段：");
-                        ComboBox::from_id_source("select timeofday").selected_text(self.timeofdays[self.select_timeofdays])
-                        .width(150.0)
-                        .show_ui(ui, |ui| {
-                            for (index, item) in self.timeofdays.iter().enumerate() {
-                                if ui.selectable_label(self.select_timeofdays == index, item.to_string()).clicked() {
-                                    self.select_timeofdays = index;
-                                }
-                            }
-                        });
+                            });
+                        }
                         ui.end_row();
                     });
 
@@ -262,8 +223,18 @@ impl UiView for UiCreateRace {
 }
 
 impl UiCreateRace {
+    fn update_stage_weathers(&mut self, page: &mut UiPageCtx) {
+        self.skytypes.clear();
+        let mut rbr = RBRGame::new(&page.store.game_path);
+        let stage_id: u32 = self.stages[self.select_stage].stage_id.parse().unwrap();
+        if let Some(skytypes) = rbr.load_game_stage_weathers(&stage_id) {
+            self.skytypes = skytypes;
+            self.select_skytype = 0 as usize;
+        }
+    }
+
     fn create_room(&mut self, page: &mut UiPageCtx) {
-        let raceinfo = RaceInfo{
+        let mut raceinfo = RaceInfo{
             name: self.room_name.clone(),
             owner: page.store.user_name.clone(),
             stage: self.stages[self.select_stage].name.clone(),
@@ -275,12 +246,15 @@ impl UiCreateRace {
             car_id: self.cars[self.select_car].id.parse().unwrap(),
             damage: self.select_damage as u32,
             weather: self.select_weather as u32,
-            skycloud: self.select_skycloud as u32,
             wetness: self.select_wetness as u32,
-            age: self.select_age as u32,
-            timeofday: self.select_timeofdays as u32,
-            skytype: self.select_skytype as u32,
+            skytype: "Default".to_string(),
+            skytype_id: 0u32,
         };
+        if let Some(skytype) = self.skytypes.get(self.select_skytype) {
+            raceinfo.skytype = skytype.get_weather_string().clone();
+            raceinfo.skytype_id = self.select_skytype as u32;
+        }
+
         let mut create = RaceCreate {token: page.store.user_token.clone(), info: raceinfo, locked: false, passwd: None};
         if !self.room_passwd.is_empty() {
             create.locked = true;

@@ -17,6 +17,7 @@ use super::{UiView, UiPageCtx};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use log::info;
+use chrono::Utc;
 
 enum UiRacingMsg {
     MsgRaceState(RaceState),
@@ -129,7 +130,7 @@ impl UiView for UiRacing {
         self.rbr_task = Some(task);
     }
 
-    fn exit(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
+    fn exit(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, _page: &mut UiPageCtx) {
         if let Some(task) = &self.rbr_task {
             task.abort();
             self.rbr_task = None;
@@ -139,6 +140,7 @@ impl UiView for UiRacing {
             self.timed_task = None;
         }
         self.state = RaceState::RaceReady;
+        ctx.send_viewport_cmd(egui::ViewportCommand::WindowLevel(egui::WindowLevel::Normal));
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, page: &mut UiPageCtx) {
@@ -146,7 +148,10 @@ impl UiView for UiRacing {
             match msg {
                 UiRacingMsg::MsgRaceState(state) => self.state = state,
                 UiRacingMsg::MsgRaceUserState(state) => self.userstates = state,
-                UiRacingMsg::MsgRaceResult(result) => self.table_data = result,
+                UiRacingMsg::MsgRaceResult(result) => {
+                    self.table_data = result;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::WindowLevel(egui::WindowLevel::AlwaysOnTop));
+                },
                 UiRacingMsg::MsgRaceAllReady => {
                     if let Some(task) = &self.timed_task {
                         task.abort();
@@ -276,9 +281,9 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], rbr: &mut RBRGa
                     tx.send(UiRacingMsg::MsgRaceState(RaceState::RaceLoading)).await.unwrap();
                     tx.send(UiRacingMsg::MsgRaceAllReady).await.unwrap();
                 }
-                RaceCmd::RaceCmdStart => {
-                    info!("recv cmd to start game");
-                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), uri.clone(), writer.clone()));
+                RaceCmd::RaceCmdStart(time) => {
+                    info!("recv cmd to start game, race will start at: [{}]", time / 1000);
+                    tokio::spawn(start_game_race(rbr.root_path.clone(), token.clone(), room.clone(), time.clone(), writer.clone()));
                 }
                 RaceCmd::RaceCmdUpload => {
                     info!("recv cmd to upload race data");
@@ -327,9 +332,9 @@ async fn start_game_load(gamepath: String, token: String, room: String, uri: Str
             racecfg = serde_json::from_str(text.as_str()).unwrap();
         }
 
+        rbr.prepare_game_env(&raceinfo, &racecfg);
         rbr.launch().await;
-        rbr.set_race_config(&raceinfo, &racecfg).await;
-        rbr.enter_practice(&raceinfo, &racecfg);
+        rbr.enter_practice(&raceinfo, &racecfg).await;
 
         loop {
             let state = rbr.get_race_state();
@@ -349,11 +354,18 @@ async fn start_game_load(gamepath: String, token: String, room: String, uri: Str
     });
 }
 
-async fn start_game_race(gamepath: String, token: String, room: String, _uri: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_race(gamepath: String, token: String, room: String, time: i64, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let mut rbr = RBRGame::new(&gamepath);
     let user_token = token.clone();
     let room_name = room.clone();
+    let starttime = time.clone();
     tokio::spawn(async move {
+        loop {
+            if Utc::now().timestamp_millis() > starttime {
+                break;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        }
         rbr.start();
         let update = RaceUpdate {token: user_token.clone(), room: room_name, state: RaceState::RaceStarted};
         let body = bincode::serialize(&update).unwrap();

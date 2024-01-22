@@ -4,15 +4,11 @@ use libc::{c_uchar, c_float, c_uint};
 use unicode_normalization::UnicodeNormalization;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::io::SeekFrom;
-use winapi::shared::minwindef::WPARAM;
-use winapi::shared::windef::HWND;
-use core::time::Duration;
-use std::thread::sleep;
 use std::ffi::OsStr;
 use std::iter::once;
 use std::os::windows::ffi::OsStrExt;
 use std::process::Command;
-use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_DOWN, VK_RETURN, VK_ESCAPE, GetForegroundWindow};
+use winapi::um::winuser::{FindWindowW, SetForegroundWindow, SendMessageW, WM_KEYDOWN, WM_KEYUP, VK_ESCAPE};
 use protocol::httpapi::{RaceState, RaceInfo, RaceConfig};
 use protocol::metaapi::{MetaRaceData, MetaRaceProgress};
 use ini::Ini;
@@ -80,18 +76,69 @@ pub struct RBRCarData {
     pub audio_hash: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RBRStageWeather {
+    pub stage_id: String,
+    pub timeofday: String,
+    pub timeofday2: String,
+    pub skytype: String,
+    pub skycloudtype: String,
+}
+
+impl RBRStageWeather {
+    pub fn get_weather_string(&self) -> String {
+        let mut fmtstr = String::new();
+        match self.timeofday2.as_str() {
+            "0" => fmtstr.push_str("Morning "),
+            "1" => fmtstr.push_str("Noon "),
+            "2" => fmtstr.push_str("Evening "),
+            _ => fmtstr.push_str("Morning "),
+        }
+        match self.skycloudtype.as_str() {
+            "0" => fmtstr.push_str("Clear "),
+            "1" => fmtstr.push_str("PartCloud "),
+            "2" => fmtstr.push_str("LightCloud "),
+            "3" => fmtstr.push_str("HeavyCloud "),
+            _ => fmtstr.push_str("Clear "),
+        }
+        match self.skytype.as_str() {
+            "0" => fmtstr.push_str("Crisp"),
+            "1" => fmtstr.push_str("Hazy"),
+            "2" => fmtstr.push_str("NoRain"),
+            "3" => fmtstr.push_str("LightRain"),
+            "4" => fmtstr.push_str("HeavyRain"),
+            "5" => fmtstr.push_str("NoSnow"),
+            "6" => fmtstr.push_str("LightSnow"),
+            "7" => fmtstr.push_str("HeaveSnow"),
+            "8" => fmtstr.push_str("LightFog"),
+            "9" => fmtstr.push_str("HeavyFog"),
+            _ => fmtstr.push_str("Crisp"),
+        }
+        fmtstr
+    }
+
+    pub fn get_weight(&self) -> u32 {
+        let timeofday2 = self.timeofday2.parse::<u32>().unwrap();
+        let skycloud = self.skycloudtype.parse::<u32>().unwrap();
+        let skytype = self.skytype.parse::<u32>().unwrap();
+
+        skycloud << 8 | skytype << 4 | timeofday2
+    }
+}
+
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceSetting {
     pub datatype: c_uint,
     pub external: c_uint,
-    pub weather: c_uint,
-    pub skycloud: c_uint,
+    pub stage: c_uint,
     pub wetness: c_uint,
-    pub age: c_uint,
-    pub timeofday: c_uint,
+    pub weather: c_uint,
     pub skytype: c_uint,
+    pub car: c_uint,
+    pub damage: c_uint,
     pub tyre: c_uint,
+    pub setup: c_uint,
 }
 
 impl RBRRaceSetting {
@@ -99,13 +146,19 @@ impl RBRRaceSetting {
         let mut racesetting = RBRRaceSetting::default();
         racesetting.datatype = 1;
         racesetting.external = 1;
-        racesetting.weather = info.weather.clone();
-        racesetting.skycloud = info.skycloud.clone();
-        racesetting.wetness = info.wetness.clone();
-        racesetting.age = info.age.clone();
-        racesetting.timeofday = info.timeofday.clone();
-        racesetting.skytype = info.skytype.clone();
-        racesetting.tyre = cfg.tyre.clone();
+        racesetting.stage = info.stage_id;
+        racesetting.wetness = info.wetness;
+        racesetting.weather = info.weather;
+        racesetting.skytype = info.skytype_id + 1;
+        if info.car_fixed {
+            racesetting.car = info.car_id;
+            racesetting.setup = 0;
+        } else {
+            racesetting.car = cfg.car_id;
+            racesetting.setup = cfg.setup_id;
+        }
+        racesetting.damage = info.damage;
+        racesetting.tyre = cfg.tyre;
         racesetting
     }
 
@@ -234,68 +287,12 @@ impl RBRGame {
                 }
             }
         };
-        self.load_practice();
     }
 
-    fn simulate_key_press(&mut self, window: HWND, key: WPARAM, delay: u64) {
-        let mut retries = 0;
-        unsafe { SetForegroundWindow(window);}
-        loop {
-            let foreground_hwnd = unsafe { GetForegroundWindow() };
-            if foreground_hwnd == window {
-                unsafe {
-                    SendMessageW(window, WM_KEYDOWN, key, 0);
-                    sleep(Duration::from_millis(delay));
-                    SendMessageW(window, WM_KEYUP, key, 0);
-                }
-                break;
-            } else {
-                retries += 1;
-                if retries >= 10 {
-                    break;
-                }
-            }
-            sleep(Duration::from_millis(50));
-        }
-    }
-
-    pub fn load_practice(&mut self) {
-        unsafe {
-            // Find the handle of the target window
-            let window_title = "Richard Burns Rally - DirectX9\0";
-            let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
-            let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
-            sleep(Duration::from_millis(100));
-
-            // Simulate a special keyboard event (Down key)
-            self.simulate_key_press(window_handle, VK_DOWN as usize, 0);
-            sleep(Duration::from_millis(200));
-
-            // Simulate a special keyboard event (Down key)
-            self.simulate_key_press(window_handle, VK_DOWN as usize, 0);
-            sleep(Duration::from_millis(200));
-        }
-    }
-
-    pub fn enter_practice(&mut self, raceinfo: &RaceInfo, racecfg: &RaceConfig) {
-        unsafe {
-            // Find the handle of the target window
-            let window_title = "Richard Burns Rally - DirectX9\0";
-            let wide_title: Vec<u16> = OsStr::new(window_title).encode_wide().chain(once(0)).collect();
-            let window_handle = FindWindowW(std::ptr::null_mut(), wide_title.as_ptr());
-            sleep(Duration::from_millis(100));
-
-            info!("enter practice with raceinfo {:?}", raceinfo);
-            info!("enter practice with racecfg {:?}", racecfg);
-
-            // Simulate a special keyboard event (Enter key)
-            self.simulate_key_press(window_handle, VK_RETURN as usize, 0);
-            sleep(Duration::from_secs(1));
-
-            // Simulate a special keyboard event (Enter key)
-            self.simulate_key_press(window_handle, VK_RETURN as usize, 0);
-            sleep(Duration::from_millis(200));
-        }
+    pub async fn enter_practice(&mut self, raceinfo: &RaceInfo, racecfg: &RaceConfig) {
+        info!("enter practice with raceinfo {:?}", raceinfo);
+        info!("enter practice with racecfg {:?}", racecfg);
+        self.set_race_config(raceinfo, racecfg).await;
     }
 
     pub fn start(&mut self) {
@@ -367,7 +364,7 @@ impl RBRGame {
         return data;
     }
 
-    pub async fn set_race_config(&mut self, info: &RaceInfo, cfg: &RaceConfig) {
+    pub fn prepare_game_env(&mut self, info: &RaceInfo, cfg: &RaceConfig) {
         self.set_race_stage(&info.stage_id);
         self.set_race_car_damage(&info.damage);
         let default_setup = info.car_id.to_string() + "_d_" + info.stage_type.to_lowercase().as_str();
@@ -382,6 +379,9 @@ impl RBRGame {
                 self.set_race_car_setup(&cfg.car_id, &info.stage_type.to_lowercase().as_str(), &cfg.setup);
             }
         }
+    }
+
+    pub async fn set_race_config(&mut self, info: &RaceInfo, cfg: &RaceConfig) {
         if let Some(udp) = &self.udp {
             let buf = RBRRaceSetting::from(info, cfg).as_bytes();
             udp.send(&buf).await.unwrap();
@@ -446,6 +446,18 @@ impl RBRGame {
             }
         }
         return None;
+    }
+
+    pub fn load_game_stage_weathers(&mut self, stage_id: &u32) -> Option<Vec<RBRStageWeather>> {
+        let filepath = self.root_path.clone() + r"\rsfdata\cache\stages_tracksettings.json";
+        if let Ok(file) = std::fs::File::open(filepath) {
+            if let Ok(mut weathers) = serde_json::from_reader::<std::fs::File, Vec<RBRStageWeather>>(file) {
+                weathers.retain(|x| &x.stage_id.parse().unwrap_or(0u32) == stage_id);
+                weathers.sort_by(|a, b| a.get_weight().cmp(&b.get_weight()));
+                return Some(weathers);
+            }
+        }
+        None
     }
 
     pub fn load_game_cars(&mut self) -> Option<Vec<RBRCarData>> {
