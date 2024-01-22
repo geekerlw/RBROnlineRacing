@@ -1,24 +1,24 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia";
+import { getLanguageCache, setLanguageCache } from "./localCache.js";
 
 export const getLocalLanguage = () => {
-    const language = localStorage.getItem('language');
-    if (language) {
-        return language;
-    }
-    const lang = navigator.language;
-    if (lang === 'zh-CN') {
-        return 'zh';
-    }
-    return 'en';
-}
+  const language = getLanguageCache();
+  if (language) {
+    return language;
+  }
+  const lang = navigator.language;
+  if (lang === "zh-CN") {
+    return "zh";
+  }
+  return "en";
+};
 
 export const setLocalLanguage = (language) => {
-  localStorage.setItem('language', language);
-}
-
+  setLanguageCache(language)
+};
 
 export const useGlobalStore = defineStore({
-  id: 'global',
+  id: "global",
   state: () => ({
     language: getLocalLanguage(),
   }),
@@ -26,6 +26,6 @@ export const useGlobalStore = defineStore({
     setLanguage(language) {
       this.language = language;
       setLocalLanguage(language);
-    }
-  }
-})
+    },
+  },
+});
