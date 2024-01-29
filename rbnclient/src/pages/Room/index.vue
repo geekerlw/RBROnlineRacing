@@ -2,9 +2,9 @@
   <div class="room">
     <div class="title">
       <div class="left-group">
-        <el-button class="rb" type="default" @click="back"><el-icon>
-            <ArrowLeft />
-          </el-icon>返回大厅</el-button>
+        <el-button class="rb" type="default" @click="back"
+          ><el-icon> <ArrowLeft /> </el-icon>返回大厅</el-button
+        >
       </div>
       比赛房间
     </div>
@@ -13,7 +13,7 @@
       <div class="msgwrapper msgfirst">
         <div class="name line">房间名: {{ room.name }}</div>
         <div class="roomowner line">房主: {{ room.owner }}</div>
-        <div class="password line">密码: 123{{  }}</div>
+        <div class="password line">密码: 123{{}}</div>
         <div class="roomplayers line">人数: {{ room.players }}/8</div>
         <div class="stage line">赛道: {{ room.stage }}</div>
         <div class="stagelength line">赛道长度： 15km</div>
@@ -21,14 +21,19 @@
         <div class="wetdry line">湿滑情况： Dry</div>
         <div class="weatherstatus line">天气状况： Good</div>
         <div class="weathertype line">天气类型：asdas</div>
-        <div class="damage line">车辆损坏： Realistic</div>  
+        <div class="damage line">车辆损坏： Realistic</div>
       </div>
-      <div class="sub-title">
-        车辆和调教
-      </div>
+      <div class="sub-title">车辆和调教</div>
       <div class="msgwrapper">
-        <div class="car line sel">车辆选择：
-          <el-select size="small" v-model="car" disabled placeholder="请选择车辆" filterable>
+        <div class="car line sel">
+          车辆选择：
+          <el-select
+            size="small"
+            v-model="car"
+            disabled
+            placeholder="请选择车辆"
+            filterable
+          >
             <el-option
               v-for="item in carList"
               :key="item.value"
@@ -38,8 +43,9 @@
           </el-select>
           <span class="limit">车辆已限定</span>
         </div>
-        <div class="set line sel">调校选择：
-          <el-select size="small" v-model="car" placeholder="请选择车辆" filterable>
+        <div class="set line sel">
+          调校选择：
+          <el-select size="small" v-model="car" placeholder="请选择调校">
             <el-option
               v-for="item in carList"
               :key="item.value"
@@ -48,8 +54,9 @@
             ></el-option>
           </el-select>
         </div>
-        <div class="type line sel">轮胎类型：
-          <el-select size="small" v-model="car" placeholder="请选择车辆" filterable>
+        <div class="type line sel">
+          轮胎类型：
+          <el-select size="small" v-model="car" placeholder="请选择轮胎">
             <el-option
               v-for="item in carList"
               :key="item.value"
@@ -59,12 +66,12 @@
           </el-select>
         </div>
       </div>
-      <div class="sub-title">
-        房间状态
-      </div>
+      <div class="sub-title">房间状态</div>
       <div class="statewrapper">
-        <div class="disabled" v-if="false">比赛中...</div>
-        <div class="state">当前状态：等待比赛中/比赛中/比赛准备中/比赛加载中</div>
+        <!-- <div class="disabled" v-if="true">比赛中...</div> -->
+        <div class="state">
+          当前状态：等待比赛中/比赛中/比赛准备中/比赛加载中
+        </div>
         <div class="block10"></div>
         <div class="action">
           房主操作：
@@ -82,9 +89,7 @@
         </div>
       </div>
       <div class="block15"></div>
-      <div class="sub-title">
-        房间成员
-      </div>
+      <div class="sub-title">房间成员</div>
       <div class="msgwrapper members">
         <div class="line">
           <span>1</span>
@@ -110,7 +115,7 @@
           <span>1</span>
           <span>jakebless</span>
           <span>未就绪</span>
-        </div>        
+        </div>
         <div class="line">
           <span>1</span>
           <span>jakebless</span>
@@ -137,57 +142,56 @@
           <span>未就绪</span>
         </div>
       </div>
-
     </div>
-
-
+    <RoomRaceState></RoomRaceState>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-const car = ref('')
+import { ref, reactive } from "vue";
+import RoomRaceState from "./RoomRaceState.vue";
+const car = ref("");
 const carList = [
   {
-    value: 'car1',
-    label: 'car1'
+    value: "car1",
+    label: "car1",
   },
   {
-    value: 'car2',
-    label: 'car2'
-  }
-]
+    value: "car2",
+    label: "car2",
+  },
+];
 
 const back = () => {
-  history.back()
-}
+  history.back();
+};
 const room = reactive({
-  name: 'jakebless',
-  stage: 'lyon-Geend',
-  owner: 'jakebless',
+  name: "jakebless",
+  stage: "lyon-Geend",
+  owner: "jakebless",
   players: 1,
-  state: '等待中'
-})
-
+  state: "等待中",
+});
 </script>
 
 <style lang="less" scoped>
 .room {
   width: 100%;
   cursor: default;
+  position: relative;
 }
-.car .limit{
+.car .limit {
   margin-left: 10px;
   font-size: 12px;
 }
-.line.sel{
+.line.sel {
   display: flex;
   align-items: center;
-  .el-select{
+  .el-select {
     width: 200px;
   }
 }
-.sub-title{
+.sub-title {
   font-size: 16px;
   font-weight: bold;
   text-align: left;
@@ -196,37 +200,35 @@ const room = reactive({
   border-top: 1px solid #dbdbdb;
   padding-top: 15px;
 }
-.msgwrapper{
+.msgwrapper {
   display: flex;
   width: 90%;
   margin: 0 auto;
   justify-content: flex-start;
   flex-wrap: wrap;
-  .line{
+  .line {
     text-align: left;
     width: 50%;
     margin-bottom: 10px;
   }
 }
-.msgwrapper.msgfirst{
-  .line{
+.msgwrapper.msgfirst {
+  .line {
     width: 33%;
   }
-
 }
-.statewrapper{
+.statewrapper {
   width: 90%;
   margin: 0 auto;
   text-align: left;
   position: relative;
-  .disabled{
+  .disabled {
     position: absolute;
     left: -2%;
     top: -10%;
     width: 104%;
     height: 120%;
-    background-color: #c5c5c5;
-    opacity: 0.5;
+    background-color: #c5c5c598;
     z-index: 1;
     display: flex;
     justify-content: center;
@@ -247,23 +249,23 @@ const room = reactive({
     position: absolute;
   }
 }
-.owentips{
+.owentips {
   color: #409eff;
   margin-left: 10px;
 }
-.members{
-  .line{
+.members {
+  .line {
     display: flex;
     width: 30%;
     margin-right: 2%;
     padding-bottom: 5px;
     border-bottom: 1px solid #dbdbdb;
-    span{
+    span {
       width: 30%;
-      &:nth-child(1){
+      &:nth-child(1) {
         width: 10%;
       }
-      &:nth-child(2){
+      &:nth-child(2) {
         width: 60%;
       }
     }

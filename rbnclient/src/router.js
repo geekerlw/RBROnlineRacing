@@ -1,9 +1,9 @@
 
 import { createRouter, createWebHashHistory } from 'vue-router'
 
-import Home from './pages/Home.vue';
-import Lobby from './pages/Lobby.vue';
-import Room from "./pages/Room.vue";
+import Home from './pages/Home/index.vue';
+import Lobby from './pages/Lobby/index.vue';
+import Room from "./pages/Room/index.vue";
 
 
 // 创建 router
