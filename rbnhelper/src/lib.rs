@@ -4,6 +4,11 @@ use simplelog::WriteLogger;
 
 pub mod plugin;
 
+extern "C" {
+    fn test_function() -> i32;
+}
+
+
 #[repr(C)]
 #[derive(Default)]
 struct RBNHelper{
@@ -28,6 +33,11 @@ extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut RBRGame) -> *mut RBNHelper {
         simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();
 
     info!("Create Plugin RBN Helper [{}] with arg: {:?}", std::env!("CARGO_PKG_VERSION"), rbrgame);
+
+    unsafe {
+        let ret = test_function();
+        info!("get the test result: {}", ret);
+    };
 
     Box::into_raw(Box::new(RBNHelper::default()))
 }

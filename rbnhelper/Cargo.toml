@@ -2,6 +2,7 @@
 name = "rbnhelper"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [lib]
 crate-type = ["cdylib"]
@@ -12,3 +13,6 @@ crate-type = ["cdylib"]
 libc = "0.2.151"
 log = "0.4.20"
 simplelog = "0.12.1"
+
+[build-dependencies]
+cc = "1.0.83"
