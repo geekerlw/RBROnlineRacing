@@ -4,19 +4,20 @@
 #include "IRBRGame.h"
 
 extern "C" {
-typedef void (*PlugDrawFrontEndPage)(void);
-typedef void (*PlugDrawResultUI)(void);
-typedef void (*PlugHandleFrontEndEvents)(char txtKeyboard, bool bUp, bool bDown, bool bLeft, bool bRight, bool bSelect);
-typedef void (*PlugTickFrontEndPage)(float fTimeDelta);
-typedef void (*PlugStageStarted)(int iMap, std::string ptxtPlayerName, bool bWasFalseStart);
-typedef void (*PlugHandleResults)(float fCheckPoint1, float fCheckPoint2, float fFinishTime, std::string ptxtPlayerName);
-typedef void (*PlugCheckPoint)(float fCheckPointTime, int iCheckPointID, std::string ptxtPlayerName);
+    typedef void (*PlugInitialize)(void);
+    typedef void (*PlugDrawFrontEndPage)(void);
+    typedef void (*PlugDrawResultUI)(void);
+    typedef void (*PlugHandleFrontEndEvents)(char txtKeyboard, bool bUp, bool bDown, bool bLeft, bool bRight, bool bSelect);
+    typedef void (*PlugTickFrontEndPage)(float fTimeDelta);
+    typedef void (*PlugStageStarted)(int iMap, std::string ptxtPlayerName, bool bWasFalseStart);
+    typedef void (*PlugHandleResults)(float fCheckPoint1, float fCheckPoint2, float fFinishTime, std::string ptxtPlayerName);
+    typedef void (*PlugCheckPoint)(float fCheckPointTime, int iCheckPointID, std::string ptxtPlayerName);
 }
 
 class PluginRust : public IPlugin {
 public:
     PluginRust(IRBRGame* pGame)
-        : m_fDrawFrontEndPage(NULL), m_fDrawResultUI(NULL)
+        : m_fPlugInitialize(NULL), m_fDrawFrontEndPage(NULL), m_fDrawResultUI(NULL)
         , m_fHandleFrondendEvents(NULL), m_fTickFrontEndPage(NULL), m_fStageStarted(NULL)
         , m_fHandleResults(NULL), m_fCheckPoint(NULL)
         , m_pGame(pGame) {};
@@ -24,6 +25,10 @@ public:
 
 public:
     const char* GetName(void) {
+        static bool initialized = false;
+        if (!initialized && m_fPlugInitialize) {
+            m_fPlugInitialize();
+        }
         return "RBN Helper";
     };
 
@@ -73,6 +78,7 @@ public:
     };
 
 public:
+    PlugInitialize m_fPlugInitialize;
     PlugDrawFrontEndPage m_fDrawFrontEndPage;
     PlugDrawResultUI m_fDrawResultUI;
     PlugHandleFrontEndEvents m_fHandleFrondendEvents;
@@ -106,31 +112,31 @@ EXPORT_API IPlugin* RBR_CreatePlugin(IRBRGame *pGame) {
     return g_pRBRPlugin;
 }
 
-EXPORT_API void RBR_SetDrawFrontEndPage(PlugDrawFrontEndPage func) {
+void RBR_SetDrawFrontEndPage(PlugDrawFrontEndPage func) {
     if (g_pRBRPlugin) {
         g_pRBRPlugin->m_fDrawFrontEndPage = func;
     }
 }
 
-EXPORT_API void RBR_SetDrawResultUI(PlugDrawResultUI func) {
+void RBR_SetDrawResultUI(PlugDrawResultUI func) {
     if (g_pRBRPlugin) {
         g_pRBRPlugin->m_fDrawResultUI = func;
     }
 }
 
-EXPORT_API void RBR_SetHandleFrontEndEvents(PlugHandleFrontEndEvents func) {
+void RBR_SetHandleFrontEndEvents(PlugHandleFrontEndEvents func) {
     if (g_pRBRPlugin) {
         g_pRBRPlugin->m_fHandleFrondendEvents = func;
     }
 }
 
-EXPORT_API void RBR_SetTickFrontEndPage(PlugTickFrontEndPage func) {
+void RBR_SetTickFrontEndPage(PlugTickFrontEndPage func) {
     if (g_pRBRPlugin) {
         g_pRBRPlugin->m_fTickFrontEndPage = func;
     }
 }
 
-EXPORT_API void RBR_SetStageStarted(PlugStageStarted func) {
+void RBR_SetStageStarted(PlugStageStarted func) {
     if (g_pRBRPlugin) {
         g_pRBRPlugin->m_fStageStarted = func;
     }

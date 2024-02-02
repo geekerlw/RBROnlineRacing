@@ -21,6 +21,11 @@ impl IPlugin for RBNHelper {
 }
 
 #[no_mangle]
+extern fn rbn_init() {
+    info!("call rbn plugin init");
+}
+
+#[no_mangle]
 extern fn plugin_draw_frontend_page() {
     info!("call draw frontend page");
 }
