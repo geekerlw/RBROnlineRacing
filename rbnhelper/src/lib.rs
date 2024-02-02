@@ -1,3 +1,4 @@
+use std::os::raw::c_void;
 use plugin::{IPlugin, RBRGame};
 use log::info;
 use simplelog::WriteLogger;
@@ -5,6 +6,8 @@ use simplelog::WriteLogger;
 pub mod plugin;
 
 extern "C" {
+    fn RBR_InitPlugin(arg: *mut c_void) -> *mut c_void;
+    fn RBR_SetInitialize(func: extern "C" fn());
     fn RBR_SetDrawFrontEndPage(func: extern "C" fn());
 }
 
@@ -26,7 +29,7 @@ extern fn rbn_init() {
 }
 
 #[no_mangle]
-extern fn plugin_draw_frontend_page() {
+extern fn rbn_draw_frontend_page() {
     info!("call draw frontend page");
 }
 
@@ -36,7 +39,7 @@ extern "stdcall" fn DllMain(_hinst: usize, _reason: u32, _reserved: *mut ()) -> 
 }
 
 #[no_mangle]
-extern "cdecl" fn RBR_CreatePlugin1(rbrgame: *mut RBRGame) -> *mut RBNHelper {
+extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut c_void) -> *mut c_void {
     let log_file = std::env::current_dir().unwrap().join("rbnhelper.log");
     WriteLogger::init(log::LevelFilter::Info, 
         simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();
@@ -44,8 +47,10 @@ extern "cdecl" fn RBR_CreatePlugin1(rbrgame: *mut RBRGame) -> *mut RBNHelper {
     info!("Create Plugin RBN Helper [{}] with arg: {:?}", std::env!("CARGO_PKG_VERSION"), rbrgame);
 
     unsafe {
-        RBR_SetDrawFrontEndPage(plugin_draw_frontend_page);
-    };
+        let plugin = RBR_InitPlugin(rbrgame);
+        RBR_SetInitialize(rbn_init);
+        RBR_SetDrawFrontEndPage(rbn_draw_frontend_page);
 
-    Box::into_raw(Box::new(RBNHelper::default()))
+        return plugin;
+    };
 }

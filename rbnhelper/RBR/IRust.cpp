@@ -103,13 +103,20 @@ static PluginRust *g_pRBRPlugin = nullptr;
 extern "C" {
 #endif
 
-EXPORT_API IPlugin* RBR_CreatePlugin(IRBRGame *pGame) {
+void* RBR_InitPlugin(void* arg) {
+    IRBRGame *pGame = static_cast<IRBRGame*>(arg);
     if (g_pRBRPlugin == nullptr)
     {
         g_pRBRPlugin = new PluginRust(pGame);
     }
 
-    return g_pRBRPlugin;
+    return (void*)g_pRBRPlugin;
+}
+
+void RBR_SetInitialize(PlugInitialize func) {
+    if (g_pRBRPlugin) {
+        g_pRBRPlugin->m_fPlugInitialize = func;
+    }
 }
 
 void RBR_SetDrawFrontEndPage(PlugDrawFrontEndPage func) {
@@ -139,6 +146,18 @@ void RBR_SetTickFrontEndPage(PlugTickFrontEndPage func) {
 void RBR_SetStageStarted(PlugStageStarted func) {
     if (g_pRBRPlugin) {
         g_pRBRPlugin->m_fStageStarted = func;
+    }
+}
+
+void RBR_SetHandleResults(PlugHandleResults func) {
+    if (g_pRBRPlugin) {
+        g_pRBRPlugin->m_fHandleResults = func;
+    }
+}
+
+void RBR_SetCheckPoint(PlugCheckPoint func) {
+    if (g_pRBRPlugin) {
+        g_pRBRPlugin->m_fCheckPoint = func;
     }
 }
 
