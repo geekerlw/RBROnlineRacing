@@ -5,9 +5,8 @@ use simplelog::WriteLogger;
 pub mod plugin;
 
 extern "C" {
-    fn test_function() -> i32;
+    fn RBR_SetDrawFrontEndPage(func: extern "C" fn());
 }
-
 
 #[repr(C)]
 #[derive(Default)]
@@ -22,12 +21,17 @@ impl IPlugin for RBNHelper {
 }
 
 #[no_mangle]
+extern fn plugin_draw_frontend_page() {
+    info!("call draw frontend page");
+}
+
+#[no_mangle]
 extern "stdcall" fn DllMain(_hinst: usize, _reason: u32, _reserved: *mut ()) -> bool {
     true
 }
 
 #[no_mangle]
-extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut RBRGame) -> *mut RBNHelper {
+extern "cdecl" fn RBR_CreatePlugin1(rbrgame: *mut RBRGame) -> *mut RBNHelper {
     let log_file = std::env::current_dir().unwrap().join("rbnhelper.log");
     WriteLogger::init(log::LevelFilter::Info, 
         simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();
@@ -35,8 +39,7 @@ extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut RBRGame) -> *mut RBNHelper {
     info!("Create Plugin RBN Helper [{}] with arg: {:?}", std::env!("CARGO_PKG_VERSION"), rbrgame);
 
     unsafe {
-        let ret = test_function();
-        info!("get the test result: {}", ret);
+        RBR_SetDrawFrontEndPage(plugin_draw_frontend_page);
     };
 
     Box::into_raw(Box::new(RBNHelper::default()))
