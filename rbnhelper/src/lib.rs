@@ -5,6 +5,7 @@ use simplelog::WriteLogger;
 
 pub mod plugin;
 
+#[link(name = "RBRHacker", kind = "static")]
 extern "C" {
     fn RBR_InitPlugin(arg: *mut c_void) -> *mut c_void;
     fn RBR_SetInitialize(func: extern "C" fn());
