@@ -143,13 +143,15 @@
         </div>
       </div>
     </div>
-    <RoomRaceState></RoomRaceState>
+    <!-- <RoomRaceState></RoomRaceState> -->
+    <RoomGrade></RoomGrade>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive } from "vue";
 import RoomRaceState from "./RoomRaceState.vue";
+import RoomGrade from "./RoomGrade.vue";
 const car = ref("");
 const carList = [
   {

@@ -10,7 +10,7 @@
       <div class="item"><span>player1</span> <span>加载中</span></div>
       <div class="item"><span>player1</span> <span>加载中</span></div>
       <div class="item"><span>player12ssssss</span> <span class="finish">加载完成</span></div>
-      <div class="item"><span>player1</span> <span class="gaming">游戏中： 5%</span></div>
+      <!-- <div class="item"><span>player1</span> <span class="gaming">加载完成</span></div> -->
     </div>
     <div class="block20"> </div>
     <div class="action">
