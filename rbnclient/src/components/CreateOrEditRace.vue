@@ -1,6 +1,6 @@
 <template>
   <!-- 利用element-plus的弹窗组件实现 -->
-  <el-dialog title="创建房间" v-model="dialogVisible" width="800px" fullscreen top="5vh" class="dlog">
+  <el-dialog :title="editRaceId ? '修改比赛': '创建房间'" v-model="dialogVisible" width="800px" fullscreen top="5vh" class="dlog">
     <el-form :model="form" :rules="rules" label-width="80px">
       <div class="group-title">房间设定</div>
       <el-form-item label="房间名" prop="name">
@@ -95,7 +95,14 @@
 <script setup>
 import { ref, reactive } from "vue";
 const dialogVisible = ref(false);
-const showCreateRace = () => {
+
+// 判断是否是编辑模式
+const editRaceId = ref("");
+
+const showCreateRace = (editRace) => {
+  if (editRace) {
+    editRaceId.value = editRace.id;
+  }
   dialogVisible.value = true;
   console.log("showCreateRace");
 };
@@ -103,8 +110,6 @@ const hideCreateRace = () => {
   dialogVisible.value = false;
 };
 
-// 判断是否是编辑模式
-const editRaceId = ref("");
 
 const stageList = [
   {

@@ -76,7 +76,7 @@
         <div class="action">
           房主操作：
           <el-button type="primary">开始比赛并准备</el-button>
-          <el-button type="primary">修改比赛</el-button>
+          <el-button type="primary" @click="showCreateRace">修改比赛</el-button>
           <el-button type="primary">随机地图</el-button>
           <span class="owentips">当前你是房主哦</span>
         </div>
@@ -143,8 +143,10 @@
         </div>
       </div>
     </div>
-    <!-- <RoomRaceState></RoomRaceState> -->
-    <RoomGrade></RoomGrade>
+    <RoomRaceState v-if="showState"></RoomRaceState>
+    <RoomGrade v-if="showGrade"></RoomGrade>
+    <CreateOrEditRace ref="editRef"></CreateOrEditRace>
+
   </div>
 </template>
 
@@ -152,6 +154,18 @@
 import { ref, reactive } from "vue";
 import RoomRaceState from "./RoomRaceState.vue";
 import RoomGrade from "./RoomGrade.vue";
+import CreateOrEditRace from '../../components/CreateOrEditRace.vue';
+
+const editRef = ref(null);
+const showCreateRace = () => {
+  editRef.value.showCreateRace({
+    id: 'mockid'
+  });
+};
+
+const showGrade = ref(false);
+const showState = ref(false);
+
 const car = ref("");
 const carList = [
   {
