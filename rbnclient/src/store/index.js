@@ -21,11 +21,17 @@ export const useGlobalStore = defineStore({
   id: "global",
   state: () => ({
     language: getLocalLanguage(),
+    token: '',
+    name: '', //username
   }),
   actions: {
     setLanguage(language) {
       this.language = language;
       setLocalLanguage(language);
     },
+    logined(token, name) {
+      this.token = token;
+      this.name = name;
+    }
   },
 });

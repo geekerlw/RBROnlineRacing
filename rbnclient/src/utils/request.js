@@ -1,6 +1,6 @@
-const { fetch } = require("@tauri-apps/api/http");
+import { fetch } from "@tauri-apps/api/http"
 
-const server = "";
+const server = "http://localhost:8080";
 const baseURL = `${server}/`;
 
 const BODY_TYPE = {
@@ -65,4 +65,4 @@ const httpJson = (url, options) => {
   });
 };
 
-module.exports = { http, httpJson };
+export { http, httpJson };

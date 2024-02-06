@@ -34,6 +34,14 @@
           "*",
           "$DOWNLOAD/*"
         ]
+      },
+      "http": {
+        "all": true,
+        "request": true,
+        "scope": [
+          "http://**",
+          "https://**"
+        ]
       }
     },
     "bundle": {
