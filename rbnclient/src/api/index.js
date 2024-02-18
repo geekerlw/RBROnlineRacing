@@ -12,7 +12,7 @@ export const login = (data) => {
 };
 
 export const createRace = (data) => {
-  return httpJson("/api/race/create", {
+  return httpJson("/api/user/login", {
     method: "POST",
     responseType: 2, // 1 to Json, 2 to Text, 3 to Binary
     data: {
