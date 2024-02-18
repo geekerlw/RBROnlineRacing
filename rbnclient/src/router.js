@@ -12,7 +12,7 @@ const router = createRouter({
   routes: [ // 定义路由
     {
       path: '/',
-      redirect: '/lobby',
+      redirect: '/home',
     },
     {
       path: '/home',

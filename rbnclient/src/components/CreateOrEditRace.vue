@@ -6,8 +6,8 @@
       <el-form-item label="房间名" prop="name">
         <el-input v-model="form.name"></el-input>
       </el-form-item>
-      <el-form-item label="房间密码" prop="password">
-        <el-input v-model="form.password"></el-input>
+      <el-form-item label="房间密码" prop="passwd">
+        <el-input v-model="form.passwd"></el-input>
       </el-form-item>
 
       <div class="group-title">比赛设定</div>
@@ -15,14 +15,28 @@
         <el-select v-model="form.stage" placeholder="请选择地图" filterable>
           <el-option
             v-for="item in stageList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            :key="item.id"
+            :label="item.stage"
+            :value="item.stage"
           ></el-option>
         </el-select>
         <el-button class="line-btn" @click="randomStage" type="primary"
           >随机一下</el-button
         >
+      </el-form-item>
+      <!-- 车辆选择 select 支持搜索 -->
+      <el-form-item label="车辆选择" prop="car" class="multitem">
+        <el-select v-model="form.car" placeholder="请选择车辆" filterable>
+          <el-option
+            v-for="item in carList"
+            :key="item.car"
+            :label="item.car"
+            :value="item.car"
+          ></el-option>
+        </el-select>
+        <el-checkbox>
+          <span slot="label">限定车辆</span>
+        </el-checkbox>
       </el-form-item>
       <!-- 车辆损坏 select -->
       <el-form-item label="车辆损坏" prop="damage">
@@ -35,37 +49,22 @@
           ></el-option>
         </el-select>
       </el-form-item>
-      <!-- 车辆选择 select 支持搜索 -->
-      <el-form-item label="车辆选择" prop="car" class="multitem">
-        <el-select v-model="form.car" placeholder="请选择车辆" filterable>
-          <el-option
-            v-for="item in carList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          ></el-option>
-        </el-select>
-        <el-checkbox>
-          <span slot="label">限定车辆</span>
-        </el-checkbox>
-      </el-form-item>
-
       <div class="group-title">条件设定</div>
       <!-- 湿滑情况选择 -->
-      <el-form-item label="湿滑情况" prop="road">
-        <el-select v-model="form.road" placeholder="">
+      <el-form-item label="湿滑情况" prop="wetness">
+        <el-select v-model="form.wetness" placeholder="">
           <el-option
-            v-for="item in roadList"
+            v-for="item in wetnessList"
             :key="item.value"
             :label="item.label"
             :value="item.value"
           ></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="天气状况" prop="skyinfo">
-        <el-select v-model="form.skyinfo" placeholder="">
+      <el-form-item label="天气状况" prop="weather">
+        <el-select v-model="form.weather" placeholder="">
           <el-option
-            v-for="item in skyinfoList"
+            v-for="item in weatherList"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -73,12 +72,12 @@
         </el-select>
       </el-form-item>      
       <el-form-item label="天气类型" prop="skykind">
-        <el-select v-model="form.skykind" placeholder="">
+        <el-select v-model="form.skytype" placeholder="">
           <el-option
-            v-for="item in skykindList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in skytypeList"
+            :key="item.skytype_id"
+            :label="item.skytype"
+            :value="item.skytype"
           ></el-option>
         </el-select>
       </el-form-item>
@@ -94,6 +93,7 @@
 </template>
 <script setup>
 import { ref, reactive } from "vue";
+import { stageList, carList, damageList, wetnessList, weatherList, skytypeList } from "../enum/race.js";
 const dialogVisible = ref(false);
 
 // 判断是否是编辑模式
@@ -110,85 +110,44 @@ const hideCreateRace = () => {
   dialogVisible.value = false;
 };
 
-
-const stageList = [
-  {
-    label: "hy",
-    value: "hy",
-  },
-  {
-    label: "com",
-    value: "com",
-  },
-];
-const damageList = [
-  {
-    label: "real",
-    value: "real",
-  },
-  {
-    label: "sim",
-    value: "sim",
-  },
-];
-const carList = [
-  {
-    label: "car1",
-    value: "car1",
-  },
-  {
-    label: "car2",
-    value: "car2",
-  },
-];
-const roadList = [
-  {
-    label: "road1",
-    value: "road1",
-  },
-  {
-    label: "road2",
-    value: "road2",
-  },
-];
-
-const skyinfoList = [
-  {
-    label: "skyinfo1",
-    value: "skyinfo1",
-  },
-  {
-    label: "skyinfo2",
-    value: "skyinfo2",
-  },
-];
-
-const skykindList = [
-  {
-    label: "skykind1",
-    value: "skykind1",
-  },
-  {
-    label: "skykind2",
-    value: "skykind2",
-  },
-];
-
 const rules = [];
 const form = reactive({
   name: "11",
-  password: "",
+  passwd: "",
   stage: "",
   damage: "",
   car: "",
-  road: '',
-  skyinfo: '',
-  skykind: '',
+  wetness: '',
+  weather: '',
+  skytype: '',
 });
 
 const randomStage = () => {
   const index = Math.floor(Math.random() * stageList.length);
-  form.stage = stageList[index].value;
+  form.stage = stageList[index].stage;
+};
+
+const createHandle = () => {
+  const data = {
+    info: {
+      name: '',
+      owner: '',
+      stage: '',
+      stage_id: 1,
+      stage_type: '222',
+      stage_len: 1,
+      car_fixed: false,
+      car: 'c5',
+      car_id: 111,
+      damage: 1,
+      weather: 1,
+      wetness: 1,
+      skytype: 'sadsa',
+      skytype_id: 1,
+    },
+    locked: false,
+    passwd: '',
+  }
 };
 
 defineExpose({

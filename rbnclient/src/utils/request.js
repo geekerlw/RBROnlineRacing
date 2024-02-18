@@ -1,4 +1,5 @@
-import { fetch } from "@tauri-apps/api/http"
+import { fetch } from "@tauri-apps/api/http";
+import { useGlobalStore } from "../store/index";
 
 const server = "http://localhost:8080";
 const baseURL = `${server}/`;
@@ -41,6 +42,7 @@ const checkStatus = (status, data) => {
 };
 
 const http = (url, options) => {
+  const globalStore = useGlobalStore()
   if (!options.headers) options.headers = {};
   // todo 可以往 headers 中添加 token 或 cookie 等信息
   options.timeout = options.timeout || 10; // 默认超时时间为 10s
@@ -48,6 +50,9 @@ const http = (url, options) => {
     if (options.body.type === BODY_TYPE.Form) {
       options.headers["Content-Type"] = "multipart/form-data";
     }
+  }
+  if (globalStore.$state.token && options.payload) {
+    options.payload.data = globalStore.$state.token;
   }
   options = { ...commonOptions, ...options };
   return fetch(buildFullPath(baseURL, url), options)
