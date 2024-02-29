@@ -7,9 +7,17 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+#[tauri::command]
+fn get_user_name() -> String {
+    "anonymous".to_string()
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            get_user_name
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

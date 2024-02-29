@@ -6,3 +6,8 @@ async function greet() {
   let value = await invoke("greet", { name: name.value });
   return value
 }
+
+async function get_user_name() {
+  let value = await invoke("get_user_name");
+  return value
+}
