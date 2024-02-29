@@ -41,13 +41,19 @@
 </template>
   
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import payimage from "../../assets/appreciate.png";
-import { login } from '../../api';
+import { login, getVersion } from '../../api';
 import { ElMessage } from 'element-plus'
 import { useGlobalStore } from '../../store'
 
 const globalStore = useGlobalStore();
+
+onMounted(() => {
+  getVersion().then((res) => {
+    console.log('version: ', res)
+  })
+})
 
 const logInForm = ref({ name: '', passwd: 'simrallycn' });
 const handleLogIn = () => {

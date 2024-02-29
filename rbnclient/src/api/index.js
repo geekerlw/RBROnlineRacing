@@ -18,3 +18,11 @@ export const createRace = (data) => {
     data: data
   });
 };
+
+export const getVersion = (data) => {
+  return httpJson("/api/version", {
+    method: "GET",
+    responseType: 2,
+    data: {}
+  })
+}

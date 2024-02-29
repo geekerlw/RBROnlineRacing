@@ -1,7 +1,7 @@
 import { fetch } from "@tauri-apps/api/http";
 import { useGlobalStore } from "../store/index";
 
-const server = "http://localhost:8080";
+const server = "http://8.137.36.254:23555";
 const baseURL = `${server}/`;
 
 const BODY_TYPE = {
@@ -27,8 +27,11 @@ const combineURLs = (baseURL, relativeURL) => {
 
 const buildFullPath = (baseURL, requestedURL) => {
   if (baseURL && !isAbsoluteURL(requestedURL)) {
+    let url = combineURLs(baseURL, requestedURL);
+    console.log(url)
     return combineURLs(baseURL, requestedURL);
   }
+  console.log(requestedURL);
   return requestedURL;
 };
 
