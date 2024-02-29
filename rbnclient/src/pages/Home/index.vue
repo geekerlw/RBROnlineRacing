@@ -46,12 +46,16 @@ import payimage from "../../assets/appreciate.png";
 import { login, getVersion } from '../../api';
 import { ElMessage } from 'element-plus'
 import { useGlobalStore } from '../../store'
+import { get_user_name } from '../../reados'
 
 const globalStore = useGlobalStore();
 
 onMounted(() => {
   getVersion().then((res) => {
     console.log('version: ', res)
+  })
+  get_user_name().then((res) => {
+    console.log('getuser:', res)
   })
 })
 
