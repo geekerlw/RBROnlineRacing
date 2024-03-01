@@ -1,9 +1,0 @@
-Version 1.0.30.0
-[20231213 212320] -n auto -p 0 -r 540      (x64 Skoda Fabia R5 evo)
-[20231213 212320] Simagic M10 Alpha Mini Ultimate (SMBASE1 -p 0): Steering=540 Device=\\?\hid#vid_0483&pid_0522#6&26a2e385&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
-[20231213 213300] -n auto -p 0 -r 540      (x64 Skoda Fabia R5 evo)
-[20231213 213300] Simagic M10 Alpha Mini Ultimate (SMBASE1 -p 0): Steering=540 Device=\\?\hid#vid_0483&pid_0522#6&26a2e385&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
-[20231213 213646] -n auto -p 0 -r 540      (x64 Ford Fiesta WRC 2019)
-[20231213 213646] Simagic M10 Alpha Mini Ultimate (SMBASE1 -p 0): Steering=540 Device=\\?\hid#vid_0483&pid_0522#6&26a2e385&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
-[20231213 214614] -n auto -p 0 -r 540      (x64 Ford Fiesta WRC 2019)
-[20231213 214614] Simagic M10 Alpha Mini Ultimate (SMBASE1 -p 0): Steering=540 Device=\\?\hid#vid_0483&pid_0522#6&26a2e385&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
