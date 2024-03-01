@@ -1,9 +1,9 @@
 [package]
 name = "rbnclient"
-version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
+version = "2.0.0"
+description = "Richard Burns Rally(RSF Version) Online Support, Generate by Tauri."
+authors = ["Lw_Ziye(https://github.com/geekerlw)", "RacingJake(https://github.com/hjdshu)"]
+license = "MIT"
 repository = ""
 edition = "2021"
 
