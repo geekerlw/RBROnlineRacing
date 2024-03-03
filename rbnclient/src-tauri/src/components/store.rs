@@ -1,5 +1,4 @@
 use std::env;
-use egui::{Ui, RichText};
 use ini::Ini;
 use std::path::Path;
 use log::info;
@@ -14,8 +13,6 @@ pub struct RacingStore {
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,
-    pub user_state: String,
-    pub curr_room: String,
     pub game_path: String,
 }
 
@@ -63,11 +60,23 @@ impl RacingStore {
         }
     }
 
-    pub fn show_user_state(&mut self, ui: &mut Ui) {
-        if self.user_state.is_empty() {
-            ui.label("正常");
-        } else {
-            ui.label(RichText::new(&self.user_state).color(egui::Color32::from_rgb(255, 0, 0)));
+    pub fn get_config(&self, key: &str) -> String {
+        match key {
+            "server_addr" => self.server_addr.clone(),
+            "server_port" => self.server_port.to_string(),
+            "meta_port" => self.meta_port.to_string(),
+            "game_path" => self.game_path.clone(),
+            _ => String::new(),
+        }
+    }
+
+    pub fn set_config(&mut self, key: &str, value: &str) {
+        match key {
+            "server_addr" => self.server_addr = value.to_string(),
+            "server_port" => self.server_port = value.parse::<u16>().unwrap(),
+            "meta_port" => self.meta_port = value.parse::<u16>().unwrap(),
+            "game_path" => self.game_path = value.to_string(),
+            _ => {},
         }
     }
 
@@ -78,7 +87,7 @@ impl RacingStore {
             + self.server_port.to_string().as_str()
             + "/";
         return uri;
-    }    
+    }
 
     pub fn get_http_url(&self, uri: &str) -> String {
         let url = "http://".to_string()
