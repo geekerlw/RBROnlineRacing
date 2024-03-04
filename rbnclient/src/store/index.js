@@ -35,3 +35,15 @@ export const useGlobalStore = defineStore({
     }
   },
 });
+
+export const useGameConfig = defineStore({
+  id: 'gameConfig',
+  state: () => ({
+    carOptions: []
+  }),
+  actions: {
+    setCarOptions(options) {
+      this.carOptions = options;
+    }
+  }
+})

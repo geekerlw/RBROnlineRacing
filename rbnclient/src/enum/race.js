@@ -1,5 +1,5 @@
 // 赛道数据，包含赛道名称，赛道id，赛道类型
-export const stageList = [
+export let stageList = [
   {
     stage: "hy",
     stage_id: 1,
@@ -12,7 +12,7 @@ export const stageList = [
   },
 ];
 // 车辆数据，包含车辆名称，车辆id
-export const carList = [
+export let carList = [
   {
     car: "car1",
     car_id: 1,
@@ -23,7 +23,7 @@ export const carList = [
   },
 ];
 // 车辆损坏数据枚举，包含车辆损坏名称，车辆损坏id
-export const damageList = [
+export let damageList = [
   {
     label: "real",
     value: 1,
@@ -35,7 +35,7 @@ export const damageList = [
 ];
 
 // 湿滑路面数据枚举，包含湿滑路面名称，湿滑路面id
-export const wetnessList = [
+export let wetnessList = [
   {
     label: "wet",
     value: 1,
@@ -47,7 +47,7 @@ export const wetnessList = [
 ];
 
 // 天气数据枚举，包含天气名称，天气id
-export const weatherList = [
+export let weatherList = [
   {
     label: "sunny",
     value: 1,
@@ -59,7 +59,7 @@ export const weatherList = [
 ];
 
 // 天气类型
-export const skytypeList = [
+export let skytypeList = [
   {
     skytype: "sa",
     skytype_id: 1,
@@ -69,3 +69,11 @@ export const skytypeList = [
     skytype_id: 2,
   },
 ]
+
+export const updateStageList = (list) => {
+  stageList = list;
+}
+
+export const getStageList = () => {
+  return stageList;
+}

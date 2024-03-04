@@ -1,5 +1,12 @@
 
 import { invoke } from "@tauri-apps/api/tauri";
+const parse = (s) => {
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    return s;
+  }
+}
 
 export async function greet() {
   // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -33,7 +40,7 @@ export async function save_all_store_config() {
 
 export async function load_game_user_name() {
   let name = await invoke("load_game_user_name");
-  return name;  // return like {"user": xxx}.
+  return parse(name);  // return like {"user": xxx}.
 }
 
 export async function load_game_stage_options() {

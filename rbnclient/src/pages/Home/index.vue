@@ -46,7 +46,7 @@ import payimage from "../../assets/appreciate.png";
 import { login, getVersion } from '../../api';
 import { ElMessage } from 'element-plus'
 import { useGlobalStore } from '../../store'
-import { get_user_name, load_game_user_name } from '../../reados'
+import { get_user_name, load_game_user_name, load_game_car_options } from '../../reados'
 
 const globalStore = useGlobalStore();
 
@@ -58,9 +58,10 @@ onMounted(() => {
     console.log('getuser:', res)
   })
   load_game_user_name().then((res) => {
-    console.log('gameuser:', res)
-    logInForm.value.name = res // FIXME: maybe no need to use json, change to use string later.
+    console.log('gameuser:', res, typeof res, 'line:61')
+    logInForm.value.name = res.user // FIXME: maybe no need to use json, change to use string later.
   })
+
 })
 
 const logInForm = ref({ name: '', passwd: 'simrallycn' });
