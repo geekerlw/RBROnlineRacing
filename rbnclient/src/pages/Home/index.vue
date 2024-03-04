@@ -1,5 +1,8 @@
 <template>
   <div class="home">
+    <!-- 配置游戏安装目录 -->
+    <GamePathConfig :visible="showGamePathConfig" @finish="finishConfig"/>
+
     <el-row justify="center">
       <el-col :span="24">
         <h2 class="text-center">{{ $t("hello") }}</h2>
@@ -47,6 +50,8 @@ import { login, getVersion } from '../../api';
 import { ElMessage } from 'element-plus'
 import { useGlobalStore } from '../../store'
 import { get_user_name, load_game_user_name, load_game_car_options } from '../../reados'
+import GamePathConfig from '../../components/GamePathConfig.vue';
+const showGamePathConfig = ref(false);
 
 const globalStore = useGlobalStore();
 
@@ -63,6 +68,11 @@ onMounted(() => {
   })
 
 })
+
+const finishConfig = (path) => {
+  console.log('finishConfig', path)
+}
+
 
 const logInForm = ref({ name: '', passwd: 'simrallycn' });
 const handleLogIn = () => {
