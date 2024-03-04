@@ -19,19 +19,21 @@ export async function get_user_name() {
   return value
 }
 
-
 /*
  * Common functions, like config store and game config load etc.
  */
 
 // configs will store in windows appdata directory, here provide api to load and save config by key - value.
 export async function load_store_config(key) {
+  // keyObject is a string, like "user_name", "game_stage", "game_car" etc.
+  // or keyObject is a json string, like '{"key": "user_name"}', '{"key": "game_stage"}' etc.
   let pair = await invoke("load_store_config", {key: key});
   return pair; // this will return like {"key": "value"}.
 }
 
 export async function save_store_config(keypair) {
-  await invoke("save_store_config", {keypair: keypair});
+  // keypair is a json string, like '{"key": "value"}'.
+  await invoke("save_store_config", JSON.stringify(keypair));
 }
 
 export async function save_all_store_config() {

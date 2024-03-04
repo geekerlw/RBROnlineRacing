@@ -40,6 +40,10 @@
         <h4 class="text-center">软件免费捐助自愿，目前仅支持微信扫一扫哦～</h4>
       </el-col>
     </el-row>
+
+    <router-link to="/test">
+      <el-button class="test" type="primary">Test</el-button>
+    </router-link>
   </div>
 </template>
   
@@ -51,6 +55,8 @@ import { ElMessage } from 'element-plus'
 import { useGlobalStore } from '../../store'
 import { get_user_name, load_game_user_name, load_game_car_options } from '../../reados'
 import GamePathConfig from '../../components/GamePathConfig.vue';
+import router from '../../router';
+
 const showGamePathConfig = ref(false);
 
 const globalStore = useGlobalStore();
@@ -104,7 +110,10 @@ const handleLogIn = () => {
     })
   })
 }
-
+const test = () => {
+  console.log('test')
+  router.push('/test')
+}
 </script>
   
 <style lang="less" scoped>
@@ -115,6 +124,11 @@ const handleLogIn = () => {
   img {
     width: 100%;
   }
+}
+.test{
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
 }
 </style>
   
