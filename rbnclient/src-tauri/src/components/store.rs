@@ -37,7 +37,7 @@ impl RacingStore {
                 self.meta_port = conf.get_from_or(Some("server"), "data_port", "23556").parse::<u16>().unwrap();
 
                 self.game_path = conf.get_from_or(Some("game"), "path", r"E:\\Richard Burns Rally").to_string();
-                self.user_name = RBRGame::new(&self.game_path).get_user().to_string();
+                self.user_name = RBRGame::new_with_path(&self.game_path).get_user().to_string();
                 info!("Parsed game user [{}] success", self.user_name);
                 self.user_passwd = String::from("simrallycn");
             }

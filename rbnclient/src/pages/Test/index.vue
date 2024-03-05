@@ -13,18 +13,8 @@
 </template>
 
 <script setup>
-import { save_store_config, load_store_config } from '../../reados'
-const back = () => {
-  history.back()
-};
-const setconfig = () => {
-  save_store_config()
-}
-const loadconfig = () => {
-  load_store_config('server_addr').then((res) => {
-    console.log(res)
-  })
-}
+import { } from '../../reados'
+
 </script>
 
 <style lang="less" scoped>

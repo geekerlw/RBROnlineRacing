@@ -221,7 +221,16 @@ impl RBRRaceData {
 }
 
 impl RBRGame {
-    pub fn new(path: &String) -> Self {
+    pub fn new() -> Self {
+        let path = std::env::current_dir().unwrap().into_os_string().into_string().unwrap();
+        Self {
+            root_path: String::from(path),
+            pid: 0,
+            udp: None,
+        }
+    }
+
+    pub fn new_with_path(path: &String) -> Self {
         Self {
             root_path: path.clone(),
             pid: 0,
@@ -312,6 +321,7 @@ impl RBRGame {
     pub fn get_user(&mut self) -> String {
         let default_user = "anonymous".to_string();
         let conf_path = self.root_path.clone() + r"\rallysimfans.ini";
+        info!("get the config path: {}", conf_path);
         if let Ok(conf) = Ini::load_from_file(conf_path) {
             return conf.get_from_or(Some("login"), "name", default_user.as_str()).to_string();
         }
