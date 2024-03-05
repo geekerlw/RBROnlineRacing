@@ -26,11 +26,24 @@
       <div class="sub-title">车辆和调教</div>
       <div class="msgwrapper">
         <div class="car line sel">
-          车辆状况：
+          车辆选择：
+          <el-select
+            size="small"
+            v-model="car"
+            disabled
+            placeholder="请选择车辆"
+            filterable
+          >
+            <el-option
+              v-for="item in carList"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            ></el-option>
+          </el-select>
           <span class="limit">车辆已限定</span>
-          <span class="limit">车辆未限定</span>
         </div>
-        <!-- <div class="set line sel">
+        <div class="set line sel">
           调校选择：
           <el-select size="small" v-model="car" placeholder="请选择调校">
             <el-option
@@ -51,7 +64,7 @@
               :value="item.value"
             ></el-option>
           </el-select>
-        </div> -->
+        </div>
       </div>
       <div class="sub-title">房间状态</div>
       <div class="statewrapper">
@@ -62,18 +75,17 @@
         <div class="block10"></div>
         <div class="action">
           房主操作：
-          <!-- <el-button type="primary">开始比赛并准备</el-button> -->
+          <el-button type="primary">开始比赛并准备</el-button>
           <el-button type="primary" @click="showCreateRace">修改比赛</el-button>
-          <!-- <el-button type="primary">随机地图</el-button> -->
+          <el-button type="primary">随机地图</el-button>
           <span class="owentips">当前你是房主哦</span>
         </div>
         <div class="block15"></div>
         <div class="action">
           成员操作：
-          <el-button type="warning">退出比赛</el-button> <span class="owentips">当前你已参赛</span>
-          <!-- <el-button type="primary">催房主开始</el-button>
+          <el-button type="primary">催房主开始</el-button>
           <el-button type="warning">退出比赛</el-button>
-          <el-button type="primary">准备</el-button> -->
+          <el-button type="primary">准备</el-button>
         </div>
       </div>
       <div class="block15"></div>
@@ -82,16 +94,12 @@
         <div class="line">
           <span>1</span>
           <span>jakebless</span>
-          <span>比赛中</span>
-          <span>1.23.1</span>
-          <span>diff 0</span>
+          <span>未就绪</span>
         </div>
         <div class="line">
           <span>1</span>
           <span>jakebless</span>
-          <span>比赛中</span>
-          <span>1.23.5</span>
-          <span>diff 0.5</span>
+          <span>未就绪</span>
         </div>
         <div class="line">
           <span>1</span>
@@ -262,9 +270,6 @@ const room = reactive({
   margin-left: 10px;
 }
 .members {
-  &.msgwrapper{
-    display: block;
-  }
   .line {
     display: flex;
     width: 30%;

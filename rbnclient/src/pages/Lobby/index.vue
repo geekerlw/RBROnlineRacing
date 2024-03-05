@@ -42,6 +42,8 @@
   import { useRouter } from "vue-router";
   import CreateOrEditRace from "../../components/CreateOrEditRace.vue";
   
+
+  
   const router = useRouter();
   const goHome = () => {
     router.push("/home");
