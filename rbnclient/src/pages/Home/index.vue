@@ -53,7 +53,7 @@ import payimage from "../../assets/appreciate.png";
 import { login, getVersion } from '../../api';
 import { ElMessage } from 'element-plus'
 import { useGlobalStore } from '../../store'
-import { get_user_name, load_game_user_name, load_game_car_options } from '../../reados'
+import { load_game_user_name, load_game_car_options } from '../../reados'
 import GamePathConfig from '../../components/GamePathConfig.vue';
 import router from '../../router';
 
@@ -65,12 +65,10 @@ onMounted(() => {
   getVersion().then((res) => {
     console.log('version: ', res)
   })
-  get_user_name().then((res) => {
-    console.log('getuser:', res)
-  })
+
   load_game_user_name().then((res) => {
     console.log('gameuser:', res, typeof res, 'line:61')
-    logInForm.value.name = res.user // FIXME: maybe no need to use json, change to use string later.
+    logInForm.value.name = res
   })
 
 })
