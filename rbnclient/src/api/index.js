@@ -26,3 +26,11 @@ export const getVersion = (data) => {
     data: {}
   })
 }
+
+export const getRaceList = (data) => {
+  return httpJson("/api/race/list", {
+    method: "GET",
+    responseType: 2,
+    data: {}
+  })
+}

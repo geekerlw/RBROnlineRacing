@@ -41,7 +41,7 @@
   import { ref, onMounted, computed } from "vue";
   import { useRouter } from "vue-router";
   import CreateOrEditRace from "../../components/CreateOrEditRace.vue";
-  
+  import { getRaceList } from "../../api";
 
   
   const router = useRouter();
@@ -85,10 +85,16 @@
     createRef.value.showCreateRace();
   };
   
-  const ssadsds = ref(null);
-  
   onMounted(() => {
-    raceList.value = roomMockList;
+    getRaceList().then((res) => {
+      console.log(res, typeof res, "raceList");
+      if (res) {
+      
+      } else {
+        raceList.value = [];
+      }
+    });
+    
   });
   </script>
   
