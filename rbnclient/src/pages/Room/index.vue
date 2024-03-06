@@ -13,22 +13,22 @@
       <div class="msgwrapper msgfirst">
         <div class="name line">房间名: {{ room.name }}</div>
         <div class="roomowner line">房主: {{ room.owner }}</div>
-        <div class="password line">密码: 123{{}}</div>
-        <div class="roomplayers line">人数: {{ room.players }}/8</div>
+        <div class="password line">密码: {{room.passwd || '无密码'}}</div>
+        <div class="roomplayers line">人数: {{ room.players }}</div>
         <div class="stage line">赛道: {{ room.stage }}</div>
-        <div class="stagelength line">赛道长度： 15km</div>
-        <div class="reloadtype line">路面类型：Tarmac</div>
-        <div class="wetdry line">湿滑情况： Dry</div>
-        <div class="weatherstatus line">天气状况： Good</div>
-        <div class="weathertype line">天气类型：asdas</div>
-        <div class="damage line">车辆损坏： Realistic</div>
+        <div class="stagelength line">赛道长度： {{ room.stage_len }}</div>
+        <div class="reloadtype line">路面类型：{{ room.stage_type }}</div>
+        <div class="wetdry line">湿滑情况： {{ room.wetness }}</div>
+        <div class="weatherstatus line">天气状况： {{ room.weather }}</div>
+        <div class="weathertype line">天气类型：{{ room.skytype }}</div>
+        <div class="damage line">车辆损坏： {{ room.damage }}</div>
       </div>
       <div class="sub-title">车辆和调教</div>
       <div class="msgwrapper">
         <div class="car line sel">
           车辆状况：
-          <span class="limit">车辆已限定</span>
-          <span class="limit">车辆未限定</span>
+          <span class="limit">{{ room.car }}</span>
+          <span class="limit">{{ room.car_fixed ? "车辆限定" : "车辆未限定"}}</span>
         </div>
         <!-- <div class="set line sel">
           调校选择：
