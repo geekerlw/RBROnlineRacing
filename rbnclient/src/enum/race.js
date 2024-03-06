@@ -1,3 +1,4 @@
+// 作废
 // 赛道数据，包含赛道名称，赛道id，赛道类型
 export let stageList = [
   {

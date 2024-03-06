@@ -17,9 +17,16 @@
         <div class="name line">房名: {{ race.name }}</div>
         <div class="stage line">地图: {{ race.stage }}</div>
         <div class="owner line">房主: {{ race.owner }}</div>
-        <div class="players line">人数: {{ race.players }}/8</div>
-        <div class="status line">状态: {{ stateText(race.state) }}</div>
+        <div class="players line">人数: {{ race.players }}</div>
+        <!-- <div class="status line">状态: {{ stateText(race.state) }}</div> -->
+        <div class="status line">状态: {{ race.state }}</div>
+
         <div class="action">
+
+          <el-button type="primary" @click="gorace(race.name)"
+            >进入房间</el-button
+          >
+
           <el-button type="primary" v-if="race.state == '等待中'" @click="back"
             >加入房间</el-button
           >
@@ -33,7 +40,7 @@
       </el-card>
       </div>
     </div>
-    <CreateOrEditRace ref="createRef"></CreateOrEditRace>
+    <CreateOrEditRace ref="createRef" @created="created"></CreateOrEditRace>
     <!-- <router-link :to="'/room/' + room">{{room}}</router-link> -->
   </template>
   
@@ -51,19 +58,13 @@
   const back = () => {
     history.back();
   };
-  const gorace = () => {
-    router.push('/room/1');
+  const gorace = (id) => {
+    router.push('/room/' + id);
   }
-  
-  const roomMockList = [
-    {
-      name: "jakebless",
-      stage: "lyon-Geend",
-      owner: "jakebless",
-      players: 5,
-      state: "等待中",
-    },
-  ];
+  const created = () => {
+    console.log(23333333333333333333333333)
+    initlist()
+  };
   
   const raceList = ref([]);
   
@@ -86,16 +87,19 @@
   };
   
   onMounted(() => {
+    initlist();
+  });
+
+  const initlist = () => {
     getRaceList().then((res) => {
-      console.log(res, typeof res, "raceList");
       if (res) {
-      
+        raceList.value = JSON.parse(res); 
       } else {
         raceList.value = [];
       }
     });
-    
-  });
+  }
+
   </script>
   
   <style lang="less" scoped>
@@ -130,6 +134,7 @@
       .line {
         margin-bottom: 10px;
       }
+      margin-right: 20px;
     }
   }
   </style>

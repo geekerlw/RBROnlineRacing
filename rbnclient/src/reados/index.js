@@ -20,17 +20,19 @@ export async function load_game_user_name() {
 
 // return game stage infos. to many key-values, you can see it at game->rbr.rs-> RBRStageData.
 export async function load_game_stage_options() {
-  let options = await invoke("load_game_state_options");
+  let options = await invoke("load_game_stage_options");
   return options;
 }
 
 // return wetness options, like [{"id": 0, "value": "xxx"}], id is use to create race.
+// 湿度
 export async function load_game_stage_wetness_options() {
   let options = await invoke("load_game_stage_wetness_options");
   return options;
 }
 
 // return weather options, like [{"id": 0, "value": "xxx"}], id is use to create race.
+// 天气
 export async function load_game_stage_weather_options() {
   let options = await invoke("load_game_stage_weather_options");
   return options;
@@ -38,8 +40,10 @@ export async function load_game_stage_weather_options() {
 
 // return skytype options, like [{"id": 0, "value": "xxx"}], id is use to create race.
 // get the stage_id from stage_options api, it's the "id" value.
+// 天空类型
 export async function load_game_stage_skytype_options(stage_id) {
-  let options = await invoke("load_game_stage_skytype_options", {stage_id: stage_id});
+  console.log("stage_id", stage_id);
+  let options = await invoke("load_game_stage_skytype_options", {stageId: stage_id});
   return options;
 }
 

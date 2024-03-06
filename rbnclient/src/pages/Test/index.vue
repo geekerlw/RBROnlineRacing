@@ -4,8 +4,7 @@
       <el-button @click="back">返回</el-button>
     </div>
     <div>
-      <el-button @click="loadconfig">loadconfig</el-button>
-      <el-button @click="setconfig">testSet</el-button>
+      <el-button @click="testGet">test</el-button>
     </div>
   </div>
 
@@ -13,8 +12,16 @@
 </template>
 
 <script setup>
-import { } from '../../reados'
-
+import { load_game_stage_options } from '../../reados'
+const back = () => {
+  history.back()
+}
+const testGet = () => {
+  console.log('testGet')
+  load_game_stage_options().then(res => {
+    console.log(res)
+  })
+}
 </script>
 
 <style lang="less" scoped>

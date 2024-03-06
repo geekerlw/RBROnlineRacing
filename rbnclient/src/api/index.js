@@ -34,3 +34,11 @@ export const getRaceList = (data) => {
     data: {}
   })
 }
+
+export const getRaceInfo = (data) => {
+  return httpJson("/api/race/info", {
+    method: "GET",
+    responseType: 2,
+    data: data
+  });
+}

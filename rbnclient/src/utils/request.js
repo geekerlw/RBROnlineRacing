@@ -1,5 +1,6 @@
 import { fetch } from "@tauri-apps/api/http";
 import { useGlobalStore } from "../store/index";
+import { ElMessage } from "element-plus";
 
 const server = "http://8.137.36.254:23555";
 const baseURL = `${server}/`;
@@ -41,6 +42,7 @@ const checkStatus = (status, data) => {
     console.log(typeof data)
     return data;
   }
+  ElMessage.error(data);
   return Promise.reject(`Request failed with status ${status}`);
 };
 
@@ -54,9 +56,10 @@ const http = (url, options) => {
       options.headers["Content-Type"] = "multipart/form-data";
     }
   }
-  if (globalStore.$state.token && options.payload) {
-    options.payload.data = globalStore.$state.token;
+  if (globalStore.$state.token && options.data) {
+    options.data.token = globalStore.$state.token;
   }
+  console.log(options.payload, 'payload')
   options = { ...commonOptions, ...options };
   return fetch(buildFullPath(baseURL, url), options)
     .then(({ status, data }) => checkStatus(status, data))

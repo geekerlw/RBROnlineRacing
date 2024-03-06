@@ -143,10 +143,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import RoomRaceState from "./RoomRaceState.vue";
 import RoomGrade from "./RoomGrade.vue";
 import CreateOrEditRace from '../../components/CreateOrEditRace.vue';
+import { getRaceInfo } from "../../api/index";
 
 const editRef = ref(null);
 const showCreateRace = () => {
@@ -173,13 +175,21 @@ const carList = [
 const back = () => {
   history.back();
 };
-const room = reactive({
-  name: "jakebless",
-  stage: "lyon-Geend",
-  owner: "jakebless",
-  players: 1,
-  state: "等待中",
+const room = ref({
 });
+
+const route = useRouter(); 
+onMounted(() => {
+  const name = route.currentRoute.value.params.roomId;
+  const data = {
+    name: name
+  }
+  getRaceInfo(data).then((res) => {
+    console.log(res);
+    room.value = JSON.parse(res)
+  });
+});
+
 </script>
 
 <style lang="less" scoped>
@@ -281,5 +291,8 @@ const room = reactive({
       }
     }
   }
+}
+.roommsgbox{
+  padding-bottom: 30px;
 }
 </style>

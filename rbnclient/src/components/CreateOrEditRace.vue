@@ -1,7 +1,14 @@
 <template>
   <!-- 利用element-plus的弹窗组件实现 -->
-  <el-dialog :title="editRaceId ? '修改比赛': '创建房间'" v-model="dialogVisible" width="800px" fullscreen top="5vh" class="dlog">
-    <el-form :model="form" :rules="rules" label-width="80px">
+  <el-dialog
+    :title="editRaceId ? '修改比赛' : '创建房间'"
+    v-model="dialogVisible"
+    width="800px"
+    fullscreen
+    top="5vh"
+    class="dlog"
+  >
+    <el-form :model="form" :rules="rules" label-width="100px">
       <div class="group-title">房间设定</div>
       <el-form-item label="房间名" prop="name">
         <el-input v-model="form.name"></el-input>
@@ -12,12 +19,12 @@
 
       <div class="group-title">比赛设定</div>
       <el-form-item label="比赛赛道" prop="stage" class="multitem">
-        <el-select v-model="form.stage" placeholder="请选择地图" filterable>
+        <el-select v-model="form.stage" placeholder="请选择地图" filterable @change="changeStage">
           <el-option
-            v-for="item in stageList"
+            v-for="item in stageListOptions"
             :key="item.id"
-            :label="item.stage"
-            :value="item.stage"
+            :label="item.name"
+            :value="item.id"
           ></el-option>
         </el-select>
         <el-button class="line-btn" @click="randomStage" type="primary"
@@ -28,13 +35,13 @@
       <el-form-item label="车辆选择" prop="car" class="multitem">
         <el-select v-model="form.car" placeholder="请选择车辆" filterable>
           <el-option
-            v-for="item in carList"
-            :key="item.car"
-            :label="item.car"
-            :value="item.car"
+            v-for="item in carListOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
           ></el-option>
         </el-select>
-        <el-checkbox>
+        <el-checkbox v-model="form.car_fixed">
           <span slot="label">限定车辆</span>
         </el-checkbox>
       </el-form-item>
@@ -42,42 +49,41 @@
       <el-form-item label="车辆损坏" prop="damage">
         <el-select v-model="form.damage" placeholder="请选择车辆损坏">
           <el-option
-            v-for="item in damageList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in damageListOptions"
+            :key="item.id"
+            :label="item.value"
+            :value="item.id"
           ></el-option>
         </el-select>
       </el-form-item>
       <div class="group-title">条件设定</div>
-      <!-- 湿滑情况选择 -->
+      <el-form-item label="天气类型" prop="skytype">
+        <el-select v-model="form.skytype" :placeholder="sktTypePlaceholder">
+          <el-option
+            v-for="item in skytypeListOptions"
+            :key="item.id"
+            :label="item.value"
+            :value="item.id"
+          ></el-option>
+        </el-select>
+      </el-form-item>
       <el-form-item label="湿滑情况" prop="wetness">
         <el-select v-model="form.wetness" placeholder="">
           <el-option
-            v-for="item in wetnessList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in wetnessListOptions"
+            :key="item.id"
+            :label="item.value"
+            :value="item.id"
           ></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="天气状况" prop="weather">
         <el-select v-model="form.weather" placeholder="">
           <el-option
-            v-for="item in weatherList"
+            v-for="item in weatherListOptions"
             :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          ></el-option>
-        </el-select>
-      </el-form-item>      
-      <el-form-item label="天气类型" prop="skykind">
-        <el-select v-model="form.skytype" placeholder="">
-          <el-option
-            v-for="item in skytypeList"
-            :key="item.skytype_id"
-            :label="item.skytype"
-            :value="item.skytype"
+            :label="item.value"
+            :value="item.id"
           ></el-option>
         </el-select>
       </el-form-item>
@@ -91,10 +97,83 @@
     </template>
   </el-dialog>
 </template>
+
 <script setup>
-import { ref, reactive } from "vue";
-import { stageList, carList, damageList, wetnessList, weatherList, skytypeList } from "../enum/race.js";
+import { ref, reactive, onMounted, computed } from "vue";
+import { ElMessage } from "element-plus";
+import {
+  load_game_stage_options,
+  load_game_car_options,
+  load_game_car_damage_options,
+  load_game_stage_skytype_options,
+  load_game_stage_weather_options,
+  load_game_stage_wetness_options,
+} from "../reados/index.js";
+import { createRace } from "../api/index.js"
+
+// emit created
+const emit = defineEmits(['created'])
+
 const dialogVisible = ref(false);
+
+const stageListOptions = ref([]);
+const carListOptions = ref([]);
+const damageListOptions = ref([]);
+const wetnessListOptions = ref([]);
+const weatherListOptions = ref([]);
+const skytypeListOptions = ref([]);
+
+const sktTypePlaceholder = computed(() => {
+  if (!form.stage) {
+    return "请先选择赛道";
+  }
+  if (skytypeListOptions.value.length === 0) {
+    return "该赛道无天气类型";
+  }
+  return "请选择天气类型";
+});
+
+onMounted(() => {
+  console.log("onMounted");
+  load_game_stage_options().then((res) => {
+    if (res) {
+      stageListOptions.value = JSON.parse(res);
+      console.log('stageListOptions', stageListOptions.value)
+    }
+  });
+  load_game_car_options().then((res) => {
+    if (res) {
+      carListOptions.value = JSON.parse(res);
+    }
+  });
+  load_game_car_damage_options().then((res) => {
+    if (res) {
+      damageListOptions.value = JSON.parse(res);
+    }
+  });
+  load_game_stage_weather_options().then((res) => {
+    if (res) {
+      weatherListOptions.value = JSON.parse(res);
+      console.log("weatherListOptions", weatherListOptions.value);
+    }
+  });
+  load_game_stage_wetness_options().then((res) => {
+    if (res) {
+      wetnessListOptions.value = JSON.parse(res);
+      console.log("wetnessListOptions", wetnessListOptions.value);
+    }
+  });
+});
+
+const changeStage = (val) => {
+  load_game_stage_skytype_options(Number(val)).then((res) => {
+    if (res) {
+      console.log("skytypeListOptions", res);
+      skytypeListOptions.value = JSON.parse(res);
+      console.log("skytypeListOptions", skytypeListOptions.value);
+    }
+  });
+};
 
 // 判断是否是编辑模式
 const editRaceId = ref("");
@@ -111,16 +190,22 @@ const hideCreateRace = () => {
 };
 
 const rules = [];
-const form = reactive({
-  name: "11",
+const resetdata = {
+  name: "",
   passwd: "",
   stage: "",
-  damage: "",
   car: "",
-  wetness: '',
-  weather: '',
-  skytype: '',
-});
+  car_fixed: false,
+  damage: null,
+  wetness: null,
+  weather: null,
+  skytype: null,
+};
+const form = reactive(JSON.parse(JSON.stringify(resetdata)));
+const restData = () => {
+  Object.assign(form, resetdata);
+  editRaceId.value = "";
+};
 
 const randomStage = () => {
   const index = Math.floor(Math.random() * stageList.length);
@@ -128,27 +213,83 @@ const randomStage = () => {
 };
 
 const createHandle = () => {
+  if (!form.name) {
+    return ElMessage.error("请输入房间名");
+  }
+  // if (!form.passwd) {
+  //   return ElMessage.error("请输入房间密码");
+  // }
+  // 判断stage
+  if (!form.stage) {
+    return ElMessage.error("请选择赛道");
+  }
+  const stage = stageListOptions.value.find((item) => item.id === form.stage);
+  let stageType = "";
+  // stage.snow = '100', stage.tarmac = '0', stage.gravel = '0', then stageType = 'snow'
+  console.log(stage)
+  if (stage.snow > stage.tarmac && stage.snow > stage.gravel) {
+    stageType = "snow";
+  } else if (stage.tarmac > stage.snow && stage.tarmac > stage.gravel) {
+    stageType = "tarmac";
+  } else if (stage.gravel > stage.snow && stage.gravel > stage.tarmac) {
+    stageType = "gravel";
+  }
+  if (!form.car) {
+    return ElMessage.error("请选择车辆");
+  }
+  const car = carListOptions.value.find((item) => item.id === form.car);
+  if (form.damage == null) {
+    return ElMessage.error("请选择车辆损坏");
+  }
+  let skyType = null;
+  if (skytypeListOptions.value.length != 0 && form.skytype == null) {
+    return ElMessage.error("请选择天气类型");
+  } else {
+    skyType = skytypeListOptions.value.find((item) => item.id === form.skytype);
+  }
+  if (form.wetness == null) {
+    return ElMessage.error("请选择湿滑情况");
+  }
+  if (form.weather == null) {
+    return ElMessage.error("请选择天气状况");
+  }
   const data = {
     info: {
-      name: '',
-      owner: '',
-      stage: '',
-      stage_id: 1,
-      stage_type: '222',
-      stage_len: 1,
-      car_fixed: false,
-      car: 'c5',
-      car_id: 111,
-      damage: 1,
-      weather: 1,
-      wetness: 1,
-      skytype: 'sadsa',
-      skytype_id: 1,
+      name: form.name,
+      owner: "",
+      stage: stage.name,
+      stage_id: Number(stage.id),
+      stage_type: stageType,
+      stage_len: Number(stage.length),
+      car_fixed: form.car_fixed,
+      car: car.name,
+      car_id: Number(car.id),
+      damage: Number(form.damage),
+      weather: form.weather,
+      wetness: form.wetness,
     },
-    locked: false,
-    passwd: '',
+    locked: false
+  };
+  if (form.passwd) {
+    data.passwd = form.passwd;
+    data.locked = true;
   }
-  console.log('createHandle', data);
+  if (skyType) {
+    data.info.skytype = skyType.value;
+    data.info.skytype_id = Number(skyType.id);
+  } else {
+    data.info.skytype = "Default";
+    data.info.skytype_id = 0;
+  }
+  console.log("createHandle", data);
+  createRace(data).then((res) => {
+    if (res) {
+      ElMessage.success("创建成功");
+      hideCreateRace();
+      restData();
+      emit('created');
+    }
+  });
 };
 
 defineExpose({
@@ -156,6 +297,7 @@ defineExpose({
   hideCreateRace,
 });
 </script>
+
 <style lang="less" scoped>
 .group-title {
   margin: 20px 0;
@@ -175,17 +317,21 @@ defineExpose({
     background-color: #409eff; //更改为你想要的颜色
   }
 }
-.multitem :deep(.el-form-item__content){
+
+.multitem :deep(.el-form-item__content) {
   display: flex;
   justify-content: space-between;
 }
-.multitem :deep(.el-select){
+
+.multitem :deep(.el-select) {
   width: calc(100% - 110px);
 }
-:global(.el-dialog__body){
+
+:global(.el-dialog__body) {
   padding-top: 0;
   padding-bottom: 0px;
 }
+
 // .line-btn {
 //   margin-top: 10px;
 // }
