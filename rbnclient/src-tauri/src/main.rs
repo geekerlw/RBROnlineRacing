@@ -110,7 +110,8 @@ fn load_game_car_setup_options(path: &str) -> Result<String, String> {
 }
 
 fn main() {
-    if let Ok(root_path) = std::env::current_dir() {
+    if let Some(root_path) = std::env::current_exe().unwrap().parent() {
+        println!("app is running in dir: {:?}", root_path);
         let log_file = root_path.join("RBR-BattleNet.log");
         WriteLogger::init(log::LevelFilter::Info, 
             simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();

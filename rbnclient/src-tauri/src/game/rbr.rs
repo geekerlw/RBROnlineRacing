@@ -222,7 +222,7 @@ impl RBRRaceData {
 
 impl RBRGame {
     pub fn new() -> Self {
-        let path = std::env::current_dir().unwrap().into_os_string().into_string().unwrap();
+        let path = std::env::current_exe().unwrap().parent().unwrap().to_string_lossy().to_string();
         Self {
             root_path: String::from(path),
             pid: 0,
