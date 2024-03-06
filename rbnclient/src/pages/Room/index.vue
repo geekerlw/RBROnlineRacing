@@ -13,7 +13,7 @@
       <div class="msgwrapper msgfirst">
         <div class="name line">房间名: {{ room.name }}</div>
         <div class="roomowner line">房主: {{ room.owner }}</div>
-        <div class="password line">密码: {{room.passwd || '无密码'}}</div>
+        <!-- <div class="password line">密码: {{room.passwd || '无密码'}}</div> -->
         <div class="roomplayers line">人数: {{ room.players }}</div>
         <div class="stage line">赛道: {{ room.stage }}</div>
         <div class="stagelength line">赛道长度： {{ room.stage_len }}</div>
