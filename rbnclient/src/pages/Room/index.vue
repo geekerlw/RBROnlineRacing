@@ -16,17 +16,17 @@
         <!-- <div class="password line">密码: {{room.passwd || '无密码'}}</div> -->
         <div class="roomplayers line">人数: {{ room.players }}</div>
         <div class="stage line">赛道: {{ room.stage }}</div>
-        <div class="stagelength line">赛道长度： {{ room.stage_len }}</div>
+        <div class="stagelength line">赛道长度： {{ room.stage_len/1000 }}KM</div>
         <div class="reloadtype line">路面类型：{{ room.stage_type }}</div>
-        <div class="wetdry line">湿滑情况： {{ room.wetness }}</div>
-        <div class="weatherstatus line">天气状况： {{ room.weather }}</div>
+        <div class="wetdry line">湿滑情况： {{ raceWetness }}</div>
+        <div class="weatherstatus line">天气状况： {{ raceWeather }}</div>
         <div class="weathertype line">天气类型：{{ room.skytype }}</div>
-        <div class="damage line">车辆损坏： {{ room.damage }}</div>
+        <div class="damage line">车辆损坏： {{ raceDamage }}</div>
       </div>
       <div class="sub-title">车辆和调教</div>
       <div class="msgwrapper">
         <div class="car line sel">
-          车辆状况：
+          车辆设置：
           <span class="limit">{{ room.car }}</span>
           <span class="limit">{{ room.car_fixed ? "车辆限定" : "车辆未限定"}}</span>
         </div>
@@ -143,12 +143,41 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import RoomRaceState from "./RoomRaceState.vue";
 import RoomGrade from "./RoomGrade.vue";
 import CreateOrEditRace from '../../components/CreateOrEditRace.vue';
 import { getRaceInfo } from "../../api/index";
+import { useGameConfig } from "../../store/index.js";
+const {
+  stageListOptions,
+  carListOptions,
+  damageListOptions,
+  wetnessListOptions,
+  weatherListOptions,
+} = useGameConfig();
+
+const raceWetness = computed(() => {
+  let wet = wetnessListOptions.find((item) => item.id == room.value.wetness)
+  if (wet) {
+    return wet.value;
+  }
+});
+
+const raceWeather = computed(() => {
+  let weather = weatherListOptions.find((item) => item.id == room.value.weather)
+  if (weather) {
+    return weather.value;
+  }
+});
+
+const raceDamage = computed(() => {
+  let damage = damageListOptions.find((item) => item.id == room.value.damage)
+  if (damage) {
+    return damage.value;
+  }
+});
 
 const editRef = ref(null);
 const showCreateRace = () => {

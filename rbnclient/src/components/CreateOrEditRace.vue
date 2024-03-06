@@ -102,26 +102,26 @@
 import { ref, reactive, onMounted, computed } from "vue";
 import { ElMessage } from "element-plus";
 import {
-  load_game_stage_options,
-  load_game_car_options,
-  load_game_car_damage_options,
   load_game_stage_skytype_options,
-  load_game_stage_weather_options,
-  load_game_stage_wetness_options,
 } from "../reados/index.js";
 import { createRace } from "../api/index.js"
+import { useGameConfig } from "../store/index.js";
+
+const {
+  stageListOptions,
+  carListOptions,
+  damageListOptions,
+  wetnessListOptions,
+  weatherListOptions,
+} = useGameConfig();
 
 // emit created
 const emit = defineEmits(['created'])
 
 const dialogVisible = ref(false);
 
-const stageListOptions = ref([]);
-const carListOptions = ref([]);
-const damageListOptions = ref([]);
-const wetnessListOptions = ref([]);
-const weatherListOptions = ref([]);
 const skytypeListOptions = ref([]);
+
 
 const sktTypePlaceholder = computed(() => {
   if (!form.stage) {
@@ -135,34 +135,6 @@ const sktTypePlaceholder = computed(() => {
 
 onMounted(() => {
   console.log("onMounted");
-  load_game_stage_options().then((res) => {
-    if (res) {
-      stageListOptions.value = JSON.parse(res);
-      console.log('stageListOptions', stageListOptions.value)
-    }
-  });
-  load_game_car_options().then((res) => {
-    if (res) {
-      carListOptions.value = JSON.parse(res);
-    }
-  });
-  load_game_car_damage_options().then((res) => {
-    if (res) {
-      damageListOptions.value = JSON.parse(res);
-    }
-  });
-  load_game_stage_weather_options().then((res) => {
-    if (res) {
-      weatherListOptions.value = JSON.parse(res);
-      console.log("weatherListOptions", weatherListOptions.value);
-    }
-  });
-  load_game_stage_wetness_options().then((res) => {
-    if (res) {
-      wetnessListOptions.value = JSON.parse(res);
-      console.log("wetnessListOptions", wetnessListOptions.value);
-    }
-  });
 });
 
 const changeStage = (val) => {
@@ -208,8 +180,8 @@ const restData = () => {
 };
 
 const randomStage = () => {
-  const index = Math.floor(Math.random() * stageList.length);
-  form.stage = stageList[index].stage;
+  const index = Math.floor(Math.random() * stageListOptions.length);
+  form.stage = stageListOptions[index].id;
 };
 
 const createHandle = () => {
@@ -223,7 +195,7 @@ const createHandle = () => {
   if (!form.stage) {
     return ElMessage.error("请选择赛道");
   }
-  const stage = stageListOptions.value.find((item) => item.id === form.stage);
+  const stage = stageListOptions.find((item) => item.id === form.stage);
   let stageType = "";
   // stage.snow = '100', stage.tarmac = '0', stage.gravel = '0', then stageType = 'snow'
   console.log(stage)
@@ -237,7 +209,7 @@ const createHandle = () => {
   if (!form.car) {
     return ElMessage.error("请选择车辆");
   }
-  const car = carListOptions.value.find((item) => item.id === form.car);
+  const car = carListOptions.find((item) => item.id === form.car);
   if (form.damage == null) {
     return ElMessage.error("请选择车辆损坏");
   }

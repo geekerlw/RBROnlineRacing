@@ -57,26 +57,23 @@ import { load_game_user_name, load_game_car_options } from '../../reados'
 import GamePathConfig from '../../components/GamePathConfig.vue';
 import router from '../../router';
 
+const globalStore = useGlobalStore()
 const showGamePathConfig = ref(false);
 
-const globalStore = useGlobalStore();
 
 onMounted(() => {
   getVersion().then((res) => {
     console.log('version: ', res)
   })
-
   load_game_user_name().then((res) => {
     console.log('gameuser:', res, typeof res, 'line:61')
     logInForm.value.name = res
   })
-
 })
 
 const finishConfig = (path) => {
   console.log('finishConfig', path)
 }
-
 
 const logInForm = ref({ name: '', passwd: 'simrallycn' });
 const handleLogIn = () => {

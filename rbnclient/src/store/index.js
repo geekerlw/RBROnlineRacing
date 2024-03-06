@@ -36,14 +36,43 @@ export const useGlobalStore = defineStore({
   },
 });
 
+
+import {
+  load_game_stage_options,
+  load_game_car_options,
+  load_game_car_damage_options,
+  load_game_stage_weather_options,
+  load_game_stage_wetness_options,
+} from "../reados/index.js";
+
 export const useGameConfig = defineStore({
   id: 'gameConfig',
   state: () => ({
-    carOptions: []
+    stageListOptions: [],
+    damageListOptions: [],
+    weatherListOptions: [],
+    wetnessListOptions: [],
+    carListOptions: [],
   }),
   actions: {
-    setCarOptions(options) {
-      this.carOptions = options;
+    loadGameConfig () {
+      load_game_stage_options().then((res) => {
+        this.stageListOptions = JSON.parse(res);
+      });
+      load_game_car_options().then((res) => {
+        this.carListOptions = JSON.parse(res);
+      });
+      load_game_car_damage_options().then((res) => {
+        this.damageListOptions = JSON.parse(res);  
+      });
+      load_game_stage_weather_options().then((res) => {
+        this.weatherListOptions = JSON.parse(res);
+      });
+      load_game_stage_wetness_options().then((res) => {
+        this.wetnessListOptions = JSON.parse(res);
+      });
     }
   }
 })
+
+

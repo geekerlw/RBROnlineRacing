@@ -2,13 +2,18 @@
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import { useI18n } from "vue-i18n";
-import { useGlobalStore } from './store/index';
+import { useGlobalStore, useGameConfig } from './store/index';
+import { onMounted } from "vue";
 const gobalStore = useGlobalStore()
+const gameConfig = useGameConfig()
 const { locale } = useI18n();
 const changeLanguage = (lang) => {
   locale.value = lang;
   gobalStore.setLanguage(lang)
 };
+onMounted(() => {
+  gameConfig.loadGameConfig();
+});
 </script>
 <template>
   <div class="maincontent">
