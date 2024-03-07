@@ -57,16 +57,20 @@
       <div class="statewrapper">
         <!-- <div class="disabled" v-if="true">比赛中...</div> -->
         <div class="state">
-          当前状态：等待比赛中/比赛中/比赛准备中/比赛加载中
+          <!-- 当前状态：等待比赛中/比赛中/比赛准备中/比赛加载中 -->
+          房间状态：等待比赛中...
+        </div>
+        <div class="state">
+          <!-- 当前状态：等待比赛中/比赛中/比赛准备中/比赛加载中 -->
+          房间状态：比赛结束&nbsp;
+          <el-button type="primary" @click="showResult">查看本场成绩</el-button>
         </div>
         <div class="block10"></div>
-        <div class="action">
+        <!-- <div class="action">
           房主操作：
-          <!-- <el-button type="primary">开始比赛并准备</el-button> -->
           <el-button type="primary" @click="showCreateRace">修改比赛</el-button>
-          <!-- <el-button type="primary">随机地图</el-button> -->
           <span class="owentips">当前你是房主哦</span>
-        </div>
+        </div> -->
         <div class="block15"></div>
         <div class="action">
           成员操作：
@@ -83,60 +87,22 @@
           <span>1</span>
           <span>jakebless</span>
           <span>比赛中</span>
-          <span>1.23.1</span>
-          <span>diff 0</span>
         </div>
         <div class="line">
-          <span>1</span>
+          <span>2</span>
           <span>jakebless</span>
           <span>比赛中</span>
-          <span>1.23.5</span>
-          <span>diff 0.5</span>
         </div>
         <div class="line">
-          <span>1</span>
+          <span>3</span>
           <span>jakebless</span>
-          <span>未就绪</span>
-        </div>
-        <div class="line">
-          <span>1</span>
-          <span>jakebless</span>
-          <span>未就绪</span>
-        </div>
-        <div class="line">
-          <span>1</span>
-          <span>jakebless</span>
-          <span>未就绪</span>
-        </div>
-        <div class="line">
-          <span>1</span>
-          <span>jakebless</span>
-          <span>未就绪</span>
-        </div>
-        <div class="line">
-          <span>1</span>
-          <span>jakebless</span>
-          <span>未就绪</span>
-        </div>
-        <div class="line">
-          <span>1</span>
-          <span>jakebless</span>
-          <span>未就绪</span>
-        </div>
-        <div class="line">
-          <span>1</span>
-          <span>jakebless</span>
-          <span>未就绪</span>
-        </div>
-        <div class="line">
-          <span>1</span>
-          <span>jakebless</span>
-          <span>未就绪</span>
+          <span>比赛中</span>
         </div>
       </div>
     </div>
-    <RoomRaceState v-if="showState"></RoomRaceState>
-    <RoomGrade v-if="showGrade"></RoomGrade>
+
+    <RoomGrade v-if="showGrade" :hideReuslt="hideReuslt"></RoomGrade>
+    <!-- <RoomRaceState v-if="showState"></RoomRaceState> -->
     <CreateOrEditRace ref="editRef"></CreateOrEditRace>
 
   </div>
@@ -206,6 +172,13 @@ const back = () => {
 };
 const room = ref({
 });
+
+const showResult = () => {
+  showGrade.value = true;
+};
+const hideReuslt = () => {
+  showGrade.value = false;
+};
 
 const route = useRouter(); 
 onMounted(() => {
@@ -282,6 +255,9 @@ onMounted(() => {
     align-items: center;
     color: #000;
   }
+}
+.state{
+  height: 40px;
 }
 .title {
   font-size: 24px;

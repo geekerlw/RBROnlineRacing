@@ -55,7 +55,7 @@
     </div>
 
     <div class="action">
-      <el-button type="primary" @click="hideReuslt">知道了</el-button>
+      <el-button type="primary">知道了</el-button>
       <el-button type="primary" @click="download">下载成绩单</el-button>
     </div>
     <div class="block40"> </div>
@@ -76,11 +76,6 @@ import { writeBinaryFile } from '@tauri-apps/api/fs';
 import { ElMessage } from 'element-plus';
 onMounted(() => {
 });
-
-defineProps({
-  hideReuslt: Function
-});
-
 
 
 const download = () => {
