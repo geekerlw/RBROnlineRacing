@@ -12,4 +12,5 @@ crate-type = ["cdylib"]
 [dependencies]
 libc = "0.2.151"
 log = "0.4.20"
+rust-ini = "0.20.0"
 simplelog = "0.12.1"

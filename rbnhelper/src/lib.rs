@@ -11,7 +11,8 @@ mod rbnhelper;
 
 #[no_mangle]
 extern fn rbn_init(ptr: *mut c_void) -> *const c_char {
-    let plugin = RBNHelper::from(ptr);
+    let mut plugin = RBNHelper::from(ptr);
+    plugin.init();
     plugin.GetName()
 }
 
@@ -23,7 +24,7 @@ extern "stdcall" fn DllMain(_hinst: usize, _reason: u32, _reserved: *mut ()) -> 
 #[no_mangle]
 extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut c_void) -> *mut c_void {
     if let Some(game_path) = std::env::current_exe().unwrap().parent() {
-        let plugin_path = game_path.join("Plugins/RBNHelper");
+        let plugin_path = game_path.join("Plugins").join("RBNHelper");
         let log_file = plugin_path.join("rbnhelper.log");
         if !plugin_path.exists() {
             std::fs::create_dir(plugin_path).unwrap();
