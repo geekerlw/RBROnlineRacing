@@ -1,11 +1,22 @@
-use libc::{c_char, c_void};
+use libc::c_char;
 use log::info;
 use crate::plugin::IPlugin;
 use crate::hacker::*;
 use ini::Ini;
+use tokio::runtime::Handle;
 
-#[derive(Default, Clone, Copy)]
 pub struct RBNHelper {
+    copyright: String,
+    rt: Option<Handle>,
+}
+
+impl Default for RBNHelper {
+    fn default() -> Self {
+        Self { 
+            copyright: format!("Welcome to use RBN Helper [{}], Copyright Lw_Ziye 2023-2024.", std::env!("CARGO_PKG_VERSION")),
+            rt: None,
+        }
+    }
 }
 
 impl IPlugin for RBNHelper {
@@ -15,16 +26,32 @@ impl IPlugin for RBNHelper {
     }
 }
 
-impl From<*mut c_void> for RBNHelper {
-    fn from(value: *mut c_void) -> Self {
-        let ptr = value as *mut RBNHelper;
-        unsafe {*ptr}
-    }
-}
-
 impl RBNHelper {
     pub fn init(&mut self) {
         self.load_dashboard_config();
+        self.init_async_runtime();
+        self.check_rbn_server();
+    }
+
+    fn init_async_runtime(&mut self) {
+        let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("Failed to init tokio runtime.");
+        self.rt = Some(rt.handle().clone());
+        std::thread::spawn(move || {
+            rt.block_on(async {
+                info!("started tokio runtime success.");
+                loop {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                };
+            });
+        });
+    }
+
+    fn check_rbn_server(&mut self) {
+        if let Some(rt) = &self.rt {
+            rt.spawn(async {
+                info!("start to check server.");
+            });
+        };
     }
 
     fn load_dashboard_config(&mut self) {
@@ -77,5 +104,9 @@ impl RBNHelper {
                 }
             }
         }
+    }
+
+    pub fn draw_on_end_frame(&mut self) {
+        //unsafe {RBR_ShowText(50.0, 200.0, self.copyright.as_ptr() as *const c_char)};
     }
 }

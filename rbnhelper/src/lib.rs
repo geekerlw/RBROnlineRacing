@@ -4,16 +4,28 @@ use rbnhelper::RBNHelper;
 use log::info;
 use simplelog::WriteLogger;
 use crate::hacker::*;
+use lazy_static::lazy_static;
+use std::sync::Mutex;
 
 mod hacker;
 mod plugin;
 mod rbnhelper;
 
+lazy_static! {
+    static ref RBNHELPER: Mutex<RBNHelper> = Mutex::new(RBNHelper::default());
+}
+
 #[no_mangle]
-extern fn rbn_init(ptr: *mut c_void) -> *const c_char {
-    let mut plugin = RBNHelper::from(ptr);
+extern fn rbn_init() -> *const c_char {
+    let mut plugin = RBNHELPER.lock().unwrap();
     plugin.init();
     plugin.GetName()
+}
+
+#[no_mangle]
+extern fn rbn_on_end_frame() {
+    let mut plugin = RBNHELPER.lock().unwrap();
+    plugin.draw_on_end_frame();
 }
 
 #[no_mangle]
@@ -35,10 +47,10 @@ extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut c_void) -> *mut c_void {
 
     info!("Create Plugin RBN Helper [{}] with arg: {:?}", std::env!("CARGO_PKG_VERSION"), rbrgame);
 
-    let rust_plugin = Box::into_raw(Box::new(RBNHelper::default())) as *mut c_void;
     unsafe {
-        let plugin = RBR_InitPlugin(rbrgame, rust_plugin);
+        let plugin = RBR_InitPlugin(rbrgame);
         RBR_SetInitialize(rbn_init);
+        //RBR_SetOnEndScene(rbn_on_end_frame);
 
         return plugin;
     };
