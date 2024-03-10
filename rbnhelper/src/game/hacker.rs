@@ -14,4 +14,18 @@ extern "C" {
     pub fn RBR_CfgProfileStyle(UserColor1: *const c_char, UserColor2: *const c_char);
     //pub fn RBR_ShowMessage(x: f32, y: f32, ptxtMessage: *const c_char, fTimeToDisplay: f32);
     //pub fn RBR_ShowText(x: f32, y: f32, ptxtText: *const c_char);
+
+    /*
+     * Reading memory functions.
+     */
+    pub fn RBR_ReadGameMode() -> i32;
+    pub fn RBR_ReadTrackLoadState() -> i32;
+    pub fn RBR_ReadRaceStartCount() -> f32;
+    pub fn RBR_ReadCarSpeed() -> f32;
+    pub fn RBR_ReadCarRaceTime() -> f32;
+    pub fn RBR_ReadStageLen() -> f32;
+    pub fn RBR_ReadCarStageProgress() -> f32;
+    pub fn RBR_ReadSplitTime1() -> f32;
+    pub fn RBR_ReadSplitTime2() -> f32;
+    pub fn RBR_ReadFinishTime() -> f32;
 }
