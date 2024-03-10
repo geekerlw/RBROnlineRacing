@@ -1,18 +1,21 @@
 use libc::c_char;
 use log::info;
-use crate::plugin::IPlugin;
-use crate::hacker::*;
+use crate::game::plugin::IPlugin;
+use crate::game::hacker::*;
 use ini::Ini;
 use tokio::runtime::Handle;
+use crate::components::store::RacingStore;
 
 pub struct RBNHelper {
+    store: RacingStore,
     copyright: String,
     rt: Option<Handle>,
 }
 
 impl Default for RBNHelper {
     fn default() -> Self {
-        Self { 
+        Self {
+            store: RacingStore::default(),
             copyright: format!("Welcome to use RBN Helper [{}], Copyright Lw_Ziye 2023-2024.", std::env!("CARGO_PKG_VERSION")),
             rt: None,
         }
@@ -28,6 +31,7 @@ impl IPlugin for RBNHelper {
 
 impl RBNHelper {
     pub fn init(&mut self) {
+        self.store.init();
         self.load_dashboard_config();
         self.init_async_runtime();
         self.check_rbn_server();

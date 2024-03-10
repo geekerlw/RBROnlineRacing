@@ -1,14 +1,14 @@
 use libc::{c_char, c_void};
-use plugin::IPlugin;
+use game::plugin::IPlugin;
 use rbnhelper::RBNHelper;
 use log::info;
 use simplelog::WriteLogger;
-use crate::hacker::*;
+use game::hacker::*;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
-mod hacker;
-mod plugin;
+mod components;
+mod game;
 mod rbnhelper;
 
 lazy_static! {
