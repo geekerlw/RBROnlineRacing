@@ -11,6 +11,7 @@ use crate::lobby::RaceLobby;
 use crate::player::LobbyPlayer;
 use crate::room::RaceRoom;
 use crate::player::RacePlayer;
+use crate::series::RaceSeries;
 use std::collections::HashMap;
 use std::sync::Arc;
 use protocol::httpapi::RoomState;
@@ -19,9 +20,14 @@ use protocol::httpapi::RoomState;
 pub struct RacingServer {
     pub lobby: RaceLobby,
     pub rooms: HashMap<String, RaceRoom>,
+    pub series: HashMap<String, RaceSeries>,
 }
 
 impl RacingServer {
+    pub fn init(&mut self) {
+        self.series.insert("daily hotlap challenge".to_string(), RaceSeries::default());
+    }
+
     pub fn is_raceroom_exist(&mut self, name: &String) -> bool {
         self.rooms.contains_key(name)
     }
