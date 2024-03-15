@@ -7,10 +7,16 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use log::{info, trace};
 
-use rust_rbrserver::server::RacingServer;
+use crate::server::RacingServer;
 use protocol::httpapi::{UserLogin, RaceQuery, RaceCreate, UserLogout, RaceInfoUpdate, RaceConfigUpdate, UserQuery};
 use protocol::API_VERSION_STRING;
 use protocol::metaapi::{META_HEADER_LEN, RaceUpdate, RaceAccess, RaceJoin, RaceLeave, MetaHeader, DataFormat, MetaRaceData};
+
+mod strategy;
+mod lobby;
+mod player;
+mod room;
+mod server;
 
 /// Set http and metadata ports.
 #[derive(Parser, Debug)]
@@ -33,7 +39,7 @@ async fn main() -> std::io::Result<()>{
     let http_addr = "0.0.0.0:".to_string() + &args.port.to_string();
     let meta_addr = "0.0.0.0:".to_string() + &args.data.to_string();
 
-    let server = Arc::new(Mutex::new(RacingServer::default()));
+    let server = Arc::new(Mutex::new(RacingServer::default().init()));
     let data_clone = server.clone();
     let mng_clone = server.clone();
 
@@ -41,8 +47,6 @@ async fn main() -> std::io::Result<()>{
         App::new()
         .app_data(web::Data::new(server.clone()))
         .service(handle_http_api_version)
-        .service(handle_http_debug_users)
-        .service(handle_http_debug_rooms)
         .service(handle_http_user_login)
         .service(handle_http_user_logout)
         .service(handle_http_race_list)
@@ -73,9 +77,11 @@ async fn main() -> std::io::Result<()>{
         loop {
             let mut server = mng_clone.lock().await;
             server.remove_invalid_players();
-            server.remove_empty_rooms();
+            server.remove_invalid_rooms();
             for (_, room) in server.rooms.iter_mut() {
-                room.check_room_state().await;
+                room.update_room_state();
+                room.update_race_state().await;
+                let _ret = room.update_race_state();
             }
             drop(server);
             tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
@@ -93,20 +99,6 @@ async fn main() -> std::io::Result<()>{
 #[actix_web::get("/api/version")]
 async fn handle_http_api_version() -> HttpResponse {
     HttpResponse::Ok().body(API_VERSION_STRING)
-}
-
-#[actix_web::get("/api/debug/users")]
-async fn handle_http_debug_users(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
-    let server = data.lock().await;
-    let response = serde_json::to_string_pretty(&server.lobby).unwrap();
-    HttpResponse::Ok().body(response)
-}
-
-#[actix_web::get("/api/debug/rooms")]
-async fn handle_http_debug_rooms(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
-    let server = data.lock().await;
-    let response = serde_json::to_string_pretty(&server.rooms).unwrap();
-    HttpResponse::Ok().body(response)
 }
 
 #[actix_web::post("/api/user/login")]

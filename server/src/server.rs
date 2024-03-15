@@ -11,29 +11,29 @@ use crate::lobby::RaceLobby;
 use crate::player::LobbyPlayer;
 use crate::room::RaceRoom;
 use crate::player::RacePlayer;
-use crate::series::RaceSeries;
+use crate::strategy::daily::Daily;
 use std::collections::HashMap;
 use std::sync::Arc;
 use protocol::httpapi::RoomState;
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct RacingServer {
     pub lobby: RaceLobby,
     pub rooms: HashMap<String, RaceRoom>,
-    pub series: HashMap<String, RaceSeries>,
 }
 
 impl RacingServer {
-    pub fn init(&mut self) {
-        self.series.insert("daily hotlap challenge".to_string(), RaceSeries::default());
+    pub fn init(mut self) -> Self {
+        self.rooms.insert("daily hotlap challenge".to_string(), RaceRoom::with_strategy(Daily::default()));
+        self
     }
 
     pub fn is_raceroom_exist(&mut self, name: &String) -> bool {
         self.rooms.contains_key(name)
     }
 
-    pub fn remove_empty_rooms(&mut self) {
-        self.rooms.retain(|_k, v| !v.is_empty());
+    pub fn remove_invalid_rooms(&mut self) {
+        self.rooms.retain(|_k, v| !v.is_empty() || v.is_allow_empty());
     }
 
     pub fn remove_invalid_players(&mut self) {
