@@ -7,8 +7,8 @@ use rbnproto::httpapi::RaceCreate;
 use rbnproto::httpapi::RaceInfo;
 use reqwest::StatusCode;
 use super::{UiView, UiPageCtx, UiMsg};
-use crate::game::rbr::RBRStageWeather;
-use crate::game::rbr::{RBRGame, RBRStageData, RBRCarData};
+use rbnproto::rsfdata::*;
+use crate::game::rbr::RBRGame;
 use crate::ui::UiPageState;
 use rand::{thread_rng, Rng};
 

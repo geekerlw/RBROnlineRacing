@@ -122,7 +122,7 @@ pub struct RBRRaceSetting {
 }
 
 impl RBRRaceSetting {
-    fn from(info: &RaceInfo, cfg: &RaceConfig) -> Self {
+    pub fn from(info: &RaceInfo, cfg: &RaceConfig) -> Self {
         let mut racesetting = RBRRaceSetting::default();
         racesetting.datatype = 1;
         racesetting.external = 1;
@@ -142,7 +142,7 @@ impl RBRRaceSetting {
         racesetting
     }
 
-    fn as_bytes(self) -> [u8; size_of::<RBRRaceSetting>()] {
+    pub fn as_bytes(self) -> [u8; size_of::<RBRRaceSetting>()] {
         let mut bytes = [0; size_of::<RBRRaceSetting>()];
         unsafe {
             let ptr = &self as *const RBRRaceSetting as *const u8;
@@ -170,7 +170,7 @@ pub struct RBRRaceData {
 }
 
 impl RBRRaceData {
-    fn from_result(result: &Vec<MetaRaceProgress>) -> Self {
+    pub fn from_result(result: &Vec<MetaRaceProgress>) -> Self {
         let mut racedata = RBRRaceData::default();
         racedata.datatype = 2;
         racedata.external = 1;
@@ -190,7 +190,7 @@ impl RBRRaceData {
         racedata
     }
 
-    fn as_bytes(self) -> [u8; size_of::<RBRRaceData>()] {
+    pub fn as_bytes(self) -> [u8; size_of::<RBRRaceData>()] {
         let mut bytes = [0; size_of::<RBRRaceData>()];
         unsafe {
             let ptr = &self as *const RBRRaceData as *const u8;
