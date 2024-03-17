@@ -1,6 +1,7 @@
 use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
 use rbnproto::metaapi::{MetaRaceData, RaceJoin};
 use tokio::time::Instant;
+use crate::lobby::RaceLobby;
 use crate::player::{LobbyPlayer, RacePlayer};
 use log::info;
 use std::str::FromStr;
@@ -48,6 +49,10 @@ impl Series for Daily {
 
     fn need_recycle(&mut self) -> bool {
         false
+    }
+
+    fn check_players(&mut self, lobby: &RaceLobby) {
+        self.room.players.retain(|x| lobby.is_player_exist(Some(&x.token), None));
     }
 
     fn is_joinable(&mut self, join: &RaceJoin) -> bool {

@@ -19,7 +19,7 @@ impl RaceLobby {
         self.players.retain(|k, _v| k != token);
     }
 
-    pub fn is_player_exist(&mut self, token: Option<&Uuid>, name: Option<&String>) -> bool {
+    pub fn is_player_exist(&self, token: Option<&Uuid>, name: Option<&String>) -> bool {
         if let Some(token) = token {
             return self.players.contains_key(token);
         } else if let Some(name) = name {

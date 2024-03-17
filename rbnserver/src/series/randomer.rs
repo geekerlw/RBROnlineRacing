@@ -1,5 +1,4 @@
 use std::{io::Read, path::PathBuf};
-use log::info;
 use unicode_normalization::UnicodeNormalization;
 use rand::{thread_rng, Rng};
 use rbnproto::{httpapi::RaceInfo, rsfdata::{RBRCarData, RBRStageData, RBRStageWeather}};

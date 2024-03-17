@@ -32,6 +32,12 @@ impl RacingServer {
         self.races.retain(|_k, v| !v.need_recycle());
     }
 
+    pub fn recycle_invalid_players(&mut self) {
+        for (_, race) in self.races.iter_mut() {
+            race.check_players(&self.lobby);
+        }
+    }
+
     pub fn force_leave_lobby(&mut self, token: &Uuid) {
         self.lobby.pop_player(token);
     }

@@ -1,5 +1,6 @@
 use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
 use rbnproto::metaapi::{MetaRaceData, RaceJoin};
+use crate::lobby::RaceLobby;
 use crate::player::{LobbyPlayer, RacePlayer};
 use log::info;
 use super::room::{RaceRoom, RoomRaceState};
@@ -37,6 +38,10 @@ impl Series for Customize {
 
     fn need_recycle(&mut self) -> bool {
         self.room.is_empty()
+    }
+
+    fn check_players(&mut self, lobby: &RaceLobby) {
+        self.room.players.retain(|x| lobby.is_player_exist(Some(&x.token), None));
     }
 
     fn is_joinable(&mut self, join: &RaceJoin) -> bool {

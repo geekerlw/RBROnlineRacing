@@ -4,7 +4,7 @@ use rbnproto::{httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserSta
 use serde::{Deserialize, Serialize};
 use tokio::{net::tcp::OwnedWriteHalf, sync::Mutex};
 
-use crate::player::LobbyPlayer;
+use crate::{lobby::RaceLobby, player::LobbyPlayer};
 
 pub mod customize;
 pub mod daily;
@@ -36,6 +36,8 @@ pub trait Series {
     fn is_joinable(&mut self, join: &RaceJoin) -> bool;
 
     fn need_recycle(&mut self) -> bool;
+
+    fn check_players(&mut self, lobby: &RaceLobby);
     
     fn is_started(&mut self) -> bool;
 

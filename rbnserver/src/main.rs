@@ -77,6 +77,7 @@ async fn main() -> std::io::Result<()>{
         loop {
             let mut server = mng_clone.lock().await;
             server.recycle_invalid_races();
+            server.recycle_invalid_players();
             for (_, race) in server.races.iter_mut() {
                 race.framed_schedule();
             }
