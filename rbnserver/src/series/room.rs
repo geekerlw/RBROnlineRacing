@@ -159,8 +159,7 @@ impl RaceRoom {
     }
 
     pub fn notify_all_players_start(&mut self) {
-        let starttime = Utc::now().timestamp_millis() + 3 * 1000;
-        let cmd = RaceCmd::RaceCmdStart(starttime);
+        let cmd = RaceCmd::RaceCmdStart;
         let players = self.players.clone();
         tokio::spawn(async move {
             for player in players {

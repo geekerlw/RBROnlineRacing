@@ -71,6 +71,10 @@ impl RacingServer {
         return false;
     }
 
+    pub fn get_race_brief(&mut self) -> String {
+        format!("Total {} races with {} players", self.races.len(), self.lobby.player_count())
+    }
+
     pub fn get_race_list(&mut self) -> Option<Vec<RaceBrief>> {
         if self.races.is_empty() {
             return None;

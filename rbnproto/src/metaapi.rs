@@ -6,7 +6,7 @@ pub enum RaceCmd {
     #[default]
     RaceCmdDefault,
     RaceCmdLoad,
-    RaceCmdStart(i64),
+    RaceCmdStart,
     RaceCmdUpload,
     RaceCmdFinish,
 }
