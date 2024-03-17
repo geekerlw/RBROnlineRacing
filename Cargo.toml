@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "client",
+    "rbnclient",
     "rbnserver",
     "rbnhelper",
 ]
