@@ -2,7 +2,6 @@ use rbnproto::httpapi::{RoomState, RaceState, RaceInfo};
 use rbnproto::metaapi::{RaceCmd, MetaRaceResult, MetaRaceProgress};
 use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
-use chrono::Utc;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub enum RoomRaceState {

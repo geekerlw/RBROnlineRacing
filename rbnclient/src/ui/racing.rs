@@ -17,7 +17,6 @@ use super::{UiView, UiPageCtx};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use log::info;
-use chrono::Utc;
 
 enum UiRacingMsg {
     MsgRaceState(RaceState),
