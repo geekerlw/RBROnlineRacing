@@ -29,7 +29,7 @@ impl RacingStore {
 
     pub fn load_config(&mut self) {
         if let Some(game_root) = env::current_exe().unwrap().parent() {
-            let conf_file = game_root.join("Plugins").join("RBNHelper").join("rbnhelper.ini");
+            let conf_file = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
             if let Ok(conf) = Ini::load_from_file(conf_file) {
                 self.server_addr = conf.get_from_or(Some("server"), "address", "127.0.0.1").to_string();
                 self.server_port = conf.get_from_or(Some("server"), "http_port", "23555").parse::<u16>().unwrap();
@@ -51,7 +51,7 @@ impl RacingStore {
                 .set("data_port", self.meta_port.to_string());
 
 
-            let conf_file = game_root.join("Plugins").join("RBNHelper").join("rbnhelper.ini");
+            let conf_file = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
             conf.write_to_file(conf_file).unwrap();
         }
     }
