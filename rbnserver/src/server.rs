@@ -38,10 +38,6 @@ impl RacingServer {
         }
     }
 
-    pub fn force_leave_lobby(&mut self, token: &Uuid) {
-        self.lobby.pop_player(token);
-    }
-
     pub fn force_leave_room(&mut self, token: &Uuid) {
         for (_, race) in self.races.iter_mut() {
             race.leave(&token.to_string());
@@ -55,7 +51,7 @@ impl RacingServer {
 
         if let Some(token) = &self.lobby.get_token_by_name(user.name.clone()) {
             self.force_leave_room(token);
-            self.force_leave_lobby(token);
+            return Some(token.to_string());
         }
 
         let token = Uuid::new_v4();
