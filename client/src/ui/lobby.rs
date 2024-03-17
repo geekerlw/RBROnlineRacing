@@ -136,7 +136,6 @@ impl UiView for UiLobby {
                                 match race.state {
                                     RoomState::RoomFree => String::from("空闲"),
                                     RoomState::RoomFull => String::from("满员"),
-                                    RoomState::RoomLocked => String::from("需要密码"),
                                     RoomState::RoomRaceOn => String::from("比赛中"),
                                 }
                             ];
@@ -150,12 +149,6 @@ impl UiView for UiLobby {
                                         self.enter_raceroom(&race.name, None, page);
                                     }
                                 },
-                                RoomState::RoomLocked => {
-                                    if ui.button("加入").clicked() {
-                                        self.select_room = race.name.clone();
-                                        self.show_passwin = true;
-                                    }
-                                }
                                 _ => {},
                             }
                             ui.end_row();

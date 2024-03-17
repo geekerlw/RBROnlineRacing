@@ -21,7 +21,6 @@ pub enum RoomState {
     #[default]
     RoomFree,
     RoomFull,
-    RoomLocked,
     RoomRaceOn,
 }
 

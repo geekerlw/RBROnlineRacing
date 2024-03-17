@@ -12,10 +12,9 @@ use protocol::httpapi::{UserLogin, RaceQuery, RaceCreate, UserLogout, RaceInfoUp
 use protocol::API_VERSION_STRING;
 use protocol::metaapi::{META_HEADER_LEN, RaceUpdate, RaceAccess, RaceJoin, RaceLeave, MetaHeader, DataFormat, MetaRaceData};
 
-mod strategy;
+mod series;
 mod lobby;
 mod player;
-mod room;
 mod server;
 
 /// Set http and metadata ports.
@@ -49,18 +48,19 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_api_version)
         .service(handle_http_user_login)
         .service(handle_http_user_logout)
-        .service(handle_http_race_list)
-        .service(handle_http_get_race_info)
-        .service(handle_http_update_race_info)
+        .service(handle_http_race_fetch_list)
+        .service(handle_http_race_get_info)
+        .service(handle_http_race_update_info)
         .service(handle_http_race_get_state)
         .service(handle_http_race_update_state)
-        .service(handle_http_get_player_config)
-        .service(handle_http_update_player_config)
-        .service(handle_http_get_room_start)
-        .service(handle_http_set_room_start)
+        .service(handle_http_player_get_config)
+        .service(handle_http_player_update_config)
+        .service(handle_http_race_get_start)
+        .service(handle_http_race_set_start)
         .service(handle_http_race_create)
         .service(handle_http_race_join)
         .service(handle_http_race_leave)
+        .service(handle_http_race_destroy)
     })
     .bind(http_addr)?
     .run();
@@ -76,12 +76,9 @@ async fn main() -> std::io::Result<()>{
     let mgr_task = tokio::spawn(async move {
         loop {
             let mut server = mng_clone.lock().await;
-            server.remove_invalid_players();
-            server.remove_invalid_rooms();
-            for (_, room) in server.rooms.iter_mut() {
-                room.update_room_state();
-                room.update_race_state().await;
-                let _ret = room.update_race_state();
+            server.recycle_invalid_races();
+            for (_, race) in server.races.iter_mut() {
+                race.framed_schedule();
             }
             drop(server);
             tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
@@ -107,7 +104,7 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     info!("Received user login: {:?}", user);
 
     let mut server = data.lock().await;
-    if let Some(tokenstr) = server.player_login(user) {
+    if let Some(tokenstr) = server.user_login(user) {
         HttpResponse::Ok().body(tokenstr)
     } else {
         HttpResponse::Unauthorized().body("Login failed!")
@@ -120,7 +117,7 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
     info!("Received user logout: {:?}", user);
 
     let mut server = data.lock().await;
-    if server.player_logout(user) {
+    if server.user_logout(user) {
         HttpResponse::Ok().body("Logout successful!")
     } else {
         HttpResponse::NotAcceptable().body("Logout failed!")
@@ -128,11 +125,11 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
 }
 
 #[actix_web::get("/api/race/list")]
-async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+async fn handle_http_race_fetch_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
     trace!("Received user query race list");
 
-    let server = data.lock().await;
-    if let Some(response) = server.get_raceroom_list() {
+    let mut server = data.lock().await;
+    if let Some(response) = server.get_race_list() {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
     } else {
         HttpResponse::NoContent().body("Get Race list failed!")
@@ -140,12 +137,12 @@ async fn handle_http_race_list(data: web::Data<Arc<Mutex<RacingServer>>>) -> Htt
 }
 
 #[actix_web::get("/api/race/info")]
-async fn handle_http_get_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
+async fn handle_http_race_get_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
     let query = body.into_inner();
     trace!("Received user query race info: {:?}", query);
 
-    let server = data.lock().await;
-    if let Some(response) = server.get_raceroom_info(&query.name) {
+    let mut server = data.lock().await;
+    if let Some(response) = server.get_race_info(&query.name) {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
     } else {
         HttpResponse::NoContent().body("Get Race info failed!")
@@ -153,12 +150,12 @@ async fn handle_http_get_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, bo
 }
 
 #[actix_web::put("/api/race/info")]
-async fn handle_http_update_race_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceInfoUpdate>) -> HttpResponse {
+async fn handle_http_race_update_info(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceInfoUpdate>) -> HttpResponse {
     let update = body.into_inner();
     trace!("Received user update race info: {:?}", update);
 
     let mut server = data.lock().await;
-    if server.update_raceroom_info(update) {
+    if server.update_race_info(update) {
         HttpResponse::Ok().body("Update race info successful!")
     } else {
         HttpResponse::NoContent().body("Update Race info failed!")
@@ -166,7 +163,7 @@ async fn handle_http_update_race_info(data: web::Data<Arc<Mutex<RacingServer>>>,
 }
 
 #[actix_web::get("/api/player/config")]
-async fn handle_http_get_player_config(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserQuery>) -> HttpResponse {
+async fn handle_http_player_get_config(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserQuery>) -> HttpResponse {
     let query = body.into_inner();
     trace!("Received user query race config: {:?}", query);
 
@@ -179,7 +176,7 @@ async fn handle_http_get_player_config(data: web::Data<Arc<Mutex<RacingServer>>>
 }
 
 #[actix_web::put("/api/player/config")]
-async fn handle_http_update_player_config(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceConfigUpdate>) -> HttpResponse {
+async fn handle_http_player_update_config(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceConfigUpdate>) -> HttpResponse {
     let update = body.into_inner();
     trace!("Received user update race config: {:?}", update);
 
@@ -196,8 +193,8 @@ async fn handle_http_race_get_state(data: web::Data<Arc<Mutex<RacingServer>>>, b
     let query = body.into_inner();
     trace!("Received user query race users state: {:?}", query);
 
-    let server = data.lock().await;
-    if let Some(response) = server.get_raceroom_userstate(&query.name) {
+    let mut server = data.lock().await;
+    if let Some(response) = server.get_race_userstate(&query.name) {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
     } else {
         HttpResponse::NoContent().body("Get Race user state failed!")
@@ -218,12 +215,12 @@ async fn handle_http_race_update_state(data: web::Data<Arc<Mutex<RacingServer>>>
 }
 
 #[actix_web::get("/api/race/start")]
-async fn handle_http_get_room_start(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
+async fn handle_http_race_get_start(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceQuery>) -> HttpResponse {
     let query = body.into_inner();
     trace!("Received user query room race start state: {:?}", query);
 
-    let server = data.lock().await;
-    if let Some(response) = server.get_raceroom_started(&query.name) {
+    let mut server = data.lock().await;
+    if let Some(response) = server.get_race_started(&query.name) {
         HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
     } else {
         HttpResponse::NoContent().body("Get Race started state failed!")
@@ -231,12 +228,12 @@ async fn handle_http_get_room_start(data: web::Data<Arc<Mutex<RacingServer>>>, b
 }
 
 #[actix_web::put("/api/race/start")]
-async fn handle_http_set_room_start(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceAccess>) -> HttpResponse {
+async fn handle_http_race_set_start(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceAccess>) -> HttpResponse {
     let access = body.into_inner();
     trace!("Received user set room race start: {:?}", access);
 
     let mut server = data.lock().await;
-    if server.set_raceroom_started(&access) {
+    if server.set_race_started(&access) {
         HttpResponse::Ok().body("Update Race started state successful!")
     } else {
         HttpResponse::NoContent().body("Update Race started state failed!")
@@ -249,7 +246,7 @@ async fn handle_http_race_create(data: web::Data<Arc<Mutex<RacingServer>>>, body
     info!("Received user create race info: {:?}", info);
 
     let mut server = data.lock().await;
-    if server.create_raceroom(info) {
+    if server.create_race(info) {
         HttpResponse::Ok().body("Create race successful!")
     } else {
         HttpResponse::NotAcceptable().body("Create race Failed!")
@@ -262,7 +259,7 @@ async fn handle_http_race_join(data: web::Data<Arc<Mutex<RacingServer>>>, body: 
     info!("Received user join race info: {:?}", info);
 
     let mut server = data.lock().await;
-    if server.join_raceroom(info) {
+    if server.join_race(info) {
         HttpResponse::Ok().body("Join race successful!")
     } else {
         HttpResponse::NotFound().body("Join race failed!")
@@ -275,10 +272,23 @@ async fn handle_http_race_leave(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     info!("Received user leave race info: {:?}", info);
 
     let mut server = data.lock().await;
-    if server.leave_raceroom(info.room, info.token) {
+    if server.leave_race(info.room, info.token) {
         HttpResponse::Ok().body("Leave race room successful!")
     } else {
         HttpResponse::NotAcceptable().body("Leave race room failed!")
+    }
+}
+
+#[actix_web::post("/api/race/destroy")]
+async fn handle_http_race_destroy(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<RaceAccess>) -> HttpResponse {
+    let info: RaceAccess = body.into_inner();
+    info!("Received user destroy race info: {:?}", info);
+
+    let mut server = data.lock().await;
+    if server.destroy_race(info.room, info.token) {
+        HttpResponse::Ok().body("Destroy race room successful!")
+    } else {
+        HttpResponse::NotAcceptable().body("Destroy race room failed!")
     }
 }
 
