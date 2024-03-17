@@ -3,7 +3,7 @@ use std::sync::Arc;
 use libc::c_char;
 use log::info;
 use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceQuery, RaceState, UserLogin, UserQuery};
-use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceJoin, RaceUpdate, META_HEADER_LEN};
+use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceJoin, RaceLeave, RaceUpdate, META_HEADER_LEN};
 use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -216,6 +216,17 @@ impl RBNHelper {
                         tx.send(InnerMsg::MsgErrorMessage("Failed Join Race".to_string())).await.unwrap();
                     }
                 }
+            });
+        }
+    }
+
+    // need to call by hooking exit hotlap and practice menu.
+    pub fn leave_race(&mut self, race: &String) {
+        if self.is_logined() {
+            let user: RaceLeave = RaceLeave{ token: self.store.user_token.clone(), room: race.clone() };
+            let url = self.store.get_http_url("api/race/leave");
+            tokio::spawn(async move {
+                let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
             });
         }
     }
