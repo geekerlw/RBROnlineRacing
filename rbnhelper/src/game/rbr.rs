@@ -1,6 +1,6 @@
 use libc::{c_uchar, c_float, c_uint};
-use protocol::httpapi::{RaceState, RaceInfo, RaceConfig};
-use protocol::metaapi::{MetaRaceData, MetaRaceProgress};
+use rbnproto::httpapi::{RaceState, RaceInfo, RaceConfig};
+use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress};
 use ini::Ini;
 use std::mem::size_of;
 use super::hacker::*;

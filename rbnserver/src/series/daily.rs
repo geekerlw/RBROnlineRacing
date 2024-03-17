@@ -1,11 +1,12 @@
-use protocol::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
-use protocol::metaapi::{MetaRaceData, RaceJoin};
+use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
+use rbnproto::metaapi::{MetaRaceData, RaceJoin};
 use tokio::time::Instant;
 use crate::player::{LobbyPlayer, RacePlayer};
 use log::info;
 use std::str::FromStr;
 use std::time::Duration;
 use chrono::Local;
+use super::randomer::RaceRandomer;
 use super::room::{RaceRoom, RoomRaceState};
 use super::Series;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
@@ -28,7 +29,7 @@ impl Default for Daily {
 }
 
 impl Series for Daily {
-    fn join(&mut self, player: &LobbyPlayer){
+    fn join(&mut self, player: &LobbyPlayer) {
         self.room.push_player(RacePlayer::new(&player.tokenstr, &player.profile_name));
     }
 
@@ -132,7 +133,7 @@ impl Series for Daily {
 
 impl Daily {
     pub fn init(mut self) -> Self {
-        self.generate_stage();
+        self.generate_next_stage();
         let tx = self.tx.clone();
         tokio::spawn(async move {
             // let scheduler = cron::Schedule::from_str("0,20,40 * * * * *").unwrap(); // for test.
@@ -150,9 +151,12 @@ impl Daily {
         self
     }
 
-    pub fn generate_stage(&mut self) {
+    pub fn generate_next_stage(&mut self) {
+        let raceinfo = RaceRandomer::build().random();
+        self.room.info = raceinfo;
         self.room.info.name = "Daily Challenge".to_string();
         self.room.info.owner = "Lw_Ziye".to_string();
+        info!("next race: {:?}", &self.room.info);
     }
 
     pub fn async_msg_handle(&mut self) {
@@ -224,6 +228,7 @@ impl Daily {
             }
             RoomRaceState::RoomRaceEnd => {
                 room.race_state = RoomRaceState::RoomRaceInit;
+                self.generate_next_stage();
             }
             _ => {}
         }

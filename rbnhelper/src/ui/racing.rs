@@ -1,9 +1,9 @@
 use eframe::egui;
 use egui::Grid;
 use egui::RichText;
-use protocol::metaapi::MetaRaceProgress;
-use protocol::metaapi::{MetaHeader, RaceCmd, RaceAccess, DataFormat, RaceUpdate, META_HEADER_LEN, MetaRaceResult};
-use protocol::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, RaceUserState, UserQuery};
+use rbnproto::metaapi::MetaRaceProgress;
+use rbnproto::metaapi::{MetaHeader, RaceCmd, RaceAccess, DataFormat, RaceUpdate, META_HEADER_LEN, MetaRaceResult};
+use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, RaceUserState, UserQuery};
 use reqwest::StatusCode;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

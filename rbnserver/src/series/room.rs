@@ -1,5 +1,5 @@
-use protocol::httpapi::{RoomState, RaceState, RaceInfo};
-use protocol::metaapi::{RaceCmd, MetaRaceResult, MetaRaceProgress};
+use rbnproto::httpapi::{RoomState, RaceState, RaceInfo};
+use rbnproto::metaapi::{RaceCmd, MetaRaceResult, MetaRaceProgress};
 use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
 use chrono::Utc;

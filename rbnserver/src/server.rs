@@ -1,6 +1,6 @@
-use protocol::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserQuery};
-use protocol::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
-use protocol::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
+use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserQuery};
+use rbnproto::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
+use rbnproto::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::Mutex;
 use uuid::Uuid;

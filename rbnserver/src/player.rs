@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use protocol::httpapi::{RaceState, RaceConfig};
-use protocol::metaapi::{MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult, MetaRaceProgress};
+use rbnproto::httpapi::{RaceState, RaceConfig};
+use rbnproto::metaapi::{MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult, MetaRaceProgress};
 use serde::{Serialize, Deserialize};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
 use uuid::Uuid;

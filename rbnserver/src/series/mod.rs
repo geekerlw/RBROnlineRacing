@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use protocol::{httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState}, metaapi::{MetaRaceData, RaceJoin}};
+use rbnproto::{httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState}, metaapi::{MetaRaceData, RaceJoin}};
 use serde::{Deserialize, Serialize};
 use tokio::{net::tcp::OwnedWriteHalf, sync::Mutex};
 
@@ -9,6 +9,7 @@ use crate::player::LobbyPlayer;
 pub mod customize;
 pub mod daily;
 pub mod room;
+pub mod randomer;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub enum RoomRaceState {

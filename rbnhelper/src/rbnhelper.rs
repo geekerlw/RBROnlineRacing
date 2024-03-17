@@ -1,7 +1,7 @@
 use libc::c_char;
 use log::info;
-use protocol::httpapi::UserLogin;
-use protocol::API_VERSION_STRING;
+use rbnproto::httpapi::UserLogin;
+use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
 use crate::game::plugin::IPlugin;
 use crate::game::hacker::*;

@@ -1,5 +1,5 @@
-use protocol::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
-use protocol::metaapi::{MetaRaceData, RaceJoin};
+use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
+use rbnproto::metaapi::{MetaRaceData, RaceJoin};
 use crate::player::{LobbyPlayer, RacePlayer};
 use log::info;
 use super::room::{RaceRoom, RoomRaceState};

@@ -1,7 +1,7 @@
 use eframe::egui;
 use egui::{FontDefinitions, FontData};
-use protocol::httpapi::UserLogout;
-use protocol::metaapi::RaceLeave;
+use rbnproto::httpapi::UserLogout;
+use rbnproto::metaapi::RaceLeave;
 use crate::ui;
 use crate::ui::{UiPageCtx, UiMsg, UiPageState};
 

@@ -8,9 +8,9 @@ use tokio::sync::Mutex;
 use log::{info, trace};
 
 use crate::server::RacingServer;
-use protocol::httpapi::{UserLogin, RaceQuery, RaceCreate, UserLogout, RaceInfoUpdate, RaceConfigUpdate, UserQuery};
-use protocol::API_VERSION_STRING;
-use protocol::metaapi::{META_HEADER_LEN, RaceUpdate, RaceAccess, RaceJoin, RaceLeave, MetaHeader, DataFormat, MetaRaceData};
+use rbnproto::httpapi::{UserLogin, RaceQuery, RaceCreate, UserLogout, RaceInfoUpdate, RaceConfigUpdate, UserQuery};
+use rbnproto::API_VERSION_STRING;
+use rbnproto::metaapi::{META_HEADER_LEN, RaceUpdate, RaceAccess, RaceJoin, RaceLeave, MetaHeader, DataFormat, MetaRaceData};
 
 mod series;
 mod lobby;

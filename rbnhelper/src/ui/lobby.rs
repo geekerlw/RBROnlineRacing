@@ -1,7 +1,7 @@
 use eframe::egui;
 use egui::Grid;
-use protocol::httpapi::{RaceBrief, RoomState};
-use protocol::metaapi::RaceJoin;
+use rbnproto::httpapi::{RaceBrief, RoomState};
+use rbnproto::metaapi::RaceJoin;
 use crate::ui::UiPageState;
 use super::{UiView, UiPageCtx, UiMsg};
 use reqwest::StatusCode;
