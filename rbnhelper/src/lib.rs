@@ -9,6 +9,7 @@ use std::sync::Mutex;
 
 mod components;
 mod game;
+mod backend;
 mod rbnhelper;
 
 lazy_static! {
