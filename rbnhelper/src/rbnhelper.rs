@@ -58,10 +58,7 @@ impl IPlugin for RBNHelper {
 
 impl RBNHelper {
     pub fn init(&mut self) {
-        let (tx, rx) = channel::<TaskMsg>(16);
         self.store.init();
-        self.backend.init();
-        self.backend.run(tx, rx);
         self.load_dashboard_config();
         self.check_and_login();
     }
@@ -150,6 +147,9 @@ impl RBNHelper {
                 InnerMsg::MsgUserLogined(token) => {
                     info!("User Logined RBN Server [{}] success.", self.store.server_addr);
                     self.store.user_token = token;
+                    let (tx, rx) = channel::<TaskMsg>(16);
+                    self.backend.init(&self.store);
+                    self.backend.run(tx, rx);
                 }
                 InnerMsg::MsgMenuMessage(msg) => {
                     self.menu_message = msg;
@@ -192,6 +192,7 @@ impl RBNHelper {
             info!("Enter Practice Menu from Main Rsf Menu.");
             self.join_race(&"Daily Challenge".to_string());
             self.fetch_race_info(&"Daily Challenge".to_string());
+            self.backend.trigger(TaskMsg::MsgStartGame("Daily Challenge".to_string()));
         }
 
         if self.rsf_menu == 3 && menu == 0 {

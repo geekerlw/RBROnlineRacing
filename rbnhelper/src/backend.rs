@@ -11,34 +11,39 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use tokio::task::JoinHandle;
 
+use crate::components::store::RacingStore;
 use crate::game::rbr::RBRGame;
 
 
 pub enum TaskMsg {
-    MsgStartGame,
+    MsgStartGame(String),
 }
 
 #[derive(Default, Clone)]
 pub struct RBNBackend {
+    meta_addr: String,
+    user_token: String,
     tx: Option<Sender<TaskMsg>>,
 }
 
 impl RBNBackend {
-    pub fn init(&mut self) {
-
+    pub fn init(&mut self, store: &RacingStore) {
+        self.meta_addr = store.get_meta_url();
+        self.user_token = store.user_token.clone();
     }
 
     pub fn run(&mut self, tx: Sender<TaskMsg>, mut rx: Receiver<TaskMsg>) {
         self.tx = Some(tx.clone());
+        let server = self.meta_addr.clone();
+        let token = self.user_token.clone();
         std::thread::spawn(move || {
             Runtime::new().unwrap().block_on(async move {
                 loop {
                     if let Some(task) = rx.recv().await {
                         match task {
-                            TaskMsg::MsgStartGame => {
-                                test_func().await;
+                            TaskMsg::MsgStartGame(room) => {
+                                spawn_one_stage(&server, &token, &room);
                             },
                         }
                     }
@@ -47,25 +52,16 @@ impl RBNBackend {
         });
     }
 
-    pub fn triger(&mut self, task: TaskMsg) {
+    pub fn trigger(&mut self, task: TaskMsg) {
         if let Some(tx) = &self.tx {
             tx.blocking_send(task).unwrap();
         }
     }
 }
 
-async fn test_func() {
-    tokio::spawn(async {
-        info!("this is an task to run.");
-        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        info!("after 2 secs, task over.");
-    });
-}
-
-// maybe start task after joined race.
-fn start_race(race: &String) {
-    let meta_addr = self.store.get_meta_url();
-    let user_token = self.store.user_token.clone();
+fn spawn_one_stage(server: &String, token: &String, race: &String) {
+    let meta_addr = server.clone();
+    let user_token = token.clone();
     let room_name = race.clone();
 
     tokio::spawn(async move {
@@ -109,7 +105,7 @@ fn start_race(race: &String) {
                 }     
                 let pack_data = &buffer[offset+META_HEADER_LEN..offset+META_HEADER_LEN+head.length as usize];
 
-                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, writer_clone.clone(), tx.clone()).await;
+                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, writer_clone.clone()).await;
                 offset += META_HEADER_LEN + head.length as usize;
             }
             remain = (&buffer[offset..]).to_vec();
@@ -117,7 +113,7 @@ fn start_race(race: &String) {
     });
 }
 
-async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>, tx: Sender<InnerMsg>) {
+async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     match head.format {
         DataFormat::FmtRaceCommand => {
             let cmd: RaceCmd = bincode::deserialize(pack_data).unwrap();
