@@ -1,9 +1,9 @@
 use std::sync::Arc;
-
 use libc::c_char;
 use log::info;
-use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceQuery, RaceState, UserLogin, UserQuery};
+use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, UserLogin};
 use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceJoin, RaceLeave, RaceUpdate, META_HEADER_LEN};
+use rbnproto::rsfdata::RBRRaceSetting;
 use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -14,7 +14,6 @@ use crate::game::plugin::IPlugin;
 use crate::game::hacker::*;
 use crate::game::rbr::RBRGame;
 use ini::Ini;
-use tokio::runtime::Handle;
 use crate::components::store::RacingStore;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -27,10 +26,10 @@ enum InnerMsg {
 }
 
 pub struct RBNHelper {
-    tokio: Handle,
     rx: Receiver<InnerMsg>,
     tx: Sender<InnerMsg>,
     store: RacingStore,
+    rsf_menu: i32,
     menu_message: String,
     ingame_message: String,
     error_message: String,
@@ -41,10 +40,10 @@ impl Default for RBNHelper {
     fn default() -> Self {
         let (tx, rx) = channel::<InnerMsg>(64);
         Self {
-            tokio: tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("Failed to init tokio runtime.").handle().clone(),
             rx,
             tx,
             store: RacingStore::default(),
+            rsf_menu: 0,
             menu_message: String::new(),
             ingame_message: String::new(),
             error_message: String::new(),
@@ -54,7 +53,7 @@ impl Default for RBNHelper {
 }
 
 impl IPlugin for RBNHelper {
-    fn GetName(&self) -> *const libc::c_char {
+    fn GetName(&mut self) -> *const libc::c_char {
         let name = std::ffi::CString::new("RBN Helper").unwrap();
         name.into_raw()
     }
@@ -64,24 +63,11 @@ impl RBNHelper {
     pub fn init(&mut self) {
         self.store.init();
         self.load_dashboard_config();
-        self.init_async_runtime();
         self.check_and_login();
     }
 
     pub fn is_logined(&self) -> bool {
-        !self.store.user_state.is_empty()
-    }
-
-    fn init_async_runtime(&mut self) {
-        let runtime = self.tokio.clone();
-        std::thread::spawn(move || {
-            runtime.block_on(async {
-                info!("started tokio runtime success.");
-                loop {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                };
-            });
-        });
+        !self.store.user_token.is_empty()
     }
 
     fn check_and_login(&mut self) {
@@ -89,7 +75,7 @@ impl RBNHelper {
         let url_login = self.store.get_http_url("api/user/login");
         let user = UserLogin{name: self.store.user_name.clone(), passwd: self.store.user_passwd.clone()};
         let tx = self.tx.clone();
-        self.tokio.spawn(async move {
+        tokio::runtime::Runtime::new().unwrap().block_on(async move {
             let res = reqwest::get(url_ver).await.unwrap();
             if res.status() == StatusCode::OK {
                 let version = res.text().await.unwrap();
@@ -162,10 +148,11 @@ impl RBNHelper {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {
                 InnerMsg::MsgUserLogined(token) => {
+                    info!("User Logined RBN Server [{}] success.", self.store.server_addr);
                     self.store.user_token = token;
                 }
                 InnerMsg::MsgMenuMessage(msg) => {
-                    self.error_message = msg;
+                    self.menu_message = msg;
                 }
                 InnerMsg::MsgInGameMessage(msg) => {
                     self.ingame_message = msg;
@@ -174,7 +161,8 @@ impl RBNHelper {
                     self.error_message = msg;
                 }
                 InnerMsg::MsgSetRaceInfo(raceinfo) => {
-                    //TODO: set race stage info.
+
+                    //unsafe { RBR_SetPractice(RBRRaceSetting::from(&raceinfo, &RaceConfig::default())); }
                 }
             }
         }
@@ -182,15 +170,44 @@ impl RBNHelper {
 
     pub fn draw_on_end_frame(&mut self) {
         self.async_message_handle();
-        //unsafe {RBR_ShowText(50.0, 200.0, self.copyright.as_ptr() as *const c_char)};
+        
+        
+        if !self.menu_message.is_empty() {
+            unsafe {RBR_DrawTextOverRsfMain(240,600, 0xFFFFFFFF, self.menu_message.as_ptr() as *const c_char)};
+        }
+        
+        unsafe {RBR_DrawTextAnyway(240, 640, 0xFFFFFFFF, self.copyright.as_ptr() as *const c_char)};
     }
 
-    // need to be an timed task when we in game menu.
-    pub fn fetch_race_list(&mut self) {
+    pub fn on_rsf_menu_changed(&mut self, menu: i32) {
+        if self.rsf_menu == 0 && menu == 2 {
+            info!("Enter Hotlap Menu from Main Rsf Menu.");
+        }
+
+        if self.rsf_menu == 2 && menu == 0 {
+            info!("Exit to main rsf menu from hotlap.");
+        }
+
+        if self.rsf_menu == 0 && menu == 3 {
+            info!("Enter Practice Menu from Main Rsf Menu.");
+            self.join_race(&"Daily Challenge".to_string());
+            self.fetch_race_info(&"Daily Challenge".to_string());
+        }
+
+        if self.rsf_menu == 3 && menu == 0 {
+            info!("Exit to Main Rsf Menu from practice.");
+            self.leave_race(&"Daily Challenge".to_string());
+        }
+
+        self.fetch_race_brief();
+        self.rsf_menu = menu;
+    }
+
+    pub fn fetch_race_brief(&mut self) {
         if self.is_logined() {
             let url = self.store.get_http_url("api/race/brief");
             let tx = self.tx.clone();
-            tokio::spawn(async move {
+            tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let res = reqwest::Client::new().get(&url).send().await.unwrap();
                 if res.status() == StatusCode::OK {
                     let brief = res.text().await.unwrap();
@@ -206,7 +223,7 @@ impl RBNHelper {
             let race_join = RaceJoin {token: self.store.user_token.clone(), room: race.clone(), passwd: None};
             let url = self.store.get_http_url("api/race/join");
             let tx = self.tx.clone();
-            tokio::spawn(async move {
+            tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let res = reqwest::Client::new().post(url).json(&race_join).send().await.unwrap();
                 match res.status() {
                     StatusCode::OK => {
@@ -225,7 +242,7 @@ impl RBNHelper {
         if self.is_logined() {
             let user: RaceLeave = RaceLeave{ token: self.store.user_token.clone(), room: race.clone() };
             let url = self.store.get_http_url("api/race/leave");
-            tokio::spawn(async move {
+            tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
             });
         }
@@ -237,11 +254,14 @@ impl RBNHelper {
             let info_url = self.store.get_http_url("api/race/info");
             let info_tx = self.tx.clone();
             let info_query = RaceQuery {name: race.clone()};
-            tokio::spawn(async move {
+            tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
                 if res.status() == StatusCode::OK {
                     let text = res.text().await.unwrap();
                     let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
+                    let mut rbr = RBRGame::default();
+                    rbr.set_race_stage(&raceinfo.stage_id);
+                    rbr.set_race_car(&raceinfo.car_id);
                     info_tx.send(InnerMsg::MsgSetRaceInfo(raceinfo)).await.unwrap();
                 }
             });
