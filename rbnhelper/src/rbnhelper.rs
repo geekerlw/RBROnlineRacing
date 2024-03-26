@@ -5,6 +5,7 @@ use rbnproto::metaapi::{RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
 use crate::backend::{RBNBackend, TaskMsg};
+use crate::components::player::OggPlayer;
 use crate::game::plugin::IPlugin;
 use crate::game::hacker::*;
 use crate::game::rbr::RBRGame;
@@ -192,12 +193,13 @@ impl RBNHelper {
             info!("Enter Practice Menu from Main Rsf Menu.");
             self.join_race(&"Daily Challenge".to_string());
             self.fetch_race_info(&"Daily Challenge".to_string());
-            self.backend.trigger(TaskMsg::MsgStartGame("Daily Challenge".to_string()));
+            self.backend.trigger(TaskMsg::MsgStartStage("Daily Challenge".to_string()));
         }
 
         if self.rsf_menu == 3 && menu == 0 {
             info!("Exit to Main Rsf Menu from practice.");
             self.leave_race(&"Daily Challenge".to_string());
+            self.backend.trigger(TaskMsg::MsgStopStage);
         }
 
         self.fetch_race_brief();
@@ -229,6 +231,7 @@ impl RBNHelper {
                 match res.status() {
                     StatusCode::OK => {
                         tx.send(InnerMsg::MsgMenuMessage("Joined Race".to_string())).await.unwrap();
+                        OggPlayer::open("join.ogg").play();
                     }
                     _ => {
                         tx.send(InnerMsg::MsgErrorMessage("Failed Join Race".to_string())).await.unwrap();
@@ -245,6 +248,7 @@ impl RBNHelper {
             let url = self.store.get_http_url("api/race/leave");
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let _res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
+                OggPlayer::open("exit.ogg").play();
             });
         }
     }

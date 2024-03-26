@@ -1,6 +1,7 @@
 use log::info;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{Sender, Receiver};
+use tokio::task::JoinHandle;
 use std::sync::Arc;
 use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, UserLogin};
 use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceJoin, RaceLeave, RaceUpdate, META_HEADER_LEN};
@@ -12,12 +13,14 @@ use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 
+use crate::components::player::OggPlayer;
 use crate::components::store::RacingStore;
 use crate::game::rbr::RBRGame;
 
 
 pub enum TaskMsg {
-    MsgStartGame(String),
+    MsgStartStage(String),
+    MsgStopStage,
 }
 
 #[derive(Default, Clone)]
@@ -39,12 +42,19 @@ impl RBNBackend {
         let token = self.user_token.clone();
         std::thread::spawn(move || {
             Runtime::new().unwrap().block_on(async move {
+                let mut stage_task = None;
                 loop {
                     if let Some(task) = rx.recv().await {
                         match task {
-                            TaskMsg::MsgStartGame(room) => {
-                                spawn_one_stage(&server, &token, &room);
+                            TaskMsg::MsgStartStage(room) => {
+                                stage_task = Some(spawn_one_stage(&server, &token, &room));
                             },
+                            TaskMsg::MsgStopStage => {
+                                if let Some(mission) = &stage_task {
+                                    mission.abort();
+                                    stage_task = None;
+                                }
+                            }
                         }
                     }
                 }
@@ -59,7 +69,7 @@ impl RBNBackend {
     }
 }
 
-fn spawn_one_stage(server: &String, token: &String, race: &String) {
+fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle<()> {
     let meta_addr = server.clone();
     let user_token = token.clone();
     let room_name = race.clone();
@@ -110,7 +120,7 @@ fn spawn_one_stage(server: &String, token: &String, race: &String) {
             }
             remain = (&buffer[offset..]).to_vec();
         }
-    });
+    })
 }
 
 async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>) {
