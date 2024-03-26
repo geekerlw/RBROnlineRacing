@@ -1,13 +1,25 @@
 [package]
 name = "rbnhelper"
-version = "0.1.0"
+version = "1.1.5"
 edition = "2021"
+description = "Richard Burns Rally (RSF) realtime online racing plugin."
+authors = ["Lw_Ziye <geekerlw@gmail.com>"]
 build = "build.rs"
 
 [lib]
 crate-type = ["cdylib"]
 
+[package.metadata.winres]
+OriginalFilename = "rbnhelper.dll"
+LegalCopyright = "Copyright © 2023-2024 Lw_Ziye"
+FileDescription = "SimRallyCn RBR联机对战助手"
+ProductName = "SimRallyCn RBR联机对战助手"
+ProductVersion = "1.1"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[target.'cfg(target_os="windows")'.build-dependencies]
+winres = "0.1.12"
 
 [dependencies]
 libc = "0.2.151"
