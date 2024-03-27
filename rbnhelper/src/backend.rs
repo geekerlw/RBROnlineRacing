@@ -5,7 +5,7 @@ use tokio::task::JoinHandle;
 use std::sync::Arc;
 use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, UserLogin};
 use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceJoin, RaceLeave, RaceUpdate, META_HEADER_LEN};
-use rbnproto::rsfdata::RBRRaceSetting;
+use rbnproto::rsfdata::{RBRRaceSetting, RBRStageData};
 use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -146,6 +146,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
         DataFormat::FmtSyncRaceData => {
             let progress: Vec<MetaRaceProgress> = bincode::deserialize(pack_data).unwrap();
+            RBRGame::default().set_race_data(&progress);
         }
 
         DataFormat::FmtSyncRaceResult => {
@@ -162,6 +163,7 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
     let user_token = token.clone();
     let room_name = room.clone();
     tokio::spawn(async move {
+        OggPlayer::open("load_race.ogg").play();
         loop {
             let state = rbr.get_race_state();
             match state {
@@ -184,6 +186,7 @@ async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWri
     let user_token = token.clone();
     let room_name = room.clone();
     tokio::spawn(async move {
+        OggPlayer::open("begin_race.ogg").play();
         let update = RaceUpdate {token: user_token.clone(), room: room_name, state: RaceState::RaceStarted};
         let body = bincode::serialize(&update).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();

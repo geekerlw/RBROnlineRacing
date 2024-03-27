@@ -164,6 +164,7 @@ impl RBNHelper {
                 InnerMsg::MsgSetRaceInfo(raceinfo) => {
 
                     //unsafe { RBR_SetPractice(RBRRaceSetting::from(&raceinfo, &RaceConfig::default())); }
+                    // RBRGame::default().cfg_practice(&raceinfo);
                 }
             }
         }
@@ -265,8 +266,7 @@ impl RBNHelper {
                     let text = res.text().await.unwrap();
                     let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
                     let mut rbr = RBRGame::default();
-                    rbr.set_race_stage(&raceinfo.stage_id);
-                    rbr.set_race_car(&raceinfo.car_id);
+                    rbr.fast_set_race_stage(&raceinfo.stage_id);
                     info_tx.send(InnerMsg::MsgSetRaceInfo(raceinfo)).await.unwrap();
                 }
             });

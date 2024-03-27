@@ -1,12 +1,25 @@
-use rbnproto::httpapi::RaceState;
-use rbnproto::metaapi::MetaRaceData;
+use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceState};
+use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress};
 use ini::Ini;
+use rbnproto::rsfdata::{RBRRaceData, RBRRaceSetting};
 use super::hacker::*;
 
 #[derive(Debug, Default)]
 pub struct RBRGame;
 
 impl RBRGame {
+    pub fn cfg_practice(&mut self, info: &RaceInfo) {
+        unsafe { RBR_CfgPractice(RBRRaceSetting::from(info, &RaceConfig::default()), false); }
+    }
+
+    pub fn enter(&mut self) {
+        unsafe { RBR_LoadRace(); };
+    }
+
+    pub fn start(&mut self) {
+        unsafe { RBR_StartRace(); };
+    }
+
     pub fn get_user(&mut self) -> String {
         let default_user = "anonymous".to_string();
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
@@ -49,7 +62,12 @@ impl RBRGame {
         data
     }
 
-    pub fn set_race_stage(&mut self, stage_id: &u32) {
+    pub fn set_race_data(&mut self, result: &Vec<MetaRaceProgress>) {
+        let racedata = RBRRaceData::from_result(result);
+        unsafe { RBR_FeedRaceData(racedata) };
+    }
+
+    pub fn fast_set_race_stage(&mut self, stage_id: &u32) {
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let recent_filepath = game_path.join("rsfdata").join("cache").join("recent.ini");
             if let Ok(mut conf) = Ini::load_from_file(&recent_filepath) {
@@ -59,22 +77,12 @@ impl RBRGame {
         }
     }
 
-    pub fn set_race_car(&mut self, car_id: &u32) {
+    pub fn fast_set_race_car(&mut self, car_id: &u32) {
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let recent_filepath = game_path.join("rsfdata").join("cache").join("recent.ini");
             if let Ok(mut conf) = Ini::load_from_file(&recent_filepath) {
                 conf.with_section(Some("PracticeCar")).set("id", car_id.to_string());
                 conf.write_to_file(recent_filepath).unwrap();
-            }
-        }
-    }
-
-    pub fn set_race_car_damage(&mut self, damage: &u32) {
-        if let Some(game_path) = std::env::current_exe().unwrap().parent() {
-            let conf_path = game_path.join("rallysimfans.ini");
-            if let Ok(mut conf) = Ini::load_from_file(&conf_path) {
-                conf.with_section(Some("drive")).set("practice_damage", damage.to_string());
-                conf.write_to_file(conf_path).unwrap();
             }
         }
     }

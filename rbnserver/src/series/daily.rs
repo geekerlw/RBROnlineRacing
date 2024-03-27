@@ -141,8 +141,8 @@ impl Daily {
         self.generate_next_stage();
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            // let scheduler = cron::Schedule::from_str("0,20,40 * * * * *").unwrap(); // for test.
-            let scheduler = cron::Schedule::from_str("0 0,10,20,30,40,50 * * * *").unwrap();
+            let scheduler = cron::Schedule::from_str("0,30 * * * * *").unwrap(); // for test.
+            // let scheduler = cron::Schedule::from_str("0 0,10,20,30,40,50 * * * *").unwrap();
             loop {
                 if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
                     let duration = next_time - Local::now();
