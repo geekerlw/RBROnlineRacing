@@ -8,6 +8,7 @@ pub enum RoomRaceState {
     #[default]
     RoomRaceInit,
     RoomRaceBegin,
+    RoomRacePrepare,
     RoomRaceReady,
     RoomRaceLoading,
     RoomRaceLoaded,
@@ -145,6 +146,16 @@ impl RaceRoom {
                 _ => false,
             }
         })
+    }
+
+    pub fn notify_all_players_prepare(&mut self) {
+        let cmd = RaceCmd::RaceCmdPrepare;
+        let players = self.players.clone();
+        tokio::spawn(async move {
+            for player in players {
+                player.notify_user_cmd(&cmd).await;
+            }
+        });
     }
 
     pub fn notify_all_players_load(&mut self) {

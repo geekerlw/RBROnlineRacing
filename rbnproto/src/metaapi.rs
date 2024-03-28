@@ -5,6 +5,7 @@ use super::httpapi::RaceState;
 pub enum RaceCmd {
     #[default]
     RaceCmdDefault,
+    RaceCmdPrepare,
     RaceCmdLoad,
     RaceCmdStart,
     RaceCmdUpload,

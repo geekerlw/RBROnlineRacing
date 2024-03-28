@@ -192,6 +192,11 @@ impl Daily {
         let room = &mut self.room;
         match room.race_state {
             RoomRaceState::RoomRaceBegin => {
+                info!("notify prepare game: {}", room.info.name);
+                room.notify_all_players_prepare();
+                room.race_state = RoomRaceState::RoomRacePrepare;
+            }
+            RoomRaceState::RoomRacePrepare => {
                 if room.is_all_players_ready() {
                     room.race_state = RoomRaceState::RoomRaceReady;
                 }
