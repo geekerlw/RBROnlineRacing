@@ -40,6 +40,7 @@ impl RacingStore {
         }
     }
 
+    #[allow(dead_code)]
     pub fn save_config(&mut self) {
         if let Some(game_root) = env::current_exe().unwrap().parent() {
             let mut conf = Ini::new();

@@ -22,11 +22,12 @@ extern "C" {
     pub fn RBR_CfgProgressBarStyle(ProgressBarBackColor: *const c_char, ProgressBarSplitColor: *const c_char, ProgressBarPointerColor: *const c_char);
     pub fn RBR_CfgProfileStyle(UserColor1: *const c_char, UserColor2: *const c_char);
     pub fn RBR_DrawTextOverRsfMain(x: i16, y: i16, color: u32, text: *const c_char);
-    pub fn RBR_DrawTextAnyway(x: i16, y: i16, color: u32, text: *const c_char);
+    //pub fn RBR_DrawTextAnyway(x: i16, y: i16, color: u32, text: *const c_char);
 
     /*
      * game flow control functions.
      */
+    pub fn RBR_CfgHotlap(racesetting: RBRRaceSetting, need_car: bool);
     pub fn RBR_CfgPractice(racesetting: RBRRaceSetting, need_car: bool);
     pub fn RBR_LoadRace();
     pub fn RBR_StartRace();

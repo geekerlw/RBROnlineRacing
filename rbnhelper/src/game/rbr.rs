@@ -1,5 +1,8 @@
+use std::ffi::c_char;
+use std::path::PathBuf;
+
 use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceState};
-use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress};
+use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress, MetaRaceResult};
 use ini::Ini;
 use rbnproto::rsfdata::{RBRRaceData, RBRRaceSetting};
 use super::hacker::*;
@@ -8,11 +11,64 @@ use super::hacker::*;
 pub struct RBRGame;
 
 impl RBRGame {
+    pub fn cfg_dashboard_style(&mut self, conf: PathBuf) {
+        if let Ok(conf) = Ini::load_from_file(conf) {
+            let enable_leader = conf.get_from_or(Some("Setting"), "LeaderEnable", "false");
+            match enable_leader {
+                "true" => {
+                    unsafe {
+                        RBR_EnableLeaderBoard();
+                        RBR_CfgLeaderBoardPos(
+                        conf.get_from_or(Some("Pos"), "LeaderBoardPosX", "20").parse().unwrap(),
+                        conf.get_from_or(Some("Pos"), "LeaderBoardPosY", "100").parse().unwrap()
+                        );
+                        RBR_CfgLeaderBoardStyle(
+                            conf.get_from_or(Some("Color"), "LeaderBriefColor", "0xFFFF00FF").as_ptr() as *const c_char,
+                            conf.get_from_or(Some("Color"), "LeaderBackGroundColor", "0xFFFFFF1F").as_ptr() as *const c_char,
+                        );
+                    };
+                },
+                _ => {},
+            };
+            let enable_progress = conf.get_from_or(Some("Setting"), "ProgressEnable", "false");
+            match enable_progress {
+                "true" => {
+                    unsafe {
+                        RBR_EnableProgressBar();
+                        RBR_CfgProgressBarPos(
+                        conf.get_from_or(Some("Pos"), "ProgressBarPosX", "40").parse().unwrap(),
+                        conf.get_from_or(Some("Pos"), "ProgressBarPosY", "300").parse().unwrap()
+                        );
+                        RBR_CfgProgressBarStyle(
+                            conf.get_from_or(Some("Color"), "ProgressBarBackColor", "0xFFFFFFFF").as_ptr() as *const c_char,
+                            conf.get_from_or(Some("Color"), "ProgressBarSplitColor", "0x00FF00FF").as_ptr() as *const c_char,
+                            conf.get_from_or(Some("Color"), "ProgressBarPointerColor", "0x00FF00FF").as_ptr() as *const c_char,
+                        );
+                    };
+                }
+                _ => {},
+            }
+
+            if enable_leader.eq("true") || enable_progress.eq("true") {
+                unsafe {
+                    RBR_CfgProfileStyle(
+                        conf.get_from_or(Some("Color"), "UserColor1", "0xFF0000FF").as_ptr() as *const c_char,
+                        conf.get_from_or(Some("Color"), "UserColor2", "0x00FF00FF").as_ptr() as *const c_char,
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn cfg_hotlap(&mut self, info: &RaceInfo) {
+        unsafe { RBR_CfgHotlap(RBRRaceSetting::from(info, &RaceConfig::default()), false); }
+    }
+
     pub fn cfg_practice(&mut self, info: &RaceInfo) {
         unsafe { RBR_CfgPractice(RBRRaceSetting::from(info, &RaceConfig::default()), false); }
     }
 
-    pub fn enter(&mut self) {
+    pub fn load(&mut self) {
         unsafe { RBR_LoadRace(); };
     }
 
@@ -62,9 +118,13 @@ impl RBRGame {
         data
     }
 
-    pub fn set_race_data(&mut self, result: &Vec<MetaRaceProgress>) {
+    pub fn feed_race_data(&mut self, result: &Vec<MetaRaceProgress>) {
         let racedata = RBRRaceData::from_result(result);
         unsafe { RBR_FeedRaceData(racedata) };
+    }
+
+    pub fn show_race_result(&mut self, _result: &Vec<MetaRaceResult>) {
+
     }
 
     pub fn fast_set_race_stage(&mut self, stage_id: &u32) {
@@ -77,6 +137,7 @@ impl RBRGame {
         }
     }
 
+    #[allow(dead_code)]
     pub fn fast_set_race_car(&mut self, car_id: &u32) {
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let recent_filepath = game_path.join("rsfdata").join("cache").join("recent.ini");

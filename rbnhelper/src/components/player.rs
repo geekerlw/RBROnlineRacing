@@ -20,11 +20,14 @@ impl OggPlayer {
         player
     }
 
+
+    #[allow(dead_code)]
     pub fn set_timeout(mut self, secs: u64) -> Self {
         self.timeout = secs;
         self
     }
 
+    #[allow(dead_code)]
     pub fn set_volume(mut self, volume: f32) -> Self {
         self.volume = volume;
         self

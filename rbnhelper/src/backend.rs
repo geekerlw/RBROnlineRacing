@@ -3,11 +3,8 @@ use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{Sender, Receiver};
 use tokio::task::JoinHandle;
 use std::sync::Arc;
-use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceQuery, RaceState, UserLogin};
-use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceJoin, RaceLeave, RaceUpdate, META_HEADER_LEN};
-use rbnproto::rsfdata::{RBRRaceSetting, RBRStageData};
-use rbnproto::API_VERSION_STRING;
-use reqwest::StatusCode;
+use rbnproto::httpapi::RaceState;
+use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceUpdate, META_HEADER_LEN};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
@@ -16,6 +13,7 @@ use tokio::sync::Mutex;
 use crate::components::player::OggPlayer;
 use crate::components::store::RacingStore;
 use crate::game::rbr::RBRGame;
+use crate::rbnhelper::InnerMsg;
 
 
 pub enum TaskMsg {
@@ -28,18 +26,21 @@ pub struct RBNBackend {
     meta_addr: String,
     user_token: String,
     tx: Option<Sender<TaskMsg>>,
+    notifier: Option<Sender<InnerMsg>>,
 }
 
 impl RBNBackend {
-    pub fn init(&mut self, store: &RacingStore) {
+    pub fn init(&mut self, store: &RacingStore, notifier: &Sender<InnerMsg>) {
         self.meta_addr = store.get_meta_url();
         self.user_token = store.user_token.clone();
+        self.notifier = Some(notifier.clone());
     }
 
     pub fn run(&mut self, tx: Sender<TaskMsg>, mut rx: Receiver<TaskMsg>) {
         self.tx = Some(tx.clone());
         let server = self.meta_addr.clone();
         let token = self.user_token.clone();
+        let notifier = self.notifier.as_ref().unwrap().clone();
         std::thread::spawn(move || {
             Runtime::new().unwrap().block_on(async move {
                 let mut stage_task = None;
@@ -47,7 +48,7 @@ impl RBNBackend {
                     if let Some(task) = rx.recv().await {
                         match task {
                             TaskMsg::MsgStartStage(room) => {
-                                stage_task = Some(spawn_one_stage(&server, &token, &room));
+                                stage_task = Some(spawn_one_stage(&server, &token, &notifier, &room));
                             },
                             TaskMsg::MsgStopStage => {
                                 if let Some(mission) = &stage_task {
@@ -69,10 +70,11 @@ impl RBNBackend {
     }
 }
 
-fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle<()> {
+fn spawn_one_stage(server: &String, token: &String, notifier: &Sender<InnerMsg>, race: &String) -> JoinHandle<()> {
     let meta_addr = server.clone();
     let user_token = token.clone();
     let room_name = race.clone();
+    let notifier = notifier.clone();
 
     tokio::spawn(async move {
         let stream = TcpStream::connect(meta_addr).await.unwrap();
@@ -115,7 +117,7 @@ fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle
                 }     
                 let pack_data = &buffer[offset+META_HEADER_LEN..offset+META_HEADER_LEN+head.length as usize];
 
-                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, writer_clone.clone()).await;
+                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, writer_clone.clone(), notifier.clone()).await;
                 offset += META_HEADER_LEN + head.length as usize;
             }
             remain = (&buffer[offset..]).to_vec();
@@ -123,18 +125,18 @@ fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle
     })
 }
 
-async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
     match head.format {
         DataFormat::FmtRaceCommand => {
             let cmd: RaceCmd = bincode::deserialize(pack_data).unwrap();
             match cmd {
                 RaceCmd::RaceCmdLoad => {
                     info!("recv cmd to load game");
-                    tokio::spawn(start_game_load(token.clone(), room.clone(), writer.clone()));
+                    tokio::spawn(start_game_load(token.clone(), room.clone(), writer.clone(), notifier.clone()));
                 }
                 RaceCmd::RaceCmdStart => {
                     info!("recv cmd to start game");
-                    tokio::spawn(start_game_race(token.clone(), room.clone(), writer.clone()));
+                    tokio::spawn(start_game_race(token.clone(), room.clone(), writer.clone(), notifier.clone()));
                 }
                 RaceCmd::RaceCmdUpload => {
                     info!("recv cmd to upload race data");
@@ -146,11 +148,12 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
         DataFormat::FmtSyncRaceData => {
             let progress: Vec<MetaRaceProgress> = bincode::deserialize(pack_data).unwrap();
-            RBRGame::default().set_race_data(&progress);
+            RBRGame::default().feed_race_data(&progress);
         }
 
         DataFormat::FmtSyncRaceResult => {
             let result: Vec<MetaRaceResult> = bincode::deserialize(pack_data).unwrap();
+            RBRGame::default().show_race_result(&result);
         }
         _ => {}
     }
@@ -158,10 +161,11 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
 
 // need to start this task when stage loaded.
-async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
     let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
+    notifier.send(InnerMsg::MsgLoadStage).await.unwrap();
     tokio::spawn(async move {
         OggPlayer::open("load_race.ogg").play();
         loop {
@@ -182,9 +186,10 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
     });
 }
 
-async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
     let user_token = token.clone();
     let room_name = room.clone();
+    notifier.send(InnerMsg::MsgStartStage).await.unwrap();
     tokio::spawn(async move {
         OggPlayer::open("begin_race.ogg").play();
         let update = RaceUpdate {token: user_token.clone(), room: room_name, state: RaceState::RaceStarted};
