@@ -9,6 +9,7 @@ use std::sync::Mutex;
 
 mod components;
 mod game;
+mod overlay;
 mod backend;
 mod rbnhelper;
 

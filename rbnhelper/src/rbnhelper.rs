@@ -1,4 +1,4 @@
-use libc::c_char;
+use std::vec;
 use log::info;
 use rbnproto::httpapi::{RaceInfo, RaceQuery, UserLogin};
 use rbnproto::metaapi::{RaceJoin, RaceLeave};
@@ -10,6 +10,8 @@ use crate::game::plugin::IPlugin;
 use crate::game::hacker::*;
 use crate::game::rbr::RBRGame;
 use crate::components::store::RacingStore;
+use crate::overlay::copyright::CopyRight;
+use crate::overlay::Overlay;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 pub enum InnerMsg {
@@ -23,7 +25,7 @@ pub struct RBNHelper {
     store: RacingStore,
     rsf_menu: i32,
     race_name: String,
-    copyright: String,
+    overlays: Vec<Box<dyn Overlay + Send + Sync>>,
 }
 
 impl Default for RBNHelper {
@@ -36,7 +38,7 @@ impl Default for RBNHelper {
             store: RacingStore::default(),
             rsf_menu: 0,
             race_name: String::from("Daily Challenge"),
-            copyright: format!("Welcome to use RBN Helper [{}], Copyright Lw_Ziye 2023-2024.", std::env!("CARGO_PKG_VERSION")),
+            overlays: vec![],
         }
     }
 }
@@ -52,6 +54,14 @@ impl RBNHelper {
     pub fn init(&mut self) {
         self.store.init();
         self.load_dashboard_config();
+
+        let window_width = unsafe { RBR_GetD3dWindowWidth() };
+        let window_height = unsafe { RBR_GetD3dWindowHeight() };
+        self.overlays.push(Box::new(CopyRight::default()));
+        for overlay in &mut self.overlays {
+            overlay.init(window_width, window_height);
+        }
+
         self.check_and_login();
     }
 
@@ -103,7 +113,9 @@ impl RBNHelper {
     pub fn draw_on_end_frame(&mut self) {
         self.async_message_handle();
         
-        unsafe {RBR_DrawTextOverRsfMain(240, 640, 0xFFFFFFFF, self.copyright.as_ptr() as *const c_char)};
+        self.overlays.iter_mut().for_each(|x| {
+            x.draw_ui();
+        });
     }
 
     pub fn on_rsf_menu_changed(&mut self, menu: i32) {

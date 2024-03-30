@@ -7,6 +7,8 @@ extern "C" {
      * plugin hooking functions.
      */
     pub fn RBR_InitPlugin(rbrgame: *mut c_void) -> *mut c_void;
+    pub fn RBR_GetD3dWindowWidth() -> i16;
+    pub fn RBR_GetD3dWindowHeight() -> i16;
     pub fn RBR_SetInitialize(func: extern "C" fn() -> *const c_char);
     pub fn RBR_SetOnEndScene(func: extern "C" fn());
     pub fn RBR_SetOnRsfMenuChanged(func: extern "C" fn(menu: i32));
