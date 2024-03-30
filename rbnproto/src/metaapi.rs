@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
+use crate::httpapi::RaceInfo;
 use super::httpapi::RaceState;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub enum RaceCmd {
     #[default]
     RaceCmdDefault,
-    RaceCmdPrepare,
+    RaceCmdPrepare(RaceInfo),
     RaceCmdLoad,
     RaceCmdStart,
     RaceCmdUpload,

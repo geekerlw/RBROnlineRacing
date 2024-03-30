@@ -12,7 +12,7 @@ pub struct OggPlayer {
 impl OggPlayer {
     pub fn open(file: &str) -> Self {
         let mut player = OggPlayer::default();
-        player.timeout = 2; // default play 2 seconds.
+        player.timeout = 3; // default play 3 seconds.
         player.volume = 0.4; // default volume to 0.4x.
         if let Some(game_root) = std::env::current_exe().unwrap().parent() {
             player.file = game_root.join("Plugins").join("RBNHelper").join("audio").join(file);

@@ -148,8 +148,14 @@ impl RaceRoom {
         })
     }
 
+    pub fn reset_all_players_state(&mut self) {
+        self.players.iter_mut().for_each(|x| {
+            x.state = RaceState::RaceDefault;
+        });
+    }
+
     pub fn notify_all_players_prepare(&mut self) {
-        let cmd = RaceCmd::RaceCmdPrepare;
+        let cmd = RaceCmd::RaceCmdPrepare(self.info.clone());
         let players = self.players.clone();
         tokio::spawn(async move {
             for player in players {

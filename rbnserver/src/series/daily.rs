@@ -141,7 +141,7 @@ impl Daily {
         self.generate_next_stage();
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            let scheduler = cron::Schedule::from_str("0,30 * * * * *").unwrap(); // for test.
+            let scheduler = cron::Schedule::from_str("0 * * * * *").unwrap(); // for test.
             // let scheduler = cron::Schedule::from_str("0 0,10,20,30,40,50 * * * *").unwrap();
             loop {
                 if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
@@ -193,6 +193,7 @@ impl Daily {
         match room.race_state {
             RoomRaceState::RoomRaceBegin => {
                 info!("notify prepare game: {}", room.info.name);
+                room.reset_all_players_state();
                 room.notify_all_players_prepare();
                 room.race_state = RoomRaceState::RoomRacePrepare;
             }

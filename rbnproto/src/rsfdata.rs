@@ -109,7 +109,6 @@ impl RBRStageWeather {
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceSetting {
-    pub datatype: c_uint,
     pub external: c_uint,
     pub stage: c_uint,
     pub wetness: c_uint,
@@ -124,7 +123,6 @@ pub struct RBRRaceSetting {
 impl RBRRaceSetting {
     pub fn from(info: &RaceInfo, cfg: &RaceConfig) -> Self {
         let mut racesetting = RBRRaceSetting::default();
-        racesetting.datatype = 1;
         racesetting.external = 1;
         racesetting.stage = info.stage_id;
         racesetting.wetness = info.wetness;
@@ -163,7 +161,6 @@ pub struct RBRRaceItem {
 #[derive(Default)]
 #[repr(C, packed)]
 pub struct RBRRaceData {
-    pub datatype: c_uint,
     pub external: c_uint,
     pub count: c_uint,
     pub data: [RBRRaceItem; 8],
@@ -172,7 +169,6 @@ pub struct RBRRaceData {
 impl RBRRaceData {
     pub fn from_result(result: &Vec<MetaRaceProgress>) -> Self {
         let mut racedata = RBRRaceData::default();
-        racedata.datatype = 2;
         racedata.external = 1;
         for (index, item) in result.iter().enumerate() {
             if index >= 8 {

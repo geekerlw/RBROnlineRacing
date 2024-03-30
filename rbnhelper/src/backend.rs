@@ -13,7 +13,6 @@ use tokio::sync::Mutex;
 use crate::components::player::OggPlayer;
 use crate::components::store::RacingStore;
 use crate::game::rbr::RBRGame;
-use crate::rbnhelper::InnerMsg;
 
 
 pub enum TaskMsg {
@@ -26,21 +25,18 @@ pub struct RBNBackend {
     meta_addr: String,
     user_token: String,
     tx: Option<Sender<TaskMsg>>,
-    notifier: Option<Sender<InnerMsg>>,
 }
 
 impl RBNBackend {
-    pub fn init(&mut self, store: &RacingStore, notifier: &Sender<InnerMsg>) {
+    pub fn init(&mut self, store: &RacingStore) {
         self.meta_addr = store.get_meta_url();
         self.user_token = store.user_token.clone();
-        self.notifier = Some(notifier.clone());
     }
 
     pub fn run(&mut self, tx: Sender<TaskMsg>, mut rx: Receiver<TaskMsg>) {
         self.tx = Some(tx.clone());
         let server = self.meta_addr.clone();
         let token = self.user_token.clone();
-        let notifier = self.notifier.as_ref().unwrap().clone();
         std::thread::spawn(move || {
             Runtime::new().unwrap().block_on(async move {
                 let mut stage_task = None;
@@ -48,7 +44,7 @@ impl RBNBackend {
                     if let Some(task) = rx.recv().await {
                         match task {
                             TaskMsg::MsgStartStage(room) => {
-                                stage_task = Some(spawn_one_stage(&server, &token, &notifier, &room));
+                                stage_task = Some(spawn_one_stage(&server, &token, &room));
                             },
                             TaskMsg::MsgStopStage => {
                                 if let Some(mission) = &stage_task {
@@ -70,11 +66,10 @@ impl RBNBackend {
     }
 }
 
-fn spawn_one_stage(server: &String, token: &String, notifier: &Sender<InnerMsg>, race: &String) -> JoinHandle<()> {
+fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle<()> {
     let meta_addr = server.clone();
     let user_token = token.clone();
     let room_name = race.clone();
-    let notifier = notifier.clone();
 
     tokio::spawn(async move {
         let stream = TcpStream::connect(meta_addr).await.unwrap();
@@ -83,11 +78,6 @@ fn spawn_one_stage(server: &String, token: &String, notifier: &Sender<InnerMsg>,
         let access = RaceAccess {token: user_token.clone(), room: room_name.clone()};
         let body = bincode::serialize(&access).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUserAccess}).unwrap();
-        writer.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
-
-        let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: RaceState::RaceReady};
-        let body = bincode::serialize(&update).unwrap();
-        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
         writer.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
 
         let mut recvbuf = vec![0u8; 1024];
@@ -117,7 +107,7 @@ fn spawn_one_stage(server: &String, token: &String, notifier: &Sender<InnerMsg>,
                 }     
                 let pack_data = &buffer[offset+META_HEADER_LEN..offset+META_HEADER_LEN+head.length as usize];
 
-                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, writer_clone.clone(), notifier.clone()).await;
+                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, writer_clone.clone()).await;
                 offset += META_HEADER_LEN + head.length as usize;
             }
             remain = (&buffer[offset..]).to_vec();
@@ -125,18 +115,23 @@ fn spawn_one_stage(server: &String, token: &String, notifier: &Sender<InnerMsg>,
     })
 }
 
-async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
+async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     match head.format {
         DataFormat::FmtRaceCommand => {
             let cmd: RaceCmd = bincode::deserialize(pack_data).unwrap();
             match cmd {
+                RaceCmd::RaceCmdPrepare(info) => {
+                    info!("recv cmd to prepare game: {:?}", info);
+                    RBRGame::default().config(&info);
+                    tokio::spawn(start_game_prepare(token.clone(), room.clone(), writer.clone()));
+                }
                 RaceCmd::RaceCmdLoad => {
                     info!("recv cmd to load game");
-                    tokio::spawn(start_game_load(token.clone(), room.clone(), writer.clone(), notifier.clone()));
+                    tokio::spawn(start_game_load(token.clone(), room.clone(), writer.clone()));
                 }
                 RaceCmd::RaceCmdStart => {
                     info!("recv cmd to start game");
-                    tokio::spawn(start_game_race(token.clone(), room.clone(), writer.clone(), notifier.clone()));
+                    tokio::spawn(start_game_race(token.clone(), room.clone(), writer.clone()));
                 }
                 RaceCmd::RaceCmdUpload => {
                     info!("recv cmd to upload race data");
@@ -159,20 +154,32 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
     }
 }
 
+async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+    let user_token = token.clone();
+    let room_name = room.clone();
+    tokio::spawn(async move {
+        OggPlayer::open("prepare.ogg").play();
+        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await; // 10 seconds later auto start.
+        let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: RaceState::RaceReady};
+        let body = bincode::serialize(&update).unwrap();
+        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+        writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
+    });
+}
 
 // need to start this task when stage loaded.
-async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
+async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
-    notifier.send(InnerMsg::MsgLoadStage).await.unwrap();
+    rbr.load();
     tokio::spawn(async move {
         OggPlayer::open("load_race.ogg").play();
         loop {
             let state = rbr.get_race_state();
             match state {
                 RaceState::RaceLoaded | RaceState::RaceRunning => {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
                     let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: RaceState::RaceLoaded};
                     let body = bincode::serialize(&update).unwrap();
                     let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
@@ -186,12 +193,13 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
     });
 }
 
-async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
+async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let user_token = token.clone();
     let room_name = room.clone();
-    notifier.send(InnerMsg::MsgStartStage).await.unwrap();
+    OggPlayer::open("begin_race.ogg").play();
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    RBRGame::default().start();
     tokio::spawn(async move {
-        OggPlayer::open("begin_race.ogg").play();
         let update = RaceUpdate {token: user_token.clone(), room: room_name, state: RaceState::RaceStarted};
         let body = bincode::serialize(&update).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();

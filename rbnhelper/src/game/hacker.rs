@@ -27,8 +27,7 @@ extern "C" {
     /*
      * game flow control functions.
      */
-    pub fn RBR_CfgHotlap(racesetting: RBRRaceSetting, need_car: bool);
-    pub fn RBR_CfgPractice(racesetting: RBRRaceSetting, need_car: bool);
+    pub fn RBR_CfgRace(racesetting: RBRRaceSetting);
     pub fn RBR_LoadRace();
     pub fn RBR_StartRace();
     pub fn RBR_FeedRaceData(racedata: RBRRaceData);

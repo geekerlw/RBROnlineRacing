@@ -14,10 +14,6 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 pub enum InnerMsg {
     MsgUserLogined(String),
-    MsgUserJoined,
-    MsgSetRaceInfo(RaceInfo),
-    MsgLoadStage,
-    MsgStartStage,
 }
 
 pub struct RBNHelper {
@@ -97,25 +93,8 @@ impl RBNHelper {
                     info!("User Logined RBN Server [{}] success.", self.store.server_addr);
                     self.store.user_token = token;
                     let (tx, rx) = channel::<TaskMsg>(16);
-                    self.backend.init(&self.store, &self.tx);
+                    self.backend.init(&self.store);
                     self.backend.run(tx, rx);
-                }
-                InnerMsg::MsgUserJoined => {
-                    self.fetch_race_info();
-                }
-                InnerMsg::MsgSetRaceInfo(raceinfo) => {
-                    if self.rsf_menu == 2 {
-                        RBRGame::default().cfg_hotlap(&raceinfo);
-                    }
-                    else if self.rsf_menu == 3 {
-                        RBRGame::default().cfg_practice(&raceinfo);
-                    }
-                }
-                InnerMsg::MsgLoadStage => {
-                    RBRGame::default().load();
-                }
-                InnerMsg::MsgStartStage => {
-                    RBRGame::default().start();
                 }
             }
         }
@@ -132,37 +111,14 @@ impl RBNHelper {
         self.rsf_menu = menu;
         self.fetch_race_brief();
 
-        if last_menu == 0 && menu == 2 {
-            info!("Enter Hotlap Menu from Main Rsf Menu.");
-        }
-
-        if last_menu == 2 && menu == 0 {
-            info!("Exit to main rsf menu from hotlap.");
-        }
-
         if last_menu == 0 && menu == 3 {
-            info!("Enter Practice Menu from Main Rsf Menu.");
-            self.join_race(&"Daily Challenge".to_string());
-            self.backend.trigger(TaskMsg::MsgStartStage("Daily Challenge".to_string()));
+            self.join_race(&self.race_name.clone());
+            self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
         }
 
         if last_menu == 3 && menu == 0 {
-            info!("Exit to Main Rsf Menu from practice.");
-            self.leave_race(&"Daily Challenge".to_string());
+            self.leave_race(&self.race_name.clone());
             self.backend.trigger(TaskMsg::MsgStopStage);
-        }
-    }
-
-    pub fn fetch_race_brief(&mut self) {
-        if self.is_logined() {
-            let url = self.store.get_http_url("api/race/brief");
-            tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().get(&url).send().await.unwrap();
-                if res.status() == StatusCode::OK {
-                    let _brief = res.text().await.unwrap();
-                    //tx.send(InnerMsg::MsgMenuMessage(brief)).await.unwrap();
-                }
-            });
         }
     }
 
@@ -170,12 +126,20 @@ impl RBNHelper {
     pub fn join_race(&mut self, race: &String) {
         if self.is_logined() {
             let race_join = RaceJoin {token: self.store.user_token.clone(), room: race.clone(), passwd: None};
-            let url = self.store.get_http_url("api/race/join");
-            let tx = self.tx.clone();
+            let join_url = self.store.get_http_url("api/race/join");
+            let info_url = self.store.get_http_url("api/race/info");
+            let info_query = RaceQuery {name: self.race_name.clone()};
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().post(url).json(&race_join).send().await.unwrap();
+                let res = reqwest::Client::new().post(join_url).json(&race_join).send().await.unwrap();
                 if res.status() == StatusCode::OK {
-                    tx.send(InnerMsg::MsgUserJoined).await.unwrap();
+                    let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
+                    if res.status() == StatusCode::OK {
+                        let text = res.text().await.unwrap();
+                        let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
+                        RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
+                        RBRGame::default().fast_set_race_car(&raceinfo.car_id);
+                        RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
+                    }
                     OggPlayer::open("join.ogg").play();
                 }
             });
@@ -194,19 +158,14 @@ impl RBNHelper {
         }
     }
 
-    // need to call by hooking hotlap and practice menu in.
-    pub fn fetch_race_info(&mut self) {
+    pub fn fetch_race_brief(&mut self) {
         if self.is_logined() {
-            let info_url = self.store.get_http_url("api/race/info");
-            let info_tx = self.tx.clone();
-            let info_query = RaceQuery {name: self.race_name.clone()};
+            let url = self.store.get_http_url("api/race/brief");
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
+                let res = reqwest::Client::new().get(&url).send().await.unwrap();
                 if res.status() == StatusCode::OK {
-                    let text = res.text().await.unwrap();
-                    let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
-                    RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
-                    info_tx.send(InnerMsg::MsgSetRaceInfo(raceinfo)).await.unwrap();
+                    let _brief = res.text().await.unwrap();
+                    //tx.send(InnerMsg::MsgMenuMessage(brief)).await.unwrap();
                 }
             });
         }
