@@ -1,6 +1,5 @@
-use std::ffi::c_char;
 use std::path::PathBuf;
-
+use std::ffi::CString;
 use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceState};
 use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress, MetaRaceResult};
 use ini::Ini;
@@ -18,14 +17,13 @@ impl RBRGame {
                 "true" => {
                     unsafe {
                         RBR_EnableLeaderBoard();
-                        RBR_CfgLeaderBoardPos(
-                        conf.get_from_or(Some("Pos"), "LeaderBoardPosX", "20").parse().unwrap(),
-                        conf.get_from_or(Some("Pos"), "LeaderBoardPosY", "100").parse().unwrap()
-                        );
-                        RBR_CfgLeaderBoardStyle(
-                            conf.get_from_or(Some("Color"), "LeaderBriefColor", "0xFFFF00FF").as_ptr() as *const c_char,
-                            conf.get_from_or(Some("Color"), "LeaderBackGroundColor", "0xFFFFFF1F").as_ptr() as *const c_char,
-                        );
+                        let posx = conf.get_from_or(Some("Pos"), "LeaderBoardPosX", "20").parse().unwrap();
+                        let posy = conf.get_from_or(Some("Pos"), "LeaderBoardPosY", "100").parse().unwrap();
+                        RBR_CfgLeaderBoardPos(posx, posy);
+
+                        let briefcolor = CString::new(conf.get_from_or(Some("Color"), "LeaderBriefColor", "0xFFFF00FF")).unwrap();
+                        let groundcolor = CString::new(conf.get_from_or(Some("Color"), "LeaderBackGroundColor", "0xFFFFFF1F")).unwrap();
+                        RBR_CfgLeaderBoardStyle(briefcolor.as_ptr(), groundcolor.as_ptr());
                     };
                 },
                 _ => {},
@@ -35,15 +33,13 @@ impl RBRGame {
                 "true" => {
                     unsafe {
                         RBR_EnableProgressBar();
-                        RBR_CfgProgressBarPos(
-                        conf.get_from_or(Some("Pos"), "ProgressBarPosX", "40").parse().unwrap(),
-                        conf.get_from_or(Some("Pos"), "ProgressBarPosY", "300").parse().unwrap()
-                        );
-                        RBR_CfgProgressBarStyle(
-                            conf.get_from_or(Some("Color"), "ProgressBarBackColor", "0xFFFFFFFF").as_ptr() as *const c_char,
-                            conf.get_from_or(Some("Color"), "ProgressBarSplitColor", "0x00FF00FF").as_ptr() as *const c_char,
-                            conf.get_from_or(Some("Color"), "ProgressBarPointerColor", "0x00FF00FF").as_ptr() as *const c_char,
-                        );
+                        let posx = conf.get_from_or(Some("Pos"), "ProgressBarPosX", "40").parse().unwrap();
+                        let posy = conf.get_from_or(Some("Pos"), "ProgressBarPosY", "300").parse().unwrap();
+                        RBR_CfgProgressBarPos(posx, posy);
+                        let backcolor = CString::new(conf.get_from_or(Some("Color"), "ProgressBarBackColor", "0xFFFFFFFF")).unwrap();
+                        let splitcolor = CString::new(conf.get_from_or(Some("Color"), "ProgressBarSplitColor", "0x00FF00FF")).unwrap();
+                        let pointercolor = CString::new(conf.get_from_or(Some("Color"), "ProgressBarPointerColor", "0x00FF00FF")).unwrap();
+                        RBR_CfgProgressBarStyle(backcolor.as_ptr(), splitcolor.as_ptr(), pointercolor.as_ptr());
                     };
                 }
                 _ => {},
@@ -51,10 +47,9 @@ impl RBRGame {
 
             if enable_leader.eq("true") || enable_progress.eq("true") {
                 unsafe {
-                    RBR_CfgProfileStyle(
-                        conf.get_from_or(Some("Color"), "UserColor1", "0xFF0000FF").as_ptr() as *const c_char,
-                        conf.get_from_or(Some("Color"), "UserColor2", "0x00FF00FF").as_ptr() as *const c_char,
-                    );
+                    let color1 = CString::new(conf.get_from_or(Some("Color"), "UserColor1", "0xFF0000FF")).unwrap();
+                    let color2 = CString::new(conf.get_from_or(Some("Color"), "UserColor2", "0x00FF00FF")).unwrap();
+                    RBR_CfgProfileStyle(color1.as_ptr(), color2.as_ptr());
                 }
             }
         }
