@@ -1,5 +1,5 @@
 use log::info;
-use tokio::runtime::Runtime;
+use tokio::runtime::Builder;
 use tokio::sync::mpsc::{Sender, Receiver};
 use tokio::task::JoinHandle;
 use std::sync::Arc;
@@ -38,7 +38,7 @@ impl RBNBackend {
         let server = self.meta_addr.clone();
         let token = self.user_token.clone();
         std::thread::spawn(move || {
-            Runtime::new().unwrap().block_on(async move {
+            Builder::new_multi_thread().enable_all().build().unwrap().block_on(async move {
                 let mut stage_task = None;
                 loop {
                     if let Some(task) = rx.recv().await {
@@ -155,11 +155,25 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 }
 
 async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+    let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
     tokio::spawn(async move {
         OggPlayer::open("prepare.ogg").play();
-        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await; // 10 seconds later auto start.
+        let start_time = std::time::SystemTime::now();
+        loop {
+            if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(10) {
+                break;
+            }
+
+            let state = rbr.get_race_state();
+            match state {
+                RaceState::RaceLoading => break,
+                _ => {}
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+        }
+
         let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: RaceState::RaceReady};
         let body = bincode::serialize(&update).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();

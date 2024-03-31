@@ -1,11 +1,9 @@
 use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
 use rbnproto::metaapi::{MetaRaceData, RaceJoin};
-use tokio::time::Instant;
+use tokio::time::{Instant, Duration};
 use crate::lobby::RaceLobby;
 use crate::player::{LobbyPlayer, RacePlayer};
 use log::info;
-use std::str::FromStr;
-use std::time::Duration;
 use chrono::Local;
 use super::randomer::RaceRandomer;
 use super::room::{RaceRoom, RoomRaceState};
@@ -139,29 +137,26 @@ impl Series for Daily {
 impl Daily {
     pub fn init(mut self) -> Self {
         self.generate_next_stage();
-        let tx = self.tx.clone();
-        tokio::spawn(async move {
-            let scheduler = cron::Schedule::from_str("0 * * * * *").unwrap(); // for test.
-            // let scheduler = cron::Schedule::from_str("0 0,10,20,30,40,50 * * * *").unwrap();
-            loop {
-                if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
-                    let duration = next_time - Local::now();
-                    info!("next time to start next stage [{}], remain [{}]", next_time, duration);
-                    tokio::time::sleep_until(Instant::now() + Duration::from_secs(duration.num_seconds() as u64)).await;
-                    tx.send(DailyMsg::MsgNextStage).await.unwrap();
-                }
-                tokio::time::sleep(Duration::from_secs(10)).await;
-            }
-        });
+        self.trigger_next_stage(10);
         self
     }
 
     pub fn generate_next_stage(&mut self) {
-        let raceinfo = RaceRandomer::build().random();
-        self.room.info = raceinfo;
-        self.room.info.name = "Daily Challenge".to_string();
-        self.room.info.owner = "Lw_Ziye".to_string();
+        self.room.info = RaceRandomer::build()
+            .with_name("Daily Challenge".to_string())
+            .with_owner("Lw_Ziye".to_string())
+            .fixed_car("Hyundai i20 Coupe WRC 2021".to_string())
+            .fixed_damage(3)
+            .random();
         info!("next race: {:?}", &self.room.info);
+    }
+
+    pub fn trigger_next_stage(&mut self, timeout: u64) {
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep_until(Instant::now() + Duration::from_secs(timeout)).await;
+            tx.send(DailyMsg::MsgNextStage).await.unwrap();
+        });
     }
 
     pub fn async_msg_handle(&mut self) {
@@ -185,6 +180,10 @@ impl Daily {
             } else {
                 room.room_state = RoomState::RoomFree;
             }
+        }
+
+        if room.is_empty() { // no player exits, force to init state.
+            room.race_state = RoomRaceState::RoomRaceInit;
         }
     }
 
@@ -240,6 +239,7 @@ impl Daily {
             RoomRaceState::RoomRaceEnd => {
                 room.race_state = RoomRaceState::RoomRaceInit;
                 self.generate_next_stage();
+                self.trigger_next_stage(60);
             }
             _ => {}
         }

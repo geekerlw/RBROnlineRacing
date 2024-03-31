@@ -12,6 +12,11 @@ pub struct RaceRandomer {
     pub skytypes: Vec<RBRStageWeather>,
     pub cars: Vec<RBRCarData>,
     pub damages: Vec<&'static str>,
+    fixed_stage: bool,
+    fixed_weather: bool,
+    fixed_car: bool,
+    fixed_damage: bool,
+    raceinfo: RaceInfo,
 }
 
 impl Default for RaceRandomer {
@@ -24,16 +29,78 @@ impl Default for RaceRandomer {
             skytypes: vec![],
             cars: vec![],
             damages: vec!["Off", "Safe", "Reduced", "Realistic"],
+            fixed_stage: false,
+            fixed_weather: false,
+            fixed_car: false,
+            fixed_damage: false,
+            raceinfo: RaceInfo::default(),
         }
     }
 }
 
+#[allow(dead_code)]
 impl RaceRandomer {
     pub fn build() -> Self {
         let mut randomer = Self::default();
         randomer.load_game_stages();
         randomer.load_game_cars();
         randomer
+    }
+
+    pub fn with_name(mut self, name: String) -> Self {
+        self.raceinfo.name = name;
+        self
+    }
+
+    pub fn with_owner(mut self, owner: String) -> Self {
+        self.raceinfo.owner = owner;
+        self
+    }
+
+    pub fn fixed_stage(mut self, stage: String) -> Self {
+        let mut select_stage = 0;
+        for (i, item) in self.stages.iter().enumerate() {
+            if item.name == stage {
+                select_stage = i;
+                break;
+            }
+        }
+        self.raceinfo.stage = self.stages[select_stage].name.clone();
+        self.raceinfo.stage_id = self.stages[select_stage].stage_id.parse().unwrap();
+        self.raceinfo.stage_type = self.stages[select_stage].get_surface();
+        self.raceinfo.stage_len = self.stages[select_stage].length.parse().unwrap();
+        self.fixed_stage = true;
+        self
+    }
+
+    pub fn fixed_weather(mut self) -> Self {
+        self.raceinfo.weather = 0u32;
+        self.raceinfo.wetness = 0u32;
+        self.raceinfo.skytype = "Default".to_string();
+        self.raceinfo.skytype_id = 0u32;
+        self.fixed_weather = true;
+        self
+    }
+
+    pub fn fixed_car(mut self, car: String) -> Self {
+        let mut select_car = 0;
+        for (i, item) in self.cars.iter().enumerate() {
+            if item.name == car {
+                select_car = i;
+                break;
+            }
+        }
+        self.raceinfo.car_fixed = true;
+        self.raceinfo.car = self.cars[select_car].name.clone();
+        self.raceinfo.car_id = self.cars[select_car].id.parse().unwrap();
+        self.fixed_car = true;
+        self
+    }
+
+    pub fn fixed_damage(mut self, damage: u32) -> Self {
+        self.raceinfo.damage = damage;
+        self.fixed_damage = true;
+        self
     }
 
     fn load_game_stages(&mut self) {
@@ -74,7 +141,6 @@ impl RaceRandomer {
     }
 
     pub fn random(&mut self) -> RaceInfo {
-        let mut raceinfo = RaceInfo::default();
         let select_stage = thread_rng().gen_range(0..self.stages.len());
         let select_wetness = thread_rng().gen_range(0..self.wetness.len());
         let select_weather = thread_rng().gen_range(0..self.weathers.len());
@@ -89,19 +155,30 @@ impl RaceRandomer {
             skytype = self.skytypes[select_skytype].get_weather_string();
         }
 
-        raceinfo.stage = self.stages[select_stage].name.clone();
-        raceinfo.stage_id = self.stages[select_stage].stage_id.parse().unwrap();
-        raceinfo.stage_type = self.stages[select_stage].get_surface();
-        raceinfo.stage_len = self.stages[select_stage].length.parse().unwrap();
-        raceinfo.car_fixed = false;
-        raceinfo.car = self.cars[select_car].name.clone();
-        raceinfo.car_id = self.cars[select_car].id.parse().unwrap();
-        raceinfo.damage = select_damage as u32;
-        raceinfo.weather = select_weather as u32;
-        raceinfo.wetness = select_wetness as u32;
-        raceinfo.skytype = skytype;
-        raceinfo.skytype_id = select_skytype as u32;
+        if !self.fixed_stage {
+            self.raceinfo.stage = self.stages[select_stage].name.clone();
+            self.raceinfo.stage_id = self.stages[select_stage].stage_id.parse().unwrap();
+            self.raceinfo.stage_type = self.stages[select_stage].get_surface();
+            self.raceinfo.stage_len = self.stages[select_stage].length.parse().unwrap();
+        }
 
-        raceinfo
+        if !self.fixed_weather {
+            self.raceinfo.weather = select_weather as u32;
+            self.raceinfo.wetness = select_wetness as u32;
+            self.raceinfo.skytype = skytype;
+            self.raceinfo.skytype_id = select_skytype as u32;
+        }
+
+        if !self.fixed_car {
+            self.raceinfo.car_fixed = false;
+            self.raceinfo.car = self.cars[select_car].name.clone();
+            self.raceinfo.car_id = self.cars[select_car].id.parse().unwrap();
+        }
+        
+        if !self.fixed_damage {
+            self.raceinfo.damage = select_damage as u32;
+        }
+
+        self.raceinfo.clone()
     }
 }

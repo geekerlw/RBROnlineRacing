@@ -86,6 +86,8 @@ impl RBRGame {
             let track_load_state = RBR_ReadTrackLoadState();
             if game_mode == 0x01 && start_count < 0f32 {
                 state = RaceState::RaceRunning;
+            } else if game_mode == 0x05 {
+                state = RaceState::RaceLoading;
             } else if game_mode == 0x0A && track_load_state == 0x08 && start_count == 7f32 {
                 state = RaceState::RaceLoaded;
             } else if game_mode == 0x0C {

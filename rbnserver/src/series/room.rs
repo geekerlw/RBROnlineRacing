@@ -230,6 +230,10 @@ impl RaceRoom {
     }
 
     pub fn notify_all_players_race_data(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+
         self.sort_players_by_progress();
         let results = self.get_race_progress();
         let players = self.players.clone();
@@ -241,6 +245,10 @@ impl RaceRoom {
     }
 
     pub fn notify_all_players_race_result(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+
         self.sort_players_by_time();
         let results = self.get_race_result();
         let players = self.players.clone();
