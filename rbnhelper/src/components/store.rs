@@ -6,9 +6,9 @@ use crate::game::rbr::RBRGame;
 
 #[derive(Default, Clone)]
 pub struct RacingStore {
-    pub server_addr: String,
-    pub server_port: u16,
-    pub meta_port: u16,
+    server_addr: String,
+    server_port: u16,
+    meta_port: u16,
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,

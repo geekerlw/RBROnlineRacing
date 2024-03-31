@@ -11,6 +11,8 @@ use crate::game::hacker::*;
 use crate::game::rbr::RBRGame;
 use crate::components::store::RacingStore;
 use crate::overlay::copyright::CopyRight;
+use crate::overlay::news::RaceNews;
+use crate::overlay::scoreboard::ScoreBoard;
 use crate::overlay::Overlay;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -55,9 +57,12 @@ impl RBNHelper {
         self.store.init();
         self.load_dashboard_config();
 
+        self.overlays.push(Box::new(CopyRight::default()));
+        self.overlays.push(Box::new(ScoreBoard::default()));
+        self.overlays.push(Box::new(RaceNews::default()));
+
         let window_width = unsafe { RBR_GetD3dWindowWidth() };
         let window_height = unsafe { RBR_GetD3dWindowHeight() };
-        self.overlays.push(Box::new(CopyRight::default()));
         for overlay in &mut self.overlays {
             overlay.init(window_width, window_height);
         }
@@ -100,7 +105,7 @@ impl RBNHelper {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {
                 InnerMsg::MsgUserLogined(token) => {
-                    info!("User Logined RBN Server [{}] success.", self.store.server_addr);
+                    info!("User Logined RBN Server [{}] success.", self.store.get_http_uri());
                     self.store.user_token = token;
                     let (tx, rx) = channel::<TaskMsg>(16);
                     self.backend.init(&self.store);
@@ -126,6 +131,9 @@ impl RBNHelper {
         if last_menu == 0 && menu == 3 {
             self.join_race(&self.race_name.clone());
             self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
+            self.overlays.iter_mut().for_each(|x| {
+                x.update(&self.store);
+            });
         }
 
         if last_menu == 3 && menu == 0 {

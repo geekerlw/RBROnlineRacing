@@ -137,7 +137,7 @@ impl Series for Daily {
 impl Daily {
     pub fn init(mut self) -> Self {
         self.generate_next_stage();
-        self.trigger_next_stage(10);
+        self.trigger_next_stage(2 * 60);
         self
     }
 
@@ -145,6 +145,7 @@ impl Daily {
         self.room.info = RaceRandomer::build()
             .with_name("Daily Challenge".to_string())
             .with_owner("Lw_Ziye".to_string())
+            .fixed_stage("Lyon - Gerland".to_string()) // for test.
             .fixed_car("Hyundai i20 Coupe WRC 2021".to_string())
             .fixed_damage(3)
             .random();
@@ -154,8 +155,10 @@ impl Daily {
     pub fn trigger_next_stage(&mut self, timeout: u64) {
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            tokio::time::sleep_until(Instant::now() + Duration::from_secs(timeout)).await;
-            tx.send(DailyMsg::MsgNextStage).await.unwrap();
+            loop {
+                tokio::time::sleep_until(Instant::now() + Duration::from_secs(timeout)).await;
+                tx.send(DailyMsg::MsgNextStage).await.unwrap();
+            }
         });
     }
 
@@ -239,7 +242,6 @@ impl Daily {
             RoomRaceState::RoomRaceEnd => {
                 room.race_state = RoomRaceState::RoomRaceInit;
                 self.generate_next_stage();
-                self.trigger_next_stage(60);
             }
             _ => {}
         }

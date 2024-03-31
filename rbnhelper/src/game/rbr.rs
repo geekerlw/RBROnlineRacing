@@ -3,7 +3,7 @@ use std::ffi::CString;
 use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceState};
 use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress, MetaRaceResult};
 use ini::Ini;
-use rbnproto::rsfdata::{RBRRaceData, RBRRaceSetting};
+use rbnproto::rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting};
 use super::hacker::*;
 
 #[derive(Debug, Default)]
@@ -90,7 +90,7 @@ impl RBRGame {
                 state = RaceState::RaceLoading;
             } else if game_mode == 0x0A && track_load_state == 0x08 && start_count == 7f32 {
                 state = RaceState::RaceLoaded;
-            } else if game_mode == 0x0C {
+            } else if game_mode == 0x09 {
                 state = RaceState::RaceFinished;
             }
         };
@@ -116,8 +116,9 @@ impl RBRGame {
         unsafe { RBR_FeedRaceData(racedata) };
     }
 
-    pub fn show_race_result(&mut self, _result: &Vec<MetaRaceResult>) {
-
+    pub fn feed_race_result(&mut self, result: &Vec<MetaRaceResult>) {
+        let raceresult = RBRRaceResult::from_result(result);
+        unsafe { RBR_FeedRaceResult(raceresult) };
     }
 
     pub fn fast_set_race_stage(&mut self, stage_id: &u32) {

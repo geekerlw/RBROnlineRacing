@@ -1,5 +1,5 @@
 use libc::{c_char, c_void};
-use rbnproto::rsfdata::{RBRRaceData, RBRRaceSetting};
+use rbnproto::rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting};
 
 #[link(name = "RBRHacker", kind = "static")]
 extern "C" {
@@ -23,6 +23,7 @@ extern "C" {
     pub fn RBR_CfgProgressBarPos(posx: u16, posy: u16);
     pub fn RBR_CfgProgressBarStyle(ProgressBarBackColor: *const c_char, ProgressBarSplitColor: *const c_char, ProgressBarPointerColor: *const c_char);
     pub fn RBR_CfgProfileStyle(UserColor1: *const c_char, UserColor2: *const c_char);
+    pub fn RBR_DrawTextOverRsf(x: i16, y: i16, color: u32, text: *const c_char);
     pub fn RBR_DrawTextOverRsfMain(x: i16, y: i16, color: u32, text: *const c_char);
     //pub fn RBR_DrawTextAnyway(x: i16, y: i16, color: u32, text: *const c_char);
 
@@ -33,6 +34,7 @@ extern "C" {
     pub fn RBR_LoadRace();
     pub fn RBR_StartRace();
     pub fn RBR_FeedRaceData(racedata: RBRRaceData);
+    pub fn RBR_FeedRaceResult(raceresult: RBRRaceResult);
 
     /*
      * Reading memory functions.

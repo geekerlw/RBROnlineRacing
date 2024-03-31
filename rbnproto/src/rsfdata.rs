@@ -1,6 +1,6 @@
 use libc::{c_uchar, c_float, c_uint};
 use crate::httpapi::{RaceInfo, RaceConfig};
-use crate::metaapi::MetaRaceProgress;
+use crate::metaapi::{MetaRaceProgress, MetaRaceResult};
 use serde::{Serialize, Deserialize};
 use std::mem::size_of;
 
@@ -191,6 +191,65 @@ impl RBRRaceData {
         unsafe {
             let ptr = &self as *const RBRRaceData as *const u8;
             std::ptr::copy(ptr, bytes.as_mut_ptr(), size_of::<RBRRaceData>());
+        };
+        bytes
+    }
+}
+
+#[derive(Default)]
+#[repr(C, packed)]
+pub struct RBRRaceResultItem {
+    pub name: [c_uchar; 32],
+    pub racecar: [c_uchar; 32],
+    pub splittime1: f32,
+    pub splittime2: f32,
+    pub finishtime: f32,
+    pub difftime: f32,
+    pub score: i32,
+}
+
+#[derive(Default)]
+#[repr(C, packed)]
+pub struct RBRRaceResult {
+    pub external: c_uint,
+    pub count: c_uint,
+    pub data: [RBRRaceResultItem; 8],
+}
+
+impl RBRRaceResult {
+    pub fn from_result(result: &Vec<MetaRaceResult>) -> Self {
+        let mut raceresult = RBRRaceResult::default();
+        raceresult.external = 1;
+        for (index, item) in result.iter().enumerate() {
+            if index >= 8 {
+                break;
+            }
+
+            raceresult.count += 1;
+            let bytes = item.profile_name.as_bytes();
+            for i in 0..bytes.len() {
+                raceresult.data[index].name[i] = bytes[i];
+            }
+
+            let bytes = item.racecar.as_bytes();
+            for i in 0..bytes.len() {
+                raceresult.data[index].racecar[i] = bytes[i];
+            }
+
+            raceresult.data[index].splittime1 = item.splittime1.clone();
+            raceresult.data[index].splittime2 = item.splittime2.clone();
+            raceresult.data[index].finishtime = item.finishtime.clone();
+            raceresult.data[index].difftime = item.difftime.clone();
+            raceresult.data[index].score = 30;
+        }
+        raceresult
+    }
+
+    pub fn as_bytes(self) -> [u8; size_of::<RBRRaceResult>()] {
+        let mut bytes = [0; size_of::<RBRRaceResult>()];
+        unsafe {
+            let ptr = &self as *const RBRRaceResult as *const u8;
+            std::ptr::copy(ptr, bytes.as_mut_ptr(), size_of::<RBRRaceResult>());
         };
         bytes
     }

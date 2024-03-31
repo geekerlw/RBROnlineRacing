@@ -148,7 +148,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
         DataFormat::FmtSyncRaceResult => {
             let result: Vec<MetaRaceResult> = bincode::deserialize(pack_data).unwrap();
-            RBRGame::default().show_race_result(&result);
+            RBRGame::default().feed_race_result(&result);
         }
         _ => {}
     }
