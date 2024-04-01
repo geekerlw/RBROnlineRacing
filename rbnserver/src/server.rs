@@ -1,3 +1,4 @@
+use log::error;
 use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserQuery};
 use rbnproto::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
 use rbnproto::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
@@ -10,6 +11,7 @@ use crate::series::customize::Customize;
 use crate::series::daily::Daily;
 use crate::series::Series;
 use std::collections::HashMap;
+use std::process::exit;
 use std::sync::Arc;
 
 #[derive(Default)]
@@ -20,8 +22,17 @@ pub struct RacingServer {
 
 impl RacingServer {
     pub fn init(mut self) -> Self {
+        self.check_environment();
         self.races.insert("Daily Challenge".to_string(), Box::new(Daily::default().init()));
         self
+    }
+
+    pub fn check_environment(&mut self) {
+        let path = std::env::current_exe().unwrap().parent().unwrap().join("rsfdata");
+        if !path.exists() || !path.is_dir() {
+            error!("Fatal Error, Make sure rsfdata directory is exists in your app's running path.");
+            exit(1);
+        }
     }
 
     pub fn is_race_exist(&mut self, name: &String) -> bool {
