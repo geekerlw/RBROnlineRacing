@@ -8,7 +8,7 @@ use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, OnceCell};
 
 use crate::components::player::OggPlayer;
 use crate::components::store::RacingStore;
@@ -226,6 +226,7 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
     let user_token = token.clone();
     let room_name = room.clone();
     tokio::spawn(async move {
+        let once_finished: OnceCell<()> = OnceCell::new();
         loop {
             let state = rbr.get_race_state();
             match state {
@@ -238,10 +239,14 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
                     break;
                 },
                 RaceState::RaceRetired | RaceState::RaceFinished => {
-                    let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: state.clone()};
-                    let body = bincode::serialize(&update).unwrap();
-                    let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
-                    writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
+                    once_finished.get_or_init(|| {
+                        async {
+                            let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: state.clone()};
+                            let body = bincode::serialize(&update).unwrap();
+                            let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+                            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
+                        }
+                    }).await;
                 },
                 RaceState::RaceRunning => {
                     let mut data = rbr.get_race_data();

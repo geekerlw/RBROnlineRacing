@@ -145,8 +145,8 @@ impl Daily {
         self.room.info = RaceRandomer::build()
             .with_name("Daily Challenge".to_string())
             .with_owner("Lw_Ziye".to_string())
-            .fixed_stage("Lyon - Gerland".to_string()) // for test.
-            .fixed_car("Hyundai i20 Coupe WRC 2021".to_string())
+            // .fixed_stage("Lyon - Gerland".to_string()) // for test.
+            // .fixed_car("Hyundai i20 Coupe WRC 2021".to_string()) // for test.
             .fixed_damage(3)
             .random();
         info!("next race: {:?}", &self.room.info);
