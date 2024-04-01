@@ -229,12 +229,19 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
         loop {
             let state = rbr.get_race_state();
             match state {
-                RaceState::RaceRetired | RaceState::RaceFinished => {
+                RaceState::RaceExitMenu => {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await; // give some time to execute exit to menu state.
                     let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: state.clone()};
                     let body = bincode::serialize(&update).unwrap();
                     let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
                     writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
                     break;
+                },
+                RaceState::RaceRetired | RaceState::RaceFinished => {
+                    let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: state.clone()};
+                    let body = bincode::serialize(&update).unwrap();
+                    let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();
+                    writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
                 },
                 RaceState::RaceRunning => {
                     let mut data = rbr.get_race_data();

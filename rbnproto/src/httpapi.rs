@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum RaceState {
     #[default]
     RaceDefault,
@@ -13,6 +13,7 @@ pub enum RaceState {
     RaceRunning,
     RaceRetired,
     RaceFinished,
+    RaceExitMenu,
     RaceError(String),
 }
 

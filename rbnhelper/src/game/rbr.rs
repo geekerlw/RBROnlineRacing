@@ -92,6 +92,8 @@ impl RBRGame {
                 state = RaceState::RaceLoaded;
             } else if game_mode == 0x09 {
                 state = RaceState::RaceFinished;
+            } else if game_mode == 0x0C {
+                state = RaceState::RaceExitMenu;
             }
         };
         state

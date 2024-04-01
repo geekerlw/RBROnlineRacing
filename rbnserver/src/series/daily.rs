@@ -237,7 +237,12 @@ impl Daily {
             }
             RoomRaceState::RoomRaceFinished => {
                 room.notify_all_players_race_result();
-                room.race_state = RoomRaceState::RoomRaceEnd;
+                room.race_state = RoomRaceState::RoomRaceExiting;
+            }
+            RoomRaceState::RoomRaceExiting => {
+                if room.is_all_players_exitmenu() {
+                    room.race_state = RoomRaceState::RoomRaceEnd;
+                }
             }
             RoomRaceState::RoomRaceEnd => {
                 room.race_state = RoomRaceState::RoomRaceInit;

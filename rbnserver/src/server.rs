@@ -38,7 +38,7 @@ impl RacingServer {
         }
     }
 
-    pub fn force_leave_room(&mut self, token: &Uuid) {
+    pub fn force_leave_race(&mut self, token: &Uuid) {
         for (_, race) in self.races.iter_mut() {
             race.leave(&token.to_string());
         }
@@ -50,7 +50,7 @@ impl RacingServer {
         }
 
         if let Some(token) = &self.lobby.get_token_by_name(user.name.clone()) {
-            self.force_leave_room(token);
+            self.force_leave_race(token);
             return Some(token.to_string());
         }
 
@@ -160,7 +160,7 @@ impl RacingServer {
         }
 
         if let Ok(token) = Uuid::parse_str(&create.token.as_str()) {
-            self.force_leave_room(&token);
+            self.force_leave_race(&token);
             if let Some(player) = self.lobby.get_player(token) {
                 let mut raceroom = Customize::default();
                 raceroom.set_limit(8);

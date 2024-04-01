@@ -170,6 +170,12 @@ impl Customize {
         let room = &mut self.room;
         match room.race_state {
             RoomRaceState::RoomRaceBegin => {
+                info!("notify prepare game: {}", room.info.name);
+                room.reset_all_players_state();
+                room.notify_all_players_prepare();
+                room.race_state = RoomRaceState::RoomRacePrepare;
+            }
+            RoomRaceState::RoomRacePrepare => {
                 if room.is_all_players_ready() {
                     room.race_state = RoomRaceState::RoomRaceReady;
                 }
@@ -207,7 +213,12 @@ impl Customize {
             }
             RoomRaceState::RoomRaceFinished => {
                 room.notify_all_players_race_result();
-                room.race_state = RoomRaceState::RoomRaceEnd;
+                room.race_state = RoomRaceState::RoomRaceExiting;
+            }
+            RoomRaceState::RoomRaceExiting => {
+                if room.is_all_players_exitmenu() {
+                    room.race_state = RoomRaceState::RoomRaceEnd;
+                }
             }
             RoomRaceState::RoomRaceEnd => {
                 room.race_state = RoomRaceState::RoomRaceInit;

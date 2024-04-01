@@ -16,6 +16,7 @@ pub enum RoomRaceState {
     RoomRaceStarted,
     RoomRaceRunning,
     RoomRaceFinished,
+    RoomRaceExiting,
     RoomRaceEnd,
 }
 
@@ -143,6 +144,15 @@ impl RaceRoom {
         self.players.iter().all(|x| {
             match x.state {
                 RaceState::RaceRetired | RaceState::RaceFinished => true,
+                _ => false,
+            }
+        })
+    }
+
+    pub fn is_all_players_exitmenu(&mut self) -> bool {
+        self.players.iter().all(|x| {
+            match x.state {
+                RaceState::RaceExitMenu => true,
                 _ => false,
             }
         })
