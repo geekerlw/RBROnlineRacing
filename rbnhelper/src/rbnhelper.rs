@@ -96,7 +96,7 @@ impl RBNHelper {
 
     fn load_dashboard_config(&mut self) {
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
-            let conf_path = game_path.join("Plugins").join("RBNHelper").join("RBRDashBoard.ini");
+            let conf_path = game_path.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
             RBRGame::default().cfg_dashboard_style(conf_path);
         }
     }

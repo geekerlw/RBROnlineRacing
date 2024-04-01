@@ -1,5 +1,4 @@
 use std::env;
-use ini::Ini;
 use log::info;
 
 use crate::game::rbr::RBRGame;
@@ -26,33 +25,18 @@ impl RacingStore {
     }
 
     pub fn load_config(&mut self) {
-        if let Some(game_root) = env::current_exe().unwrap().parent() {
-            let conf_file = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
-            if let Ok(conf) = Ini::load_from_file(conf_file) {
-                self.server_addr = conf.get_from_or(Some("server"), "address", "127.0.0.1").to_string();
-                self.server_port = conf.get_from_or(Some("server"), "http_port", "23555").parse::<u16>().unwrap();
-                self.meta_port = conf.get_from_or(Some("server"), "data_port", "23556").parse::<u16>().unwrap();
-
-                self.user_name = RBRGame::default().get_user().to_string();
-                info!("Parsed game user [{}] success", self.user_name);
-                self.user_passwd = String::from("simrallycn");
-            }
+        if cfg!(debug_assertions) {
+            self.server_addr = String::from("127.0.0.1");
+        } else {
+            self.server_addr = String::from("8.137.36.254");
         }
-    }
+        self.server_port = 23555;
+        self.meta_port = 23556;
 
-    #[allow(dead_code)]
-    pub fn save_config(&mut self) {
-        if let Some(game_root) = env::current_exe().unwrap().parent() {
-            let mut conf = Ini::new();
-            conf.with_section(Some("server"))
-                .set("address", &self.server_addr)
-                .set("http_port", self.server_port.to_string())
-                .set("data_port", self.meta_port.to_string());
+        self.user_name = RBRGame::default().get_user().to_string();
+        self.user_passwd = String::from("simrallycn");
 
-
-            let conf_file = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
-            conf.write_to_file(conf_file).unwrap();
-        }
+        info!("Parsed game user [{}] success", self.user_name);
     }
 
     pub fn get_http_uri(&self) -> String {
