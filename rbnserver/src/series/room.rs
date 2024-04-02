@@ -143,7 +143,7 @@ impl RaceRoom {
     pub fn is_all_players_finish(&mut self) -> bool {
         self.players.iter().all(|x| {
             match x.state {
-                RaceState::RaceRetired | RaceState::RaceFinished => true,
+                RaceState::RaceRetired | RaceState::RaceFinished | RaceState::RaceExitMenu => true,
                 _ => false,
             }
         })
