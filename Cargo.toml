@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "client",
-    "server",
+    "rbnclient",
+    "rbnserver",
+    "rbnhelper",
 ]
 resolver = "2"
