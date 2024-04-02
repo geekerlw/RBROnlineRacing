@@ -4,6 +4,7 @@ use tokio::time::{Instant, Duration};
 use crate::lobby::RaceLobby;
 use crate::player::{LobbyPlayer, RacePlayer};
 use log::info;
+use std::str::FromStr;
 use chrono::Local;
 use super::randomer::RaceRandomer;
 use super::room::{RaceRoom, RoomRaceState};
@@ -137,7 +138,7 @@ impl Series for Daily {
 impl Daily {
     pub fn init(mut self) -> Self {
         self.generate_next_stage();
-        self.trigger_next_stage(2 * 60);
+        self.trigger_next_stage();
         self
     }
 
@@ -146,18 +147,24 @@ impl Daily {
             .with_name("Daily Challenge".to_string())
             .with_owner("Lw_Ziye".to_string())
             // .fixed_stage("Lyon - Gerland".to_string()) // for test.
-            // .fixed_car("Hyundai i20 Coupe WRC 2021".to_string()) // for test.
+            .fixed_car("Hyundai i20 Coupe WRC 2021".to_string()) // for test.
             .fixed_damage(3)
             .random();
         info!("next race: {:?}", &self.room.info);
     }
 
-    pub fn trigger_next_stage(&mut self, timeout: u64) {
+    pub fn trigger_next_stage(&mut self) {
         let tx = self.tx.clone();
         tokio::spawn(async move {
+            let scheduler = cron::Schedule::from_str("0 0/2 * * * *").unwrap();
             loop {
-                tokio::time::sleep_until(Instant::now() + Duration::from_secs(timeout)).await;
-                tx.send(DailyMsg::MsgNextStage).await.unwrap();
+                if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
+                    let duration = next_time - Local::now();
+                    info!("next time to start next stage [{}], remain [{}]", next_time, duration);
+                    tokio::time::sleep_until(Instant::now() + Duration::from_secs(duration.num_seconds() as u64)).await;
+                    tx.send(DailyMsg::MsgNextStage).await.unwrap();
+                }
+                tokio::time::sleep(Duration::from_secs(10)).await;
             }
         });
     }
