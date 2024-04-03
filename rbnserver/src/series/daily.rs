@@ -147,7 +147,7 @@ impl Daily {
             .with_name("Daily Challenge".to_string())
             .with_owner("Lw_Ziye".to_string())
             // .fixed_stage("Lyon - Gerland".to_string()) // for test.
-            .fixed_car("Hyundai i20 Coupe WRC 2021".to_string()) // for test.
+            // .fixed_car("Hyundai i20 Coupe WRC 2021".to_string()) // for test.
             .fixed_damage(3)
             .random();
         info!("next race: {:?}", &self.room.info);
@@ -156,7 +156,7 @@ impl Daily {
     pub fn trigger_next_stage(&mut self) {
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            let scheduler = cron::Schedule::from_str("0 0/2 * * * *").unwrap();
+            let scheduler = cron::Schedule::from_str("0 0/5 * * * *").unwrap();
             loop {
                 if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
                     let duration = next_time - Local::now();
@@ -173,8 +173,9 @@ impl Daily {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {
                 DailyMsg::MsgNextStage => {
-                    info!("Timed trigger to start stage at [{}]", Local::now());
-                    self.room.set_racing_started();
+                    if self.room.set_racing_started() {
+                        info!("Timed trigger to start stage at [{}]", Local::now());
+                    }
                 }
             }
         }

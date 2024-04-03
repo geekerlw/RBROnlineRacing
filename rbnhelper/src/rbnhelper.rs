@@ -153,14 +153,19 @@ impl RBNHelper {
                 let res = reqwest::Client::new().post(join_url).json(&race_join).send().await.unwrap();
                 if res.status() == StatusCode::OK {
                     let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
-                    if res.status() == StatusCode::OK {
-                        let text = res.text().await.unwrap();
-                        let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
-                        RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
-                        RBRGame::default().fast_set_race_car(&raceinfo.car_id);
-                        RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
+                    match res.status() {
+                        StatusCode::OK => {
+                            let text = res.text().await.unwrap();
+                            let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
+                            RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
+                            RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
+                            OggPlayer::open("join.ogg").play();
+                        },
+                        _ => {
+                            OggPlayer::open("join_failed.ogg").play();
+                        }
                     }
-                    OggPlayer::open("join.ogg").play();
+                    
                 }
             });
         }

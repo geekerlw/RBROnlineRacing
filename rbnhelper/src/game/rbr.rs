@@ -133,6 +133,7 @@ impl RBRGame {
         }
     }
 
+    #[allow(dead_code)]
     pub fn fast_set_race_car(&mut self, car_id: &u32) {
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let recent_filepath = game_path.join("rsfdata").join("cache").join("recent.ini");
