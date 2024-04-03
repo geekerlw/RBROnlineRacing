@@ -5,7 +5,7 @@ use log::info;
 use simplelog::WriteLogger;
 use game::hacker::*;
 use lazy_static::lazy_static;
-use std::sync::Mutex;
+use std::{ffi::CString, sync::Mutex};
 
 mod components;
 mod game;
@@ -46,11 +46,14 @@ extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut c_void) -> *mut c_void {
     if let Some(game_path) = std::env::current_exe().unwrap().parent() {
         let plugin_path = game_path.join("Plugins").join("RBNHelper");
         let log_file = plugin_path.join("rbnhelper.log");
+        let hacker_file = plugin_path.join("RBRHackLayer.log");
         if !plugin_path.exists() {
             std::fs::create_dir(plugin_path).unwrap();
         }
         WriteLogger::init(log::LevelFilter::Info, 
             simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();
+        let hacker_logfile = CString::new(hacker_file.into_os_string().into_string().unwrap()).expect("Failed to construct hacker layer log filepath.");
+        unsafe {RBR_InitLogger(hacker_logfile.as_ptr())};
     }
 
     info!("Create Plugin RBN Helper [{}] with arg: {:?}", std::env!("CARGO_PKG_VERSION"), rbrgame);
