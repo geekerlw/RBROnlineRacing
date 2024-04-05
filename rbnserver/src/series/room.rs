@@ -226,7 +226,7 @@ impl RaceRoom {
     pub fn get_race_result(&mut self) -> Vec::<MetaRaceResult> {
         let mut results = Vec::<MetaRaceResult>::new();
         let leader = self.players.first().unwrap().clone();
-        for player in &self.players {
+        for (i, player) in self.players.iter().enumerate() {
             let mut result = MetaRaceResult::default();
             result.profile_name = player.profile_name.clone();
             result.racecar = player.race_cfg.car.clone();
@@ -234,6 +234,11 @@ impl RaceRoom {
             result.splittime2 = player.race_data.splittime2;
             result.finishtime = player.race_data.finishtime;
             result.difftime = player.race_data.finishtime - leader.race_data.finishtime;
+            if result.finishtime == 3600.0f32 { // if not complete race, default reduce 2 score.
+                result.score = -2i32;
+            } else {
+                result.score = (self.players.len() - i) as i32;
+            }
             results.push(result);
         }
         results

@@ -289,7 +289,7 @@ impl RBRRaceResult {
             raceresult.data[index].splittime2 = item.splittime2.clone();
             raceresult.data[index].finishtime = item.finishtime.clone();
             raceresult.data[index].difftime = item.difftime.clone();
-            raceresult.data[index].score = 30;
+            raceresult.data[index].score = item.score.clone();
         }
         raceresult
     }

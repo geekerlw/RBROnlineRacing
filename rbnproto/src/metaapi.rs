@@ -97,4 +97,5 @@ pub struct MetaRaceResult {
     pub splittime2: f32,
     pub finishtime: f32,
     pub difftime: f32,
+    pub score: i32,
 }
