@@ -1,5 +1,5 @@
-use std::env;
 use log::info;
+use rbnproto::httpapi::UserScore;
 
 use crate::game::rbr::RBRGame;
 
@@ -12,11 +12,12 @@ pub struct RacingStore {
     pub user_passwd: String,
     pub user_token: String,
     pub brief_news: String,
+    pub scoreinfo: UserScore,
 }
 
 impl RacingStore {
     pub fn init(&mut self) {
-        if let Some(game_root) = env::current_exe().unwrap().parent() {
+        if let Some(game_root) = std::env::current_exe().unwrap().parent() {
             let conf_path = game_root.join("Plugins").join("RBNHelper").as_path().to_owned();
             if !conf_path.exists() {
                 std::fs::create_dir(conf_path).unwrap();
@@ -36,6 +37,8 @@ impl RacingStore {
 
         self.user_name = RBRGame::default().get_user().to_string();
         self.user_passwd = String::from("simrallycn");
+        self.scoreinfo.license = "Rookie".to_string();
+        self.scoreinfo.score = 0;
 
         info!("Parsed game user [{}] success", self.user_name);
     }

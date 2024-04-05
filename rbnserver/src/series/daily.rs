@@ -3,7 +3,7 @@ use rbnproto::metaapi::{MetaRaceData, RaceJoin};
 use tokio::time::{Instant, Duration};
 use crate::lobby::RaceLobby;
 use crate::player::{LobbyPlayer, RacePlayer};
-use log::info;
+use log::{info, trace};
 use std::str::FromStr;
 use chrono::Local;
 use super::randomer::RaceRandomer;
@@ -173,7 +173,7 @@ impl Daily {
             loop {
                 if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
                     let duration = next_time - Local::now();
-                    info!("next time to start next stage [{}], remain [{}]", next_time, duration);
+                    trace!("next time to start next stage [{}], remain [{}]", next_time, duration);
                     tokio::time::sleep_until(Instant::now() + Duration::from_secs(duration.num_seconds() as u64)).await;
                     tx.send(DailyMsg::MsgNextStage).await.unwrap();
                 }

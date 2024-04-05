@@ -1,5 +1,5 @@
 use log::error;
-use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserQuery};
+use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserQuery, UserScore};
 use rbnproto::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
 use rbnproto::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
 use tokio::net::tcp::OwnedWriteHalf;
@@ -82,6 +82,16 @@ impl RacingServer {
             }
         }
         return false;
+    }
+
+    pub async fn get_user_score(&mut self, tokenstr: &String) -> Option<UserScore> {
+        if let Ok(token) = Uuid::parse_str(tokenstr) {
+            if let Some(player) = self.lobby.get_player(token) {
+                return db::RaceDB::default().query_user_score(player).await;
+            }
+        }
+
+        None
     }
 
     pub fn get_race_news(&mut self) -> String {

@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use rbnproto::metaapi::MetaRaceResult;
+use rbnproto::{httpapi::UserScore, metaapi::MetaRaceResult};
 use sqlx::SqlitePool;
 
 use crate::player::LobbyPlayer;
@@ -37,8 +37,39 @@ impl RaceDB {
         sqlx::migrate!().run(&pool).await.unwrap();
     }
 
+    fn get_license(&mut self, score: i32) -> String {
+        let mut license = String::from("Rookie");
+        if score < 200 {
+            license = "Rookie".to_string();
+        } else if 200 <= score && score < 400 {
+            license = "Amateur".to_string();
+        } else if 400 <= score && score < 600 {
+            license = "Master".to_string();
+        } else if 600 <= score && score < 800 {
+            license = "Profession".to_string();
+        } else if 800 < score {
+            license = "Genius".to_string();
+        }
+
+        license
+    }
+
     pub async fn connect(&mut self) -> SqlitePool {
         SqlitePool::connect(self.dbfile.to_str().unwrap()).await.unwrap()
+    }
+
+    pub async fn query_user_score(&mut self, player: &LobbyPlayer) -> Option<UserScore> {
+        let conn = self.connect().await;
+        let user: Option<User> = sqlx::query_as("SELECT * FROM user WHERE name = ?")
+        .bind(&player.profile_name)
+        .fetch_optional(&conn)
+        .await.unwrap_or_default();
+
+        if let Some(user) = user {
+            return Some(UserScore { license: user.license.clone(), score: user.score.clone() });
+        }
+
+        None
     }
 
     pub async fn on_user_login(&mut self, player: &LobbyPlayer) {
@@ -66,8 +97,10 @@ impl RaceDB {
 
             if let Some(user) = user {
                 let new_score = user.score + result.score;
+                let new_license = self.get_license(new_score);
 
-                sqlx::query("update user SET score = ? where id = ?")
+                sqlx::query("update user SET license = ?, score = ? where id = ?")
+                .bind(new_license)
                 .bind(new_score)
                 .bind(&user.id)
                 .execute(&conn)

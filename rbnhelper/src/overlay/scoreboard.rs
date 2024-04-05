@@ -5,7 +5,6 @@ use super::Overlay;
 pub struct ScoreBoard {
     posx: i16,
     posy: i16,
-    content: CString,
 }
 
 impl Default for ScoreBoard {
@@ -13,7 +12,6 @@ impl Default for ScoreBoard {
         Self {
             posx: 1800,
             posy: 5,
-            content: CString::new("Rookie 666").expect("Failed to init copyright."),
         }
     }
 }
@@ -24,11 +22,8 @@ impl Overlay for ScoreBoard {
         self.posy = 5;
     }
 
-    fn update(&mut self, _store: &RacingStore) {
-
-    }
-
-    fn draw_ui(&mut self) {
-        unsafe { RBR_DrawTextOverRsf(self.posx, self.posy, 0xFFFFFFFF, self.content.as_ptr()) };
+    fn draw_ui(&mut self, store: &RacingStore) {
+        let text = CString::new(format!("{} {}", store.scoreinfo.license, store.scoreinfo.score)).unwrap_or_default();
+        unsafe { RBR_DrawTextOverRsf(self.posx, self.posy, 0xFFFFFFFF, text.as_ptr()) };
     }
 }

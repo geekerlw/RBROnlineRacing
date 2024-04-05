@@ -50,6 +50,7 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_api_version)
         .service(handle_http_user_login)
         .service(handle_http_user_logout)
+        .service(handle_http_user_fetch_score)
         .service(handle_http_race_fetch_news)
         .service(handle_http_race_fetch_list)
         .service(handle_http_race_get_info)
@@ -125,6 +126,19 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
         HttpResponse::Ok().body("Logout successful!")
     } else {
         HttpResponse::NotAcceptable().body("Logout failed!")
+    }
+}
+
+#[actix_web::get("/api/user/score")]
+async fn handle_http_user_fetch_score(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserQuery>) -> HttpResponse {
+    let query = body.into_inner();
+    trace!("Received user query user score: {:?}", query);
+
+    let mut server = data.lock().await;
+    if let Some(response) = server.get_user_score(&query.token).await {
+        HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
+    } else {
+        HttpResponse::NoContent().body("Get Race info failed!")
     }
 }
 

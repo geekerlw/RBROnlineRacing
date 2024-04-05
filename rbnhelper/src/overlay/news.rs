@@ -1,11 +1,11 @@
 use std::ffi::CString;
+
 use crate::{components::store::RacingStore, RBR_DrawTextOverRsfMain};
 use super::Overlay;
 
 pub struct RaceNews {
     posx: i16,
     posy: i16,
-    content: CString,
 }
 
 impl Default for RaceNews {
@@ -13,7 +13,6 @@ impl Default for RaceNews {
         Self {
             posx: (1920 - 600) / 2,
             posy: 45,
-            content: CString::new("Connect Server Failed.").expect("Failed to init CString."),
         }
     }
 }
@@ -24,11 +23,12 @@ impl Overlay for RaceNews {
         self.posy = 45;
     }
 
-    fn update(&mut self, store: &RacingStore) {
-        self.content = CString::new(store.brief_news.clone()).expect("Failed to init CString.");
-    }
+    fn draw_ui(&mut self, store: &RacingStore) {
+        if store.brief_news.is_empty() {
+            return;
+        }
 
-    fn draw_ui(&mut self) {
-        unsafe { RBR_DrawTextOverRsfMain(self.posx, self.posy, 0xFFFFFFFF, self.content.as_ptr()) };
+        let text = CString::new(store.brief_news.clone()).unwrap_or_default();
+        unsafe { RBR_DrawTextOverRsfMain(self.posx, self.posy, 0xFFFFFFFF, text.as_ptr()) };
     }
 }

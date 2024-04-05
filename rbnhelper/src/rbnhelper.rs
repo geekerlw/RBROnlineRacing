@@ -1,6 +1,6 @@
 use std::vec;
 use log::info;
-use rbnproto::httpapi::{RaceInfo, RaceQuery, UserLogin};
+use rbnproto::httpapi::{RaceInfo, RaceQuery, UserLogin, UserQuery, UserScore};
 use rbnproto::metaapi::{RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
@@ -19,6 +19,7 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 pub enum InnerMsg {
     MsgUserLogined(String),
     MsgUpdateNews(String),
+    MsgUpdateScore(UserScore),
 }
 
 pub struct RBNHelper {
@@ -77,15 +78,9 @@ impl RBNHelper {
         }
     }
 
-    pub fn update_overlays(&mut self) {
-        self.overlays.iter_mut().for_each(|x| {
-            x.update(&self.store);
-        });
-    }
-
     pub fn draw_overlays(&mut self) {
         self.overlays.iter_mut().for_each(|x| {
-            x.draw_ui();
+            x.draw_ui(&self.store);
         });
     }
 
@@ -128,7 +123,9 @@ impl RBNHelper {
                 }
                 InnerMsg::MsgUpdateNews(news) => {
                     self.store.brief_news = news;
-                    self.update_overlays();
+                }
+                InnerMsg::MsgUpdateScore(score) => {
+                    self.store.scoreinfo = score;
                 }
             }
         }
@@ -143,7 +140,7 @@ impl RBNHelper {
         let last_menu = self.rsf_menu;
         self.rsf_menu = menu;
         self.fetch_race_news();
-        self.update_overlays();
+        self.fetch_user_score();
 
         if last_menu == 0 && menu == 3 {
             self.join_race(&self.race_name.clone());
@@ -205,6 +202,22 @@ impl RBNHelper {
                 if res.status() == StatusCode::OK {
                     let news = res.text().await.unwrap();
                     tx.send(InnerMsg::MsgUpdateNews(news)).await.unwrap();
+                }
+            });
+        }
+    }
+
+    pub fn fetch_user_score(&mut self) {
+        if self.is_logined() {
+            let url = self.store.get_http_url("api/user/score");
+            let query = UserQuery { token: self.store.user_token.clone() };
+            let tx = self.tx.clone();
+            tokio::runtime::Runtime::new().unwrap().block_on(async move {
+                let res = reqwest::Client::new().get(&url).json(&query).send().await.unwrap();
+                if res.status() == StatusCode::OK {
+                    let text = res.text().await.unwrap();
+                    let userscore: UserScore = serde_json::from_str(&text).unwrap();
+                    tx.send(InnerMsg::MsgUpdateScore(userscore)).await.unwrap();
                 }
             });
         }

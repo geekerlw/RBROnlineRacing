@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use crate::RBR_DrawTextOverRsfMain;
+use crate::{components::store::RacingStore, RBR_DrawTextOverRsfMain};
 use super::Overlay;
 
 pub struct CopyRight {
@@ -24,7 +24,7 @@ impl Overlay for CopyRight {
         self.posy = height - 60;
     }
 
-    fn draw_ui(&mut self) {
+    fn draw_ui(&mut self, _store: &RacingStore) {
         unsafe { RBR_DrawTextOverRsfMain(self.posx, self.posy, 0xFFFFFFFF, self.content.as_ptr()) };
     }
 }
