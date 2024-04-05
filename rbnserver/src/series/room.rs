@@ -1,6 +1,7 @@
 use rbnproto::httpapi::{RaceInfo, RaceState, RoomState};
 use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
+use crate::db;
 use crate::player::RacePlayer;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -237,7 +238,7 @@ impl RaceRoom {
             if result.finishtime == 3600.0f32 { // if not complete race, default reduce 2 score.
                 result.score = -2i32;
             } else {
-                result.score = (self.players.len() - i) as i32;
+                result.score = (self.players.len() - i) as i32 * 3;
             }
             results.push(result);
         }
@@ -287,6 +288,17 @@ impl RaceRoom {
             for player in players {
                 player.notify_result(&results).await;
             }
+        });
+    }
+
+    pub fn store_all_players_race_result(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+
+        let results = self.get_race_result();
+        tokio::spawn(async move {
+            db::RaceDB::default().on_race_finished(&results).await;
         });
     }
 }

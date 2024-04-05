@@ -12,6 +12,7 @@ use rbnproto::httpapi::{UserLogin, RaceQuery, RaceCreate, UserLogout, RaceInfoUp
 use rbnproto::API_VERSION_STRING;
 use rbnproto::metaapi::{META_HEADER_LEN, RaceUpdate, RaceAccess, RaceJoin, RaceLeave, MetaHeader, DataFormat, MetaRaceData};
 
+mod db;
 mod series;
 mod lobby;
 mod player;
@@ -41,6 +42,7 @@ async fn main() -> std::io::Result<()>{
     let server = Arc::new(Mutex::new(RacingServer::default().init()));
     let data_clone = server.clone();
     let mng_clone = server.clone();
+    db::RaceDB::default().migrate().await;
 
     let http_server = HttpServer::new(move || {
         App::new()
@@ -106,7 +108,7 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     info!("Received user login: {:?}", user);
 
     let mut server = data.lock().await;
-    if let Some(tokenstr) = server.user_login(user) {
+    if let Some(tokenstr) = server.user_login(user).await {
         HttpResponse::Ok().body(tokenstr)
     } else {
         HttpResponse::Unauthorized().body("Login failed!")

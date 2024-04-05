@@ -35,6 +35,7 @@ Step 1: Add following content to the file .gitignore.
 *.user
 *.userosscache
 *.sln.docstates
+*.db
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

@@ -258,6 +258,7 @@ impl Daily {
             }
             RoomRaceState::RoomRaceFinished => {
                 room.notify_all_players_race_result();
+                room.store_all_players_race_result();
                 room.race_state = RoomRaceState::RoomRaceExiting;
             }
             RoomRaceState::RoomRaceExiting => {

@@ -5,6 +5,7 @@ use rbnproto::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::Mutex;
 use uuid::Uuid;
+use crate::db;
 use crate::lobby::RaceLobby;
 use crate::player::LobbyPlayer;
 use crate::series::customize::Customize;
@@ -55,7 +56,7 @@ impl RacingServer {
         }
     }
 
-    pub fn user_login(&mut self, user: UserLogin) -> Option<String> {
+    pub async fn user_login(&mut self, user: UserLogin) -> Option<String> {
         if user.passwd != "simrallycn" {
             return None;
         }
@@ -68,6 +69,7 @@ impl RacingServer {
         let token = Uuid::new_v4();
         let tokenstr = token.to_string();
         let player: LobbyPlayer = LobbyPlayer {tokenstr: token.to_string(), profile_name: user.name};
+        db::RaceDB::default().on_user_login(&player).await;
         self.lobby.push_player(token, player);
         return Some(tokenstr);
     }
