@@ -1,5 +1,5 @@
-use rbnproto::httpapi::{RoomState, RaceState, RaceInfo};
-use rbnproto::metaapi::{RaceCmd, MetaRaceResult, MetaRaceProgress};
+use rbnproto::httpapi::{RaceInfo, RaceState, RoomState};
+use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
 use crate::player::RacePlayer;
 
@@ -237,6 +237,22 @@ impl RaceRoom {
             results.push(result);
         }
         results
+    }
+
+    pub fn notify_all_players_race_state(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+        let mut states = vec![];
+        for player in &self.players {
+            states.push(MetaRaceState {name: player.profile_name.clone(), state: player.state.clone()});
+        }
+        let players = self.players.clone();
+        tokio::spawn(async move {
+            for player in players {
+                player.notify_racestate(&states).await;
+            }
+        });
     }
 
     pub fn notify_all_players_race_data(&mut self) {

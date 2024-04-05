@@ -21,8 +21,9 @@ pub enum DataFormat {
     FmtUpdateState = 2,
     FmtUploadData = 3,
     FmtRaceCommand = 4,
-    FmtSyncRaceData = 5,
-    FmtSyncRaceResult = 6,
+    FmtSyncRaceState = 5,
+    FmtSyncRaceData = 6,
+    FmtSyncRaceResult = 7,
     FmtResponse = 0x8000,
 }
 
@@ -60,6 +61,12 @@ pub static META_HEADER_LEN: usize = 6;
 pub struct MetaHeader {
     pub length: u16,
     pub format: DataFormat,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct MetaRaceState {
+    pub name: String,
+    pub state: RaceState,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

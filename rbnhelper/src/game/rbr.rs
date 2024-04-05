@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 use std::ffi::CString;
 use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceState};
-use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress, MetaRaceResult};
+use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress, MetaRaceResult, MetaRaceState};
 use ini::Ini;
-use rbnproto::rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting};
+use rbnproto::rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting, RBRRaceState};
 use super::hacker::*;
 
 #[derive(Debug, Default)]
@@ -111,6 +111,11 @@ impl RBRGame {
             data.finishtime = RBR_ReadFinishTime();
         }
         data
+    }
+
+    pub fn feed_race_state(&mut self, result: &Vec<MetaRaceState>) {
+        let racestate = RBRRaceState::from_result(result);
+        unsafe { RBR_FeedRaceState(racestate) };
     }
 
     pub fn feed_race_data(&mut self, result: &Vec<MetaRaceProgress>) {

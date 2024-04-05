@@ -1,5 +1,5 @@
 use libc::{c_char, c_void};
-use rbnproto::rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting};
+use rbnproto::rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting, RBRRaceState};
 
 #[link(name = "RBRHacker", kind = "static")]
 extern "C" {
@@ -34,6 +34,7 @@ extern "C" {
     pub fn RBR_CfgRace(racesetting: RBRRaceSetting);
     pub fn RBR_LoadRace();
     pub fn RBR_StartRace();
+    pub fn RBR_FeedRaceState(racestate: RBRRaceState);
     pub fn RBR_FeedRaceData(racedata: RBRRaceData);
     pub fn RBR_FeedRaceResult(raceresult: RBRRaceResult);
 

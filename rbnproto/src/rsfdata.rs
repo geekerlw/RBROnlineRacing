@@ -1,6 +1,6 @@
 use libc::{c_uchar, c_float, c_uint};
 use crate::httpapi::{RaceInfo, RaceConfig};
-use crate::metaapi::{MetaRaceProgress, MetaRaceResult};
+use crate::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState};
 use serde::{Serialize, Deserialize};
 use std::mem::size_of;
 
@@ -145,6 +145,55 @@ impl RBRRaceSetting {
         unsafe {
             let ptr = &self as *const RBRRaceSetting as *const u8;
             std::ptr::copy(ptr, bytes.as_mut_ptr(), size_of::<RBRRaceSetting>());
+        };
+        bytes
+    }
+}
+
+#[derive(Default)]
+#[repr(C, packed)]
+pub struct RBRRaceStateItem {
+    pub name: [c_uchar; 32],
+    pub state: [c_uchar; 32],
+}
+
+#[derive(Default)]
+#[repr(C, packed)]
+pub struct RBRRaceState {
+    pub external: c_uint,
+    pub count: c_uint,
+    pub data: [RBRRaceStateItem; 8],
+}
+
+impl RBRRaceState {
+    pub fn from_result(result: &Vec<MetaRaceState>) -> Self {
+        let mut racestate = RBRRaceState::default();
+        racestate.external = 1;
+        for (index, item) in result.iter().enumerate() {
+            if index >= 8 {
+                break;
+            }
+
+            racestate.count += 1;
+            let bytes = item.name.as_bytes();
+            for i in 0..bytes.len() {
+                racestate.data[index].name[i] = bytes[i];
+            }
+
+            let statestr = format!("{:?}", item.state);
+            let bytes = statestr.as_bytes();
+            for i in 0..bytes.len() {
+                racestate.data[index].state[i] = bytes[i];
+            }
+        }
+        racestate
+    }
+
+    pub fn as_bytes(self) -> [u8; size_of::<RBRRaceState>()] {
+        let mut bytes = [0; size_of::<RBRRaceState>()];
+        unsafe {
+            let ptr = &self as *const RBRRaceState as *const u8;
+            std::ptr::copy(ptr, bytes.as_mut_ptr(), size_of::<RBRRaceState>());
         };
         bytes
     }

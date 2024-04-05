@@ -40,6 +40,7 @@ impl Series for Daily {
     fn access(&mut self, token: &String, writer: std::sync::Arc<tokio::sync::Mutex<tokio::net::tcp::OwnedWriteHalf>>) -> bool {
         if let Some(player) = self.room.get_player(token) {
             player.writer = Some(writer);
+            self.room.notify_all_players_race_state();
             return true;
         }
 
@@ -119,6 +120,7 @@ impl Series for Daily {
     fn update_player_state(&mut self, token: &String, state: RaceState) -> bool {
         if let Some(player) = self.room.get_player(token) {
             player.state = state;
+            self.room.notify_all_players_race_state();
             return true;
         }
         false
@@ -147,20 +149,27 @@ impl Daily {
     }
 
     pub fn generate_next_stage(&mut self) {
-        self.room.info = RaceRandomer::build()
+        let mut randomer = RaceRandomer::build()
             .with_name("Daily Challenge".to_string())
             .with_owner("Lw_Ziye".to_string())
-            // .fixed_stage("Lyon - Gerland".to_string()) // for test.
-            // .fixed_car("Hyundai i20 Coupe WRC 2021".to_string()) // for test.
-            .fixed_damage(3)
-            .random();
+            .fixed_damage(3);
+
+        if cfg!(debug_assertions) {
+            randomer = randomer.fixed_stage("Lyon - Gerland".to_string()).fixed_car("Hyundai i20 Coupe WRC 2021".to_string());
+        }
+
+        self.room.info = randomer.random();
         info!("next race: {:?}", &self.room.info);
     }
 
     pub fn trigger_next_stage(&mut self) {
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            let scheduler = cron::Schedule::from_str("0 0/5 * * * *").unwrap();
+            let mut scheduler = cron::Schedule::from_str("0 0/5 * * * *").unwrap();
+            if cfg!(debug_assertions) {
+                scheduler = cron::Schedule::from_str("0 0/1 * * * *").unwrap();
+            }
+
             loop {
                 if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
                     let duration = next_time - Local::now();

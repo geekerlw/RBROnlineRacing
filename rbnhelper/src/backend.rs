@@ -4,7 +4,7 @@ use tokio::sync::mpsc::{Sender, Receiver};
 use tokio::task::JoinHandle;
 use std::sync::Arc;
 use rbnproto::httpapi::RaceState;
-use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, RaceAccess, RaceCmd, RaceUpdate, META_HEADER_LEN};
+use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceAccess, RaceCmd, RaceUpdate, META_HEADER_LEN};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
@@ -139,6 +139,11 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
                 }
                 _ => {}
             }
+        }
+
+        DataFormat::FmtSyncRaceState => {
+            let state: Vec<MetaRaceState> = bincode::deserialize(pack_data).unwrap();
+            RBRGame::default().feed_race_state(&state);
         }
 
         DataFormat::FmtSyncRaceData => {

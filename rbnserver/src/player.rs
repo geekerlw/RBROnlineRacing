@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use rbnproto::httpapi::{RaceState, RaceConfig};
-use rbnproto::metaapi::{MetaRaceData, RaceCmd, MetaHeader, DataFormat, MetaRaceResult, MetaRaceProgress};
+use rbnproto::httpapi::{RaceConfig, RaceState};
+use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceData, MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
 use uuid::Uuid;
@@ -59,6 +59,14 @@ impl RacePlayer {
     pub async fn notify_user_cmd(&self, cmd: &RaceCmd) {
         let body = bincode::serialize(cmd).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtRaceCommand}).unwrap();
+        if let Some(writer) = &self.writer {
+            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
+        }
+    }
+
+    pub async fn notify_racestate(&self, result: &Vec::<MetaRaceState>) {
+        let body = bincode::serialize(result).unwrap();
+        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceState}).unwrap();
         if let Some(writer) = &self.writer {
             writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
         }
