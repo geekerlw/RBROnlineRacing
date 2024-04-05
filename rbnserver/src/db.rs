@@ -39,15 +39,15 @@ impl RaceDB {
 
     fn get_license(&mut self, score: i32) -> String {
         let mut license = String::from("Rookie");
-        if score < 200 {
+        if score < 500 {
             license = "Rookie".to_string();
-        } else if 200 <= score && score < 400 {
+        } else if 500 <= score && score < 100 {
             license = "Amateur".to_string();
-        } else if 400 <= score && score < 600 {
+        } else if 1000 <= score && score < 1500 {
             license = "Master".to_string();
-        } else if 600 <= score && score < 800 {
+        } else if 1500 <= score && score < 2000 {
             license = "Profession".to_string();
-        } else if 800 < score {
+        } else if 2000 < score {
             license = "Genius".to_string();
         }
 
