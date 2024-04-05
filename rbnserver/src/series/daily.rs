@@ -103,6 +103,10 @@ impl Series for Daily {
         false
     }
 
+    fn get_players_counts(&mut self) -> u32 {
+        self.room.players.len() as u32
+    }
+
     fn get_players_state(&mut self) -> Vec<RaceUserState> {
         let mut states = vec![];
         for player in &self.room.players {

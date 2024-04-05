@@ -82,8 +82,13 @@ impl RacingServer {
         return false;
     }
 
-    pub fn get_race_brief(&mut self) -> String {
-        format!("Total {} races with {} players", self.races.len(), self.lobby.player_count())
+    pub fn get_race_news(&mut self) -> String {
+        let mut count = 0u32;
+        self.races.iter_mut().for_each(|(_, race)| {
+            count += race.get_players_counts();
+        });
+
+        format!("{} players online, enter [Time Trial] or [Practice] to Join Race !!!", count)
     }
 
     pub fn get_race_list(&mut self) -> Option<Vec<RaceBrief>> {

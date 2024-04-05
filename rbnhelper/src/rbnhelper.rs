@@ -18,6 +18,7 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 pub enum InnerMsg {
     MsgUserLogined(String),
+    MsgUpdateNews(String),
 }
 
 pub struct RBNHelper {
@@ -56,7 +57,15 @@ impl RBNHelper {
     pub fn init(&mut self) {
         self.store.init();
         self.load_dashboard_config();
+        self.check_and_login();
+        self.init_overlays();
+    }
 
+    pub fn is_logined(&self) -> bool {
+        !self.store.user_token.is_empty()
+    }
+
+    pub fn init_overlays(&mut self) {
         self.overlays.push(Box::new(CopyRight::default()));
         self.overlays.push(Box::new(ScoreBoard::default()));
         self.overlays.push(Box::new(RaceNews::default()));
@@ -66,12 +75,18 @@ impl RBNHelper {
         for overlay in &mut self.overlays {
             overlay.init(window_width, window_height);
         }
-
-        self.check_and_login();
     }
 
-    pub fn is_logined(&self) -> bool {
-        !self.store.user_token.is_empty()
+    pub fn update_overlays(&mut self) {
+        self.overlays.iter_mut().for_each(|x| {
+            x.update(&self.store);
+        });
+    }
+
+    pub fn draw_overlays(&mut self) {
+        self.overlays.iter_mut().for_each(|x| {
+            x.draw_ui();
+        });
     }
 
     fn check_and_login(&mut self) {
@@ -111,29 +126,28 @@ impl RBNHelper {
                     self.backend.init(&self.store);
                     self.backend.run(tx, rx);
                 }
+                InnerMsg::MsgUpdateNews(news) => {
+                    self.store.brief_news = news;
+                    self.update_overlays();
+                }
             }
         }
     }
 
     pub fn draw_on_end_frame(&mut self) {
         self.async_message_handle();
-        
-        self.overlays.iter_mut().for_each(|x| {
-            x.draw_ui();
-        });
+        self.draw_overlays();
     }
 
     pub fn on_rsf_menu_changed(&mut self, menu: i32) {
         let last_menu = self.rsf_menu;
         self.rsf_menu = menu;
-        self.fetch_race_brief();
+        self.fetch_race_news();
+        self.update_overlays();
 
         if last_menu == 0 && menu == 3 {
             self.join_race(&self.race_name.clone());
             self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
-            self.overlays.iter_mut().for_each(|x| {
-                x.update(&self.store);
-            });
         }
 
         if last_menu == 3 && menu == 0 {
@@ -165,7 +179,6 @@ impl RBNHelper {
                             OggPlayer::open("join_failed.ogg").play();
                         }
                     }
-                    
                 }
             });
         }
@@ -183,14 +196,15 @@ impl RBNHelper {
         }
     }
 
-    pub fn fetch_race_brief(&mut self) {
+    pub fn fetch_race_news(&mut self) {
         if self.is_logined() {
-            let url = self.store.get_http_url("api/race/brief");
+            let url = self.store.get_http_url("api/race/news");
+            let tx = self.tx.clone();
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let res = reqwest::Client::new().get(&url).send().await.unwrap();
                 if res.status() == StatusCode::OK {
-                    let _brief = res.text().await.unwrap();
-                    //tx.send(InnerMsg::MsgMenuMessage(brief)).await.unwrap();
+                    let news = res.text().await.unwrap();
+                    tx.send(InnerMsg::MsgUpdateNews(news)).await.unwrap();
                 }
             });
         }

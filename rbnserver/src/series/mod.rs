@@ -53,6 +53,8 @@ pub trait Series {
 
     fn update_player_config(&mut self, token: &String, cfg: RaceConfig) -> bool;
 
+    fn get_players_counts(&mut self) -> u32;
+
     fn get_players_state(&mut self) -> Vec<RaceUserState>;
 
     fn update_player_state(&mut self, token: &String, state: RaceState) -> bool;

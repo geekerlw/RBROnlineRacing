@@ -48,7 +48,7 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_api_version)
         .service(handle_http_user_login)
         .service(handle_http_user_logout)
-        .service(handle_http_race_fetch_brief)
+        .service(handle_http_race_fetch_news)
         .service(handle_http_race_fetch_list)
         .service(handle_http_race_get_info)
         .service(handle_http_race_update_info)
@@ -126,12 +126,12 @@ async fn handle_http_user_logout(data: web::Data<Arc<Mutex<RacingServer>>>, body
     }
 }
 
-#[actix_web::get("/api/race/brief")]
-async fn handle_http_race_fetch_brief(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
-    trace!("Received user query race brief");
+#[actix_web::get("/api/race/news")]
+async fn handle_http_race_fetch_news(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+    trace!("Received user query race news");
 
     let mut server = data.lock().await;
-    HttpResponse::Ok().body(serde_json::to_string(&server.get_race_brief()).unwrap())
+    HttpResponse::Ok().body(serde_json::to_string(&server.get_race_news()).unwrap())
 }
 
 #[actix_web::get("/api/race/list")]

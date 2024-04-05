@@ -9,10 +9,6 @@ pub struct RaceLobby {
 }
 
 impl RaceLobby {
-    pub fn player_count(&mut self) -> u32 {
-        self.players.len() as u32
-    }
-
     pub fn push_player(&mut self, token: Uuid, player: LobbyPlayer) {
         if !self.players.contains_key(&token) {
             self.players.insert(token, player);
