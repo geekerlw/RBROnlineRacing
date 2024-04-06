@@ -236,7 +236,7 @@ impl RaceRoom {
             result.finishtime = player.race_data.finishtime;
             result.difftime = player.race_data.finishtime - leader.race_data.finishtime;
             if result.finishtime == 3600.0f32 { // if not complete race, default reduce 2 score.
-                result.score = -2i32;
+                result.score = -5i32;
             } else {
                 result.score = (self.players.len() - i) as i32 * 3;
             }
