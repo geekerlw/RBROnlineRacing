@@ -142,12 +142,12 @@ impl RBNHelper {
         self.fetch_race_news();
         self.fetch_user_score();
 
-        if last_menu == 0 && menu == 3 {
+        if last_menu == 0 && (menu == 2 || menu == 3) {
             self.join_race(&self.race_name.clone());
             self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
         }
 
-        if last_menu == 3 && menu == 0 {
+        if (last_menu == 2 || last_menu == 3) && menu == 0 {
             self.leave_race(&self.race_name.clone());
             self.backend.trigger(TaskMsg::MsgStopStage);
         }

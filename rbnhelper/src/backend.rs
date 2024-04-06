@@ -236,7 +236,7 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
             let state = rbr.get_race_state();
             match state {
                 RaceState::RaceExitMenu => {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await; // give some time to execute exit to menu state.
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await; // give some time to execute exit to menu state.
                     let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: state.clone()};
                     let body = bincode::serialize(&update).unwrap();
                     let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUpdateState}).unwrap();

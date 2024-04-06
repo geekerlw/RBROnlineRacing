@@ -41,14 +41,14 @@ impl RaceDB {
         let mut license = String::from("Rookie");
         if score < 500 {
             license = "Rookie".to_string();
-        } else if 500 <= score && score < 100 {
+        } else if 500 <= score && score < 1000 {
             license = "Amateur".to_string();
         } else if 1000 <= score && score < 1500 {
             license = "Master".to_string();
         } else if 1500 <= score && score < 2000 {
             license = "Profession".to_string();
-        } else if 2000 < score {
-            license = "Genius".to_string();
+        } else if 2000 <= score {
+            license = "Buglike".to_string();
         }
 
         license
@@ -99,7 +99,7 @@ impl RaceDB {
                 let new_score = user.score + result.score;
                 let new_license = self.get_license(new_score);
 
-                sqlx::query("update user SET license = ?, score = ? where id = ?")
+                sqlx::query("UPDATE user SET license = ?, score = ? where id = ?")
                 .bind(new_license)
                 .bind(new_score)
                 .bind(&user.id)
