@@ -10,7 +10,7 @@ pub struct ScoreBoard {
 impl Default for ScoreBoard {
     fn default() -> Self {
         Self {
-            posx: 1800,
+            posx: 1780,
             posy: 5,
         }
     }
@@ -18,7 +18,7 @@ impl Default for ScoreBoard {
 
 impl Overlay for ScoreBoard {
     fn init(&mut self, width: i16, _height: i16) {
-        self.posx = width - 120;
+        self.posx = width - 140;
         self.posy = 5;
     }
 
