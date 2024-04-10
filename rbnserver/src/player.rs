@@ -87,4 +87,12 @@ impl RacePlayer {
             writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
         }
     }
+
+    pub async fn notify_racenotice(&self, result: &String) {
+        let body = bincode::serialize(result).unwrap();
+        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceNotice}).unwrap();
+        if let Some(writer) = &self.writer {
+            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
+        }
+    }
 }

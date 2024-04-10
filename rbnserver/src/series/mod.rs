@@ -9,6 +9,7 @@ use crate::{lobby::RaceLobby, player::LobbyPlayer};
 pub mod customize;
 pub mod daily;
 pub mod room;
+pub mod pithouse;
 pub mod randomer;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

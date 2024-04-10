@@ -6,6 +6,7 @@ use crate::player::{LobbyPlayer, RacePlayer};
 use log::{info, trace};
 use std::str::FromStr;
 use chrono::Local;
+use super::pithouse::RacePitHouse;
 use super::randomer::RaceRandomer;
 use super::room::{RaceRoom, RoomRaceState};
 use super::Series;
@@ -16,6 +17,7 @@ enum DailyMsg {
 }
 
 pub struct Daily {
+    pit: RacePitHouse,
     room: RaceRoom,
     rx: Receiver<DailyMsg>,
     tx: Sender<DailyMsg>,
@@ -24,23 +26,27 @@ pub struct Daily {
 impl Default for Daily {
     fn default() -> Self {
         let (tx, rx) = channel::<DailyMsg>(8);
-        Self { room: RaceRoom::default(), rx, tx }
+        Self {
+            pit: RacePitHouse::default(), 
+            room: RaceRoom::default(), 
+            rx, 
+            tx 
+        }
     }
 }
 
 impl Series for Daily {
     fn join(&mut self, player: &LobbyPlayer) {
-        self.room.push_player(RacePlayer::new(&player.tokenstr, &player.profile_name));
+        self.pit.push_player(RacePlayer::new(&player.tokenstr, &player.profile_name));
     }
 
     fn leave(&mut self, token: &String) {
-        self.room.pop_player(token);
+        self.pit.pop_player(token);
     }
 
     fn access(&mut self, token: &String, writer: std::sync::Arc<tokio::sync::Mutex<tokio::net::tcp::OwnedWriteHalf>>) -> bool {
-        if let Some(player) = self.room.get_player(token) {
+        if let Some(player) = self.pit.get_player(token) {
             player.writer = Some(writer);
-            self.room.notify_all_players_race_state();
             return true;
         }
 
@@ -53,13 +59,10 @@ impl Series for Daily {
 
     fn check_players(&mut self, lobby: &RaceLobby) {
         self.room.players.retain(|x| lobby.is_player_exist(Some(&x.token), None));
+        self.pit.players.retain(|x| lobby.is_player_exist(Some(&x.token), None));
     }
 
-    fn is_joinable(&mut self, join: &RaceJoin) -> bool {
-        if self.room.is_racing_started() || self.room.is_player_exist(&join.token) {
-            return false;
-        }
-
+    fn is_joinable(&mut self, _join: &RaceJoin) -> bool {
         true
     }
 
@@ -144,8 +147,14 @@ impl Series for Daily {
 impl Daily {
     pub fn init(mut self) -> Self {
         self.generate_next_stage();
+        self.generate_next_players();
         self.trigger_next_stage();
         self
+    }
+
+    pub fn generate_next_players(&mut self) {
+        self.pit.players.iter().for_each(|x| self.room.push_player(x.clone()));
+        self.pit.players.clear();
     }
 
     pub fn generate_next_stage(&mut self) {
@@ -186,7 +195,10 @@ impl Daily {
         if let Ok(msg) = self.rx.try_recv() {
             match msg {
                 DailyMsg::MsgNextStage => {
-                    if self.room.set_racing_started() {
+                    if !self.room.is_racing_started() {
+                        self.generate_next_stage();
+                        self.generate_next_players();
+                        self.room.set_racing_started();
                         info!("Timed trigger to start stage at [{}]", Local::now());
                     }
                 }
@@ -251,6 +263,7 @@ impl Daily {
                 room.race_state = RoomRaceState::RoomRaceRunning;
             }
             RoomRaceState::RoomRaceRunning => {
+                self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", room.players.len(), room.get_race_remain_time()));
                 room.notify_all_players_race_data();
                 if room.is_all_players_finish() {
                     room.race_state = RoomRaceState::RoomRaceFinished;
@@ -268,7 +281,6 @@ impl Daily {
             }
             RoomRaceState::RoomRaceEnd => {
                 room.race_state = RoomRaceState::RoomRaceInit;
-                self.generate_next_stage();
             }
             _ => {}
         }

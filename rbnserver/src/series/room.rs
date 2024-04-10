@@ -301,4 +301,8 @@ impl RaceRoom {
             db::RaceDB::default().on_race_finished(&results).await;
         });
     }
+
+    pub fn get_race_remain_time(&mut self) -> u32 {
+        30
+    }
 }

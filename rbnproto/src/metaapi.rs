@@ -24,6 +24,7 @@ pub enum DataFormat {
     FmtSyncRaceState = 5,
     FmtSyncRaceData = 6,
     FmtSyncRaceResult = 7,
+    FmtSyncRaceNotice = 8,
     FmtResponse = 0x8000,
 }
 
