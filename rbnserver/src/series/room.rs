@@ -309,12 +309,12 @@ impl RaceRoom {
         }
 
         let player = self.players.last().unwrap().clone();
-        let leftlen = self.info.stage_len as f32 - player.race_data.progress;
+        let leftlen = (player.race_data.stagelen - player.race_data.progress) / player.race_data.stagelen * self.info.stage_len as f32;
         if player.race_data.speed != 0f32 {
             return (leftlen / player.race_data.speed * 3.6) as u32;
         }
         else {
-            return (leftlen / 10.0 * 3.6) as u32; // default 10km/h as 3.6m/s.
+            return (leftlen / 80.0 * 3.6) as u32; // default 80km/h as 3.6m/s.
         }
     }
 
