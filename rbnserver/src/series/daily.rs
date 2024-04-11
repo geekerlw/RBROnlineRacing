@@ -44,6 +44,7 @@ impl Series for Daily {
     }
 
     fn leave(&mut self, token: &String) {
+        self.room.pop_player(token);
         self.pit.pop_player(token);
     }
 
