@@ -157,24 +157,26 @@ impl RBNHelper {
         self.fetch_user_score();
 
         if last_menu == 0 && (menu == 2 || menu == 3) {
-            self.join_race(&self.race_name.clone());
-            self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
+            if self.join_race(&self.race_name.clone()) {
+                self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
+            }
         }
 
         if (last_menu == 2 || last_menu == 3) && menu == 0 {
-            self.leave_race(&self.race_name.clone());
-            self.backend.trigger(TaskMsg::MsgStopStage);
+            if self.leave_race(&self.race_name.clone()) {
+                self.backend.trigger(TaskMsg::MsgStopStage);
+            }
         }
     }
 
     // need to call by hooking hotlap and practice menu in.
-    pub fn join_race(&mut self, race: &String) {
+    pub fn join_race(&mut self, race: &String) -> bool {
         if self.is_logined() {
             let race_join = RaceJoin {token: self.store.user_token.clone(), room: race.clone(), passwd: None};
             let join_url = self.store.get_http_url("api/race/join");
             let info_url = self.store.get_http_url("api/race/info");
             let info_query = RaceQuery {name: self.race_name.clone()};
-            tokio::runtime::Runtime::new().unwrap().block_on(async move {
+            return tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let res = reqwest::Client::new().post(join_url).json(&race_join).send().await.unwrap();
                 match res.status() {
                     StatusCode::OK => {
@@ -185,26 +187,35 @@ impl RBNHelper {
                             RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
                             RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
                             OggPlayer::open("join.ogg").play();
+                            return true;
                         };
+                        return false;
                     }
                     _ => {
                         OggPlayer::open("join_failed.ogg").play();
+                        return false;
                     }
                 }
             });
         }
+        false
     }
 
     // need to call by hooking exit hotlap and practice menu.
-    pub fn leave_race(&mut self, race: &String) {
+    pub fn leave_race(&mut self, race: &String) -> bool {
         if self.is_logined() {
             let user: RaceLeave = RaceLeave{ token: self.store.user_token.clone(), room: race.clone() };
             let url = self.store.get_http_url("api/race/leave");
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                reqwest::Client::new().post(url).json(&user).send().await.unwrap();
-                OggPlayer::open("exit.ogg").play();
+                let res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
+                if res.status() == StatusCode::OK {
+                    OggPlayer::open("exit.ogg").play();
+                    return true;
+                }
+                return false;
             });
         }
+        false
     }
 
     pub fn fetch_race_news(&mut self) {

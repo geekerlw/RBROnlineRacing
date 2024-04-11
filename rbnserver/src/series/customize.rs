@@ -1,9 +1,8 @@
-use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState, RoomState};
+use rbnproto::httpapi::{RaceBrief, RaceConfig, RaceInfo, RaceState, RaceUserState};
 use rbnproto::metaapi::{MetaRaceData, RaceJoin};
 use crate::lobby::RaceLobby;
 use crate::player::{LobbyPlayer, RacePlayer};
-use log::info;
-use super::room::{RaceRoom, RoomRaceState};
+use super::room::RaceRoom;
 use super::Series;
 
 pub struct Customize {
@@ -147,7 +146,8 @@ impl Customize {
         self.room.set_pass(passwd.clone());
     }
 
-    pub fn update_room_state(&mut self) {
+    fn update_room_state(&mut self) {
+        self.room.update_room_state();
         let room = &mut self.room;
         if !room.is_player_exist(&room.info.owner.clone()) {
             if let Some(owner) = room.players.get(0) {
@@ -158,76 +158,9 @@ impl Customize {
         if room.is_locked() {
             return;
         }
-
-        if room.is_racing_started() {
-            room.room_state = RoomState::RoomRaceOn;
-        } else {
-            if room.is_full() {
-                room.room_state = RoomState::RoomFull;
-            } else {
-                room.room_state = RoomState::RoomFree;
-            }
-        }
     }
 
-    pub fn update_race_state(&mut self) {
-        let room = &mut self.room;
-        match room.race_state {
-            RoomRaceState::RoomRaceBegin => {
-                info!("notify prepare game: {}", room.info.name);
-                room.reset_all_players_state();
-                room.notify_all_players_prepare();
-                room.race_state = RoomRaceState::RoomRacePrepare;
-            }
-            RoomRaceState::RoomRacePrepare => {
-                if room.is_all_players_ready() {
-                    room.race_state = RoomRaceState::RoomRaceReady;
-                }
-            }
-            RoomRaceState::RoomRaceReady => {
-                info!("notify load game: {}", room.info.name);
-                room.notify_all_players_load();
-                room.race_state = RoomRaceState::RoomRaceLoading;
-            }
-            RoomRaceState::RoomRaceLoading => {
-                if room.is_all_players_loaded() {
-                    room.race_state = RoomRaceState::RoomRaceLoaded;
-                }
-            }
-            RoomRaceState::RoomRaceLoaded => {
-                info!("notify start game: {}", room.info.name);
-                room.notify_all_players_start();
-                room.race_state = RoomRaceState::RoomRaceStarting;
-            }
-            RoomRaceState::RoomRaceStarting => {
-                if room.is_all_players_started() {
-                    room.race_state = RoomRaceState::RoomRaceStarted;
-                }
-            }
-            RoomRaceState::RoomRaceStarted => {
-                info!("notify exchange data: {}", room.info.name);
-                room.notify_all_players_upload();
-                room.race_state = RoomRaceState::RoomRaceRunning;
-            }
-            RoomRaceState::RoomRaceRunning => {
-                room.notify_all_players_race_data();
-                if room.is_all_players_finish() {
-                    room.race_state = RoomRaceState::RoomRaceFinished;
-                }
-            }
-            RoomRaceState::RoomRaceFinished => {
-                room.notify_all_players_race_result();
-                room.race_state = RoomRaceState::RoomRaceExiting;
-            }
-            RoomRaceState::RoomRaceExiting => {
-                if room.is_all_players_exitmenu() {
-                    room.race_state = RoomRaceState::RoomRaceEnd;
-                }
-            }
-            RoomRaceState::RoomRaceEnd => {
-                room.race_state = RoomRaceState::RoomRaceInit;
-            }
-            _ => {}
-        }
+    fn update_race_state(&mut self) {
+        self.room.update_race_state();
     }
 }

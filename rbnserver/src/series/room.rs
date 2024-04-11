@@ -1,10 +1,11 @@
+use log::info;
 use rbnproto::httpapi::{RaceInfo, RaceState, RoomState};
 use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
 use crate::db;
 use crate::player::RacePlayer;
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum RoomRaceState {
     #[default]
     RoomRaceInit,
@@ -302,20 +303,91 @@ impl RaceRoom {
         });
     }
 
-    pub fn notify_all_players_race_notice(&mut self, notice: String) {
+    pub fn guess_race_remain(&mut self) -> u32 {
         if self.is_empty() {
-            return;
+            return 0u32;
         }
 
-        let players = self.players.clone();
-        tokio::spawn(async move {
-            for player in players {
-                player.notify_racenotice(&notice).await;
-            }
-        });
+        let player = self.players.last().unwrap().clone();
+        let leftlen = self.info.stage_len as f32 - player.race_data.progress;
+        if player.race_data.speed != 0f32 {
+            return (leftlen / player.race_data.speed * 3.6) as u32;
+        }
+        else {
+            return (leftlen / 10.0 * 3.6) as u32; // default 10km/h as 3.6m/s.
+        }
     }
 
-    pub fn get_race_remain_time(&mut self) -> u32 {
-        30
+    pub fn update_room_state(&mut self) {
+        if self.is_racing_started() {
+            self.room_state = RoomState::RoomRaceOn;
+        } else {
+            if self.is_full() {
+                self.room_state = RoomState::RoomFull;
+            } else {
+                self.room_state = RoomState::RoomFree;
+            }
+        }
+    }
+
+    pub fn update_race_state(&mut self) {
+        match self.race_state {
+            RoomRaceState::RoomRaceBegin => {
+                info!("notify prepare game: {}", self.info.name);
+                self.reset_all_players_state();
+                self.notify_all_players_prepare();
+                self.race_state = RoomRaceState::RoomRacePrepare;
+            }
+            RoomRaceState::RoomRacePrepare => {
+                if self.is_all_players_ready() {
+                    self.race_state = RoomRaceState::RoomRaceReady;
+                }
+            }
+            RoomRaceState::RoomRaceReady => {
+                info!("notify load game: {}", self.info.name);
+                self.notify_all_players_load();
+                self.race_state = RoomRaceState::RoomRaceLoading;
+            }
+            RoomRaceState::RoomRaceLoading => {
+                if self.is_all_players_loaded() {
+                    self.race_state = RoomRaceState::RoomRaceLoaded;
+                }
+            }
+            RoomRaceState::RoomRaceLoaded => {
+                info!("notify start game: {}", self.info.name);
+                self.notify_all_players_start();
+                self.race_state = RoomRaceState::RoomRaceStarting;
+            }
+            RoomRaceState::RoomRaceStarting => {
+                if self.is_all_players_started() {
+                    self.race_state = RoomRaceState::RoomRaceStarted;
+                }
+            }
+            RoomRaceState::RoomRaceStarted => {
+                info!("notify exchange data: {}", self.info.name);
+                self.notify_all_players_upload();
+                self.race_state = RoomRaceState::RoomRaceRunning;
+            }
+            RoomRaceState::RoomRaceRunning => {
+                self.notify_all_players_race_data();
+                if self.is_all_players_finish() {
+                    self.race_state = RoomRaceState::RoomRaceFinished;
+                }
+            }
+            RoomRaceState::RoomRaceFinished => {
+                self.notify_all_players_race_result();
+                self.store_all_players_race_result();
+                self.race_state = RoomRaceState::RoomRaceExiting;
+            }
+            RoomRaceState::RoomRaceExiting => {
+                if self.is_all_players_exitmenu() {
+                    self.race_state = RoomRaceState::RoomRaceEnd;
+                }
+            }
+            RoomRaceState::RoomRaceEnd => {
+                self.race_state = RoomRaceState::RoomRaceInit;
+            }
+            _ => {}
+        }
     }
 }

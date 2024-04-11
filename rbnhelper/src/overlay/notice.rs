@@ -11,7 +11,7 @@ pub struct RaceNotice {
 impl Default for RaceNotice {
     fn default() -> Self {
         Self {
-            posx: (1920 - 600) / 2,
+            posx: (1920 - 680) / 2,
             posy: 45,
         }
     }
@@ -19,7 +19,7 @@ impl Default for RaceNotice {
 
 impl Overlay for RaceNotice {
     fn init(&mut self, width: i16, _height: i16) {
-        self.posx = (width - 600) / 2;
+        self.posx = (width - 680) / 2;
         self.posy = 45;
     }
 
