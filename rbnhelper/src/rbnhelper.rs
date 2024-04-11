@@ -12,6 +12,7 @@ use crate::game::rbr::RBRGame;
 use crate::components::store::RacingStore;
 use crate::overlay::copyright::CopyRight;
 use crate::overlay::news::RaceNews;
+use crate::overlay::notice::RaceNotice;
 use crate::overlay::scoreboard::ScoreBoard;
 use crate::overlay::Overlay;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
@@ -20,6 +21,7 @@ pub enum InnerMsg {
     MsgUserLogined(String),
     MsgUpdateNews(String),
     MsgUpdateScore(UserScore),
+    MsgUpdateNotice(String),
 }
 
 pub struct RBNHelper {
@@ -70,6 +72,7 @@ impl RBNHelper {
         self.overlays.push(Box::new(CopyRight::default()));
         self.overlays.push(Box::new(ScoreBoard::default()));
         self.overlays.push(Box::new(RaceNews::default()));
+        self.overlays.push(Box::new(RaceNotice::default()));
 
         let window_width = unsafe { RBR_GetD3dWindowWidth() };
         let window_height = unsafe { RBR_GetD3dWindowHeight() };
@@ -119,13 +122,16 @@ impl RBNHelper {
                     self.store.user_token = token;
                     let (tx, rx) = channel::<TaskMsg>(16);
                     self.backend.init(&self.store);
-                    self.backend.run(tx, rx);
+                    self.backend.run(tx, rx, &self.tx);
                 }
                 InnerMsg::MsgUpdateNews(news) => {
                     self.store.brief_news = news;
                 }
                 InnerMsg::MsgUpdateScore(score) => {
                     self.store.scoreinfo = score;
+                }
+                InnerMsg::MsgUpdateNotice(notice) => {
+                    self.store.noticeinfo = notice;
                 }
             }
         }
@@ -134,6 +140,14 @@ impl RBNHelper {
     pub fn draw_on_end_frame(&mut self) {
         self.async_message_handle();
         self.draw_overlays();
+    }
+
+    pub fn on_game_mode_changed(&mut self) {
+        let mut rbr = RBRGame::default();
+
+        if rbr.game_mode() == 0x0C { // clear notice info when game exit to menu.
+            self.store.noticeinfo.clear();
+        }
     }
 
     pub fn on_rsf_menu_changed(&mut self, menu: i32) {

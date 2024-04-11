@@ -5,7 +5,7 @@ use crate::lobby::RaceLobby;
 use crate::player::{LobbyPlayer, RacePlayer};
 use log::{info, trace};
 use std::str::FromStr;
-use chrono::Local;
+use chrono::{Local, Utc};
 use super::pithouse::RacePitHouse;
 use super::randomer::RaceRandomer;
 use super::room::{RaceRoom, RoomRaceState};
@@ -141,6 +141,7 @@ impl Series for Daily {
         self.async_msg_handle();
         self.update_room_state();
         self.update_race_state();
+        self.framed_notice();
     }
 }
 
@@ -263,7 +264,6 @@ impl Daily {
                 room.race_state = RoomRaceState::RoomRaceRunning;
             }
             RoomRaceState::RoomRaceRunning => {
-                self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", room.players.len(), room.get_race_remain_time()));
                 room.notify_all_players_race_data();
                 if room.is_all_players_finish() {
                     room.race_state = RoomRaceState::RoomRaceFinished;
@@ -283,6 +283,14 @@ impl Daily {
                 room.race_state = RoomRaceState::RoomRaceInit;
             }
             _ => {}
+        }
+    }
+
+    fn framed_notice(&mut self) {
+        if self.room.is_racing_started() {
+            self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", self.room.players.len(), self.room.get_race_remain_time()));
+        } else {
+            self.pit.notify_all_players_race_notice(format!("Next Race will be start at [{}]", Local::now()));
         }
     }
 }

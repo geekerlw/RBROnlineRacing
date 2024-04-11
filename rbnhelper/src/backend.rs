@@ -13,6 +13,7 @@ use tokio::sync::{Mutex, OnceCell};
 use crate::components::player::OggPlayer;
 use crate::components::store::RacingStore;
 use crate::game::rbr::RBRGame;
+use crate::rbnhelper::InnerMsg;
 
 
 pub enum TaskMsg {
@@ -33,10 +34,11 @@ impl RBNBackend {
         self.user_token = store.user_token.clone();
     }
 
-    pub fn run(&mut self, tx: Sender<TaskMsg>, mut rx: Receiver<TaskMsg>) {
+    pub fn run(&mut self, tx: Sender<TaskMsg>, mut rx: Receiver<TaskMsg>, notifier: &Sender<InnerMsg>) {
         self.tx = Some(tx.clone());
         let server = self.meta_addr.clone();
         let token = self.user_token.clone();
+        let notifier = notifier.clone();
         std::thread::spawn(move || {
             Builder::new_multi_thread().enable_all().build().unwrap().block_on(async move {
                 let mut stage_task = None;
@@ -44,7 +46,7 @@ impl RBNBackend {
                     if let Some(task) = rx.recv().await {
                         match task {
                             TaskMsg::MsgStartStage(room) => {
-                                stage_task = Some(spawn_one_stage(&server, &token, &room));
+                                stage_task = Some(spawn_one_stage(&server, &token, &room, &notifier));
                             },
                             TaskMsg::MsgStopStage => {
                                 if let Some(mission) = &stage_task {
@@ -66,10 +68,11 @@ impl RBNBackend {
     }
 }
 
-fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle<()> {
+fn spawn_one_stage(server: &String, token: &String, race: &String, notifier: &Sender<InnerMsg>) -> JoinHandle<()> {
     let meta_addr = server.clone();
     let user_token = token.clone();
     let room_name = race.clone();
+    let notifier = notifier.clone();
 
     tokio::spawn(async move {
         let stream = TcpStream::connect(meta_addr).await.unwrap();
@@ -107,7 +110,7 @@ fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle
                 }     
                 let pack_data = &buffer[offset+META_HEADER_LEN..offset+META_HEADER_LEN+head.length as usize];
 
-                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, writer_clone.clone()).await;
+                meta_message_handle(head.clone(), pack_data, &user_token, &room_name, &writer_clone, &notifier).await;
                 offset += META_HEADER_LEN + head.length as usize;
             }
             remain = (&buffer[offset..]).to_vec();
@@ -115,7 +118,7 @@ fn spawn_one_stage(server: &String, token: &String, race: &String) -> JoinHandle
     })
 }
 
-async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String, room: &String, writer: &Arc<Mutex<OwnedWriteHalf>>, notifier: &Sender<InnerMsg>) {
     match head.format {
         DataFormat::FmtRaceCommand => {
             let cmd: RaceCmd = bincode::deserialize(pack_data).unwrap();
@@ -157,7 +160,8 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
         }
 
         DataFormat::FmtSyncRaceNotice => {
-            let _notice: String = bincode::deserialize(pack_data).unwrap();
+            let notice: String = bincode::deserialize(pack_data).unwrap();
+            notifier.send(InnerMsg::MsgUpdateNotice(notice)).await.unwrap();
         }
         _ => {}
     }

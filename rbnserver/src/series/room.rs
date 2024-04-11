@@ -302,6 +302,19 @@ impl RaceRoom {
         });
     }
 
+    pub fn notify_all_players_race_notice(&mut self, notice: String) {
+        if self.is_empty() {
+            return;
+        }
+
+        let players = self.players.clone();
+        tokio::spawn(async move {
+            for player in players {
+                player.notify_racenotice(&notice).await;
+            }
+        });
+    }
+
     pub fn get_race_remain_time(&mut self) -> u32 {
         30
     }

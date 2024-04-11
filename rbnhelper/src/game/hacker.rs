@@ -13,6 +13,7 @@ extern "C" {
     pub fn RBR_SetInitialize(func: extern "C" fn() -> *const c_char);
     pub fn RBR_SetOnEndScene(func: extern "C" fn());
     pub fn RBR_SetOnRsfMenuChanged(func: extern "C" fn(menu: i32));
+    pub fn RBR_SetOnGameModeChanged(func: extern "C" fn());
 
     /*
      * ui functions.
@@ -26,7 +27,8 @@ extern "C" {
     pub fn RBR_CfgProfileStyle(UserColor1: *const c_char, UserColor2: *const c_char);
     pub fn RBR_DrawTextOverRsf(x: i16, y: i16, color: u32, text: *const c_char);
     pub fn RBR_DrawTextOverRsfMain(x: i16, y: i16, color: u32, text: *const c_char);
-    //pub fn RBR_DrawTextAnyway(x: i16, y: i16, color: u32, text: *const c_char);
+    pub fn RBR_DrawTextOverRsfHotlap(x: i16, y: i16, color: u32, text: *const c_char);
+    pub fn RBR_DrawTextOverRsfPractice(x: i16, y: i16, color: u32, text: *const c_char);
 
     /*
      * game flow control functions.

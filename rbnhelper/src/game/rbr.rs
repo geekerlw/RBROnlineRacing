@@ -67,6 +67,10 @@ impl RBRGame {
         unsafe { RBR_StartRace(); };
     }
 
+    pub fn game_mode(&mut self) -> i32 {
+        unsafe { RBR_ReadGameMode() }
+    }
+
     pub fn get_user(&mut self) -> String {
         let default_user = "anonymous".to_string();
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {

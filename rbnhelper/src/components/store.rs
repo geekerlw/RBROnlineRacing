@@ -12,6 +12,7 @@ pub struct RacingStore {
     pub user_passwd: String,
     pub user_token: String,
     pub brief_news: String,
+    pub noticeinfo: String,
     pub scoreinfo: UserScore,
 }
 

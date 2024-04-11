@@ -31,6 +31,12 @@ extern fn rbn_on_end_frame() {
 }
 
 #[no_mangle]
+extern fn rbn_on_game_mode_changed() {
+    let mut plugin = RBNHELPER.lock().unwrap();
+    plugin.on_game_mode_changed();
+}
+
+#[no_mangle]
 extern fn rbn_on_rsf_menu_changed(menu: i32) {
     let mut plugin = RBNHELPER.lock().unwrap();
     plugin.on_rsf_menu_changed(menu);
@@ -63,6 +69,7 @@ extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut c_void) -> *mut c_void {
         RBR_SetInitialize(rbn_init);
         RBR_SetOnEndScene(rbn_on_end_frame);
         RBR_SetOnRsfMenuChanged(rbn_on_rsf_menu_changed);
+        RBR_SetOnGameModeChanged(rbn_on_game_mode_changed);
 
         return plugin;
     };
