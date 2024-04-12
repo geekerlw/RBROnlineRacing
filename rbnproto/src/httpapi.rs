@@ -14,7 +14,6 @@ pub enum RaceState {
     RaceRetired,
     RaceFinished,
     RaceExitMenu,
-    RaceError(String),
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

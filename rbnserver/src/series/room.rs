@@ -304,18 +304,17 @@ impl RaceRoom {
     }
 
     pub fn guess_race_remain(&mut self) -> u32 {
-        if self.is_empty() {
-            return 0u32;
+        if let Some(player) = self.players.iter().rev().find(|x| x.state.eq(&RaceState::RaceRunning)) {
+            let leftlen = (player.race_data.stagelen - player.race_data.progress) / player.race_data.stagelen * self.info.stage_len as f32;
+            if player.race_data.speed != 0f32 {
+                return (leftlen / player.race_data.speed * 3.6) as u32;
+            }
+            else {
+                return (leftlen / 80.0 * 3.6) as u32; // default 80km/h as 3.6m/s.
+            }
         }
 
-        let player = self.players.last().unwrap().clone();
-        let leftlen = (player.race_data.stagelen - player.race_data.progress) / player.race_data.stagelen * self.info.stage_len as f32;
-        if player.race_data.speed != 0f32 {
-            return (leftlen / player.race_data.speed * 3.6) as u32;
-        }
-        else {
-            return (leftlen / 80.0 * 3.6) as u32; // default 80km/h as 3.6m/s.
-        }
+        return 0u32;
     }
 
     pub fn update_room_state(&mut self) {
@@ -375,6 +374,7 @@ impl RaceRoom {
                 }
             }
             RoomRaceState::RoomRaceFinished => {
+                info!("notify finished results: {}", self.info.name);
                 self.notify_all_players_race_result();
                 self.store_all_players_race_result();
                 self.race_state = RoomRaceState::RoomRaceExiting;

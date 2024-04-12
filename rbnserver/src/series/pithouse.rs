@@ -1,3 +1,4 @@
+use rbnproto::metaapi::MetaRaceState;
 use crate::player::RacePlayer;
 
 
@@ -78,6 +79,22 @@ impl RacePitHouse {
         tokio::spawn(async move {
             for player in players {
                 player.notify_racenotice(&notice).await;
+            }
+        });
+    }
+
+    pub fn notify_all_players_race_state(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+        let mut states = vec![];
+        for player in &self.players {
+            states.push(MetaRaceState {name: player.profile_name.clone(), state: player.state.clone()});
+        }
+        let players = self.players.clone();
+        tokio::spawn(async move {
+            for player in players {
+                player.notify_racestate(&states).await;
             }
         });
     }

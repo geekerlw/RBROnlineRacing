@@ -19,6 +19,7 @@ enum DailyMsg {
 
 pub struct Daily {
     start_time: DateTime<Local>,
+    tick_time: DateTime<Local>,
     pit: RacePitHouse,
     room: RaceRoom,
     rx: Receiver<DailyMsg>,
@@ -30,6 +31,7 @@ impl Default for Daily {
         let (tx, rx) = channel::<DailyMsg>(8);
         Self {
             start_time: Local::now(),
+            tick_time: Local::now(),
             pit: RacePitHouse::default(), 
             room: RaceRoom::default(), 
             rx, 
@@ -127,7 +129,6 @@ impl Series for Daily {
     fn update_player_state(&mut self, token: &String, state: RaceState) -> bool {
         if let Some(player) = self.room.get_player(token) {
             player.state = state;
-            self.room.notify_all_players_race_state();
             return true;
         }
         false
@@ -235,10 +236,23 @@ impl Daily {
     }
 
     fn framed_notice(&mut self) {
-        if self.room.is_racing_started() {
-            self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", self.room.players.len(), self.room.guess_race_remain()));
-        } else {
-            self.pit.notify_all_players_race_notice(format!("Next Race will be start at [{}], remain time [{}]", self.start_time, self.start_time - Local::now()));
+        if Local::now().signed_duration_since(self.tick_time) > chrono::Duration::seconds(1) {
+            self.tick_time = Local::now();
+
+            if self.room.is_racing_started() {
+                self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", self.room.players.len(), self.room.guess_race_remain()));
+
+                match self.room.race_state {
+                    RoomRaceState::RoomRacePrepare | RoomRaceState::RoomRaceLoading => {
+                        self.room.notify_all_players_race_state();
+                    }
+                    _ => {}
+                }
+            } else {
+                self.pit.notify_all_players_race_notice(format!("Next Race will be start at [{}], remain time [{}]", self.start_time, self.start_time - Local::now()));
+                self.pit.notify_all_players_race_state();
+            }
+
         }
     }
 }
