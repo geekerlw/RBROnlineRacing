@@ -304,7 +304,7 @@ impl RaceRoom {
     }
 
     pub fn guess_race_remain(&mut self) -> u32 {
-        if let Some(player) = self.players.iter().rev().find(|x| x.state.eq(&RaceState::RaceRunning)) {
+        if let Some(player) = self.players.get(0) {
             let leftlen = (player.race_data.stagelen - player.race_data.progress) / player.race_data.stagelen * self.info.stage_len as f32;
             if player.race_data.speed != 0f32 {
                 return (leftlen / player.race_data.speed * 3.6) as u32;

@@ -241,18 +241,11 @@ impl Daily {
 
             if self.room.is_racing_started() {
                 self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", self.room.players.len(), self.room.guess_race_remain()));
-
-                match self.room.race_state {
-                    RoomRaceState::RoomRacePrepare | RoomRaceState::RoomRaceLoading => {
-                        self.room.notify_all_players_race_state();
-                    }
-                    _ => {}
-                }
+                self.room.notify_all_players_race_state();
             } else {
                 self.pit.notify_all_players_race_notice(format!("Next Race will be start at [{}], remain time [{}]", self.start_time, self.start_time - Local::now()));
                 self.pit.notify_all_players_race_state();
             }
-
         }
     }
 }
