@@ -11,16 +11,16 @@ pub struct RaceNotice {
 impl Default for RaceNotice {
     fn default() -> Self {
         Self {
-            posx: (1920 - 680) / 2,
-            posy: 45,
+            posx: (1920 - 700) / 2,
+            posy: 54,
         }
     }
 }
 
 impl Overlay for RaceNotice {
     fn init(&mut self, width: i16, _height: i16) {
-        self.posx = (width - 680) / 2;
-        self.posy = 45;
+        self.posx = (width - 700) / 2;
+        self.posy = 54;
     }
 
     fn draw_ui(&mut self, store: &RacingStore) {
@@ -30,8 +30,8 @@ impl Overlay for RaceNotice {
 
         let text = CString::new(store.noticeinfo.clone()).unwrap_or_default();
         unsafe { 
-            RBR_DrawTextOverRsfHotlap(self.posx, self.posy, 0xFFFF0000, text.as_ptr());
-            RBR_DrawTextOverRsfPractice(self.posx, self.posy, 0xFFFF0000, text.as_ptr());
+            RBR_DrawTextOverRsfHotlap(self.posx, self.posy, 0xFFFFFFFF, text.as_ptr());
+            RBR_DrawTextOverRsfPractice(self.posx, self.posy, 0xFFFFFFFF, text.as_ptr());
         };
     }
 }

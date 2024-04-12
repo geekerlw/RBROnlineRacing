@@ -12,7 +12,7 @@ impl Default for RaceNews {
     fn default() -> Self {
         Self {
             posx: (1920 - 600) / 2,
-            posy: 45,
+            posy: 54,
         }
     }
 }
@@ -20,7 +20,7 @@ impl Default for RaceNews {
 impl Overlay for RaceNews {
     fn init(&mut self, width: i16, _height: i16) {
         self.posx = (width - 600) / 2;
-        self.posy = 45;
+        self.posy = 54;
     }
 
     fn draw_ui(&mut self, store: &RacingStore) {

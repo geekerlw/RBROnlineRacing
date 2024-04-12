@@ -11,7 +11,7 @@ impl Default for ScoreBoard {
     fn default() -> Self {
         Self {
             posx: 1780,
-            posy: 5,
+            posy: 8,
         }
     }
 }
@@ -19,7 +19,7 @@ impl Default for ScoreBoard {
 impl Overlay for ScoreBoard {
     fn init(&mut self, width: i16, _height: i16) {
         self.posx = width - 140;
-        self.posy = 5;
+        self.posy = 8;
     }
 
     fn draw_ui(&mut self, store: &RacingStore) {

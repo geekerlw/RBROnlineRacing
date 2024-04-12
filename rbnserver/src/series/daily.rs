@@ -185,7 +185,7 @@ impl Daily {
     pub fn trigger_next_stage(&mut self) {
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            let mut scheduler = cron::Schedule::from_str("0 0/2 * * * *").unwrap();
+            let mut scheduler = cron::Schedule::from_str("0 0/3 * * * *").unwrap();
             if cfg!(debug_assertions) {
                 scheduler = cron::Schedule::from_str("0 0/1 * * * *").unwrap();
             }
@@ -236,7 +236,7 @@ impl Daily {
     }
 
     fn framed_notice(&mut self) {
-        if Local::now().signed_duration_since(self.tick_time) > chrono::Duration::seconds(1) {
+        if Local::now().signed_duration_since(self.tick_time) > chrono::Duration::milliseconds(500) {
             self.tick_time = Local::now();
 
             if self.room.is_racing_started() {
