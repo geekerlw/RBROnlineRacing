@@ -93,14 +93,16 @@ impl RBNHelper {
         let user = UserLogin{name: self.store.user_name.clone(), passwd: self.store.user_passwd.clone()};
         let tx = self.tx.clone();
         tokio::runtime::Runtime::new().unwrap().block_on(async move {
-            let res = reqwest::get(url_ver).await.unwrap();
-            if res.status() == StatusCode::OK {
-                let version = res.text().await.unwrap();
-                if version == API_VERSION_STRING {
-                    let res = reqwest::Client::new().post(url_login).json(&user).send().await.unwrap();
-                    if res.status() == StatusCode::OK {
-                        let token = res.text().await.unwrap();
-                        tx.send(InnerMsg::MsgUserLogined(token)).await.unwrap();
+            let res = reqwest::get(url_ver).await;
+            if let Ok(res) = res {
+                if res.status() == StatusCode::OK {
+                    let version = res.text().await.unwrap();
+                    if version == API_VERSION_STRING {
+                        let res = reqwest::Client::new().post(url_login).json(&user).send().await.unwrap();
+                        if res.status() == StatusCode::OK {
+                            let token = res.text().await.unwrap();
+                            tx.send(InnerMsg::MsgUserLogined(token)).await.unwrap();
+                        }
                     }
                 }
             }
