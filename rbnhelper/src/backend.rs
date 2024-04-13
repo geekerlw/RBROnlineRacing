@@ -175,7 +175,7 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
         OggPlayer::open("prepare.ogg").play();
         let start_time = std::time::SystemTime::now();
         loop {
-            if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(20) {
+            if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(30) {
                 break;
             }
 
