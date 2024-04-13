@@ -68,6 +68,10 @@ impl RBNHelper {
         !self.store.user_token.is_empty()
     }
 
+    pub fn is_autojoin(&self) -> bool {
+        self.store.autojoin
+    }
+
     pub fn init_overlays(&mut self) {
         self.overlays.push(Box::new(CopyRight::default()));
         self.overlays.push(Box::new(ScoreBoard::default()));
@@ -76,9 +80,7 @@ impl RBNHelper {
 
         let window_width = unsafe { RBR_GetD3dWindowWidth() };
         let window_height = unsafe { RBR_GetD3dWindowHeight() };
-        for overlay in &mut self.overlays {
-            overlay.init(window_width, window_height);
-        }
+        self.overlays.iter_mut().for_each(|x| x.init(window_width, window_height));
     }
 
     pub fn draw_overlays(&mut self) {
@@ -173,7 +175,7 @@ impl RBNHelper {
 
     // need to call by hooking hotlap and practice menu in.
     pub fn join_race(&mut self, race: &String) -> bool {
-        if self.is_logined() {
+        if self.is_logined() && self.is_autojoin() {
             let race_join = RaceJoin {token: self.store.user_token.clone(), room: race.clone(), passwd: None};
             let join_url = self.store.get_http_url("api/race/join");
             let info_url = self.store.get_http_url("api/race/info");
@@ -205,7 +207,7 @@ impl RBNHelper {
 
     // need to call by hooking exit hotlap and practice menu.
     pub fn leave_race(&mut self, race: &String) -> bool {
-        if self.is_logined() {
+        if self.is_logined() && self.is_autojoin() {
             let user: RaceLeave = RaceLeave{ token: self.store.user_token.clone(), room: race.clone() };
             let url = self.store.get_http_url("api/race/leave");
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
