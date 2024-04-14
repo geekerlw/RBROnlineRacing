@@ -53,4 +53,7 @@ extern "C" {
     pub fn RBR_ReadSplitTime1() -> f32;
     pub fn RBR_ReadSplitTime2() -> f32;
     pub fn RBR_ReadFinishTime() -> f32;
+    pub fn RBR_ReadCarPosx() -> f32;
+    pub fn RBR_ReadCarPosy() -> f32;
+    pub fn RBR_ReadCarPosz() -> f32;
 }

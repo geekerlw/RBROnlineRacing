@@ -205,6 +205,9 @@ pub struct RBRRaceItem {
     pub name: [c_uchar; 32],
     pub progress: c_float,
     pub difffirst: c_float,
+    pub posx: c_float,
+    pub posy: c_float,
+    pub posz: c_float,
 }
 
 #[derive(Default)]
@@ -231,6 +234,9 @@ impl RBRRaceData {
             }
             racedata.data[index].progress = item.progress.clone();
             racedata.data[index].difffirst = item.difffirst.clone();
+            racedata.data[index].posx = item.posx.clone();
+            racedata.data[index].posy = item.posy.clone();
+            racedata.data[index].posz = item.posz.clone();
         }
         racedata
     }

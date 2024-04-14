@@ -172,10 +172,11 @@ impl Daily {
         let mut randomer = RaceRandomer::build()
             .with_name("Daily Challenge".to_string())
             .with_owner("Lw_Ziye".to_string())
+            .fixed_stage("Barak".to_string())
             .fixed_damage(3);
 
         if cfg!(debug_assertions) {
-            randomer = randomer.fixed_stage("Lyon - Gerland".to_string()).fixed_car("Hyundai i20 Coupe WRC 2021".to_string());
+            randomer = randomer.fixed_stage("Barak".to_string()).fixed_car("Hyundai i20 Coupe WRC 2021".to_string());
         }
 
         self.room.info = randomer.random();
