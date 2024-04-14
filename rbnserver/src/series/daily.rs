@@ -187,7 +187,7 @@ impl Daily {
         tokio::spawn(async move {
             let mut scheduler = cron::Schedule::from_str("0 0/3 * * * *").unwrap();
             if cfg!(debug_assertions) {
-                scheduler = cron::Schedule::from_str("0 0/1 * * * *").unwrap();
+                scheduler = cron::Schedule::from_str("0/30 * * * * *").unwrap();
             }
 
             loop {
