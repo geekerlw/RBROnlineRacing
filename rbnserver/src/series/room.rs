@@ -220,9 +220,7 @@ impl RaceRoom {
             else {
                 result.difffirst = difflength / 10.0 * 3.6; // default 10km/h as 3.6m/s.
             }
-            result.posx = player.race_data.posx;
-            result.posy = player.race_data.posy;
-            result.posz = player.race_data.posz;
+            result.carpos = player.race_data.carpos.clone();
             results.push(result);
         }
         results

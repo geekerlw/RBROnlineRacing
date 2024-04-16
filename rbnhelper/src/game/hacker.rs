@@ -1,5 +1,5 @@
 use libc::{c_char, c_void};
-use rbnproto::rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting, RBRRaceState};
+use rbnproto::{rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting, RBRRaceState}, D3DMATRIX};
 
 #[link(name = "RBRHacker", kind = "static")]
 extern "C" {
@@ -53,7 +53,5 @@ extern "C" {
     pub fn RBR_ReadSplitTime1() -> f32;
     pub fn RBR_ReadSplitTime2() -> f32;
     pub fn RBR_ReadFinishTime() -> f32;
-    pub fn RBR_ReadCarPosx() -> f32;
-    pub fn RBR_ReadCarPosy() -> f32;
-    pub fn RBR_ReadCarPosz() -> f32;
+    pub fn RBR_ReadCarPos() -> D3DMATRIX;
 }

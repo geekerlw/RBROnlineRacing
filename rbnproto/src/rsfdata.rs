@@ -1,6 +1,7 @@
 use libc::{c_uchar, c_float, c_uint};
 use crate::httpapi::{RaceInfo, RaceConfig};
 use crate::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState};
+use crate::D3DMATRIX;
 use serde::{Serialize, Deserialize};
 use std::mem::size_of;
 
@@ -205,9 +206,7 @@ pub struct RBRRaceItem {
     pub name: [c_uchar; 32],
     pub progress: c_float,
     pub difffirst: c_float,
-    pub posx: c_float,
-    pub posy: c_float,
-    pub posz: c_float,
+    pub carpos: D3DMATRIX,
 }
 
 #[derive(Default)]
@@ -234,9 +233,7 @@ impl RBRRaceData {
             }
             racedata.data[index].progress = item.progress.clone();
             racedata.data[index].difffirst = item.difffirst.clone();
-            racedata.data[index].posx = item.posx.clone();
-            racedata.data[index].posy = item.posy.clone();
-            racedata.data[index].posz = item.posz.clone();
+            racedata.data[index].carpos = item.carpos.clone();
         }
         racedata
     }
