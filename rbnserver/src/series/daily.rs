@@ -172,7 +172,7 @@ impl Daily {
         let mut randomer = RaceRandomer::build()
             .with_name("Daily Challenge".to_string())
             .with_owner("Lw_Ziye".to_string())
-            .fixed_stage("Barak".to_string())
+            .with_exclude()
             .fixed_damage(3);
 
         if cfg!(debug_assertions) {

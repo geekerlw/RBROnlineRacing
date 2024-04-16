@@ -1,8 +1,14 @@
 use std::{io::Read, path::PathBuf};
+use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
 use rand::{thread_rng, Rng};
 use rbnproto::{httpapi::RaceInfo, rsfdata::{RBRCarData, RBRStageData, RBRStageWeather}};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RBRStageExclude {
+    pub id: String,
+    pub name: String
+}
 
 pub struct RaceRandomer {
     rsfdata_path: PathBuf,
@@ -54,6 +60,16 @@ impl RaceRandomer {
 
     pub fn with_owner(mut self, owner: String) -> Self {
         self.raceinfo.owner = owner;
+        self
+    }
+
+    pub fn with_exclude(mut self) -> Self {
+        let filepath = self.rsfdata_path.clone().join("stages_exclude.json");
+        if let Ok(file) = std::fs::File::open(filepath) {
+            if let Ok(excludes) = serde_json::from_reader::<std::fs::File, Vec<RBRStageExclude>>(file) {
+                self.stages.retain_mut(|x| excludes.iter().all(|a| a.id != x.id));
+            }
+        }
         self
     }
 
