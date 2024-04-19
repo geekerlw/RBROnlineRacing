@@ -267,11 +267,13 @@ impl RBNHelper {
         if self.is_logined() {
             let url = self.store.get_http_url("api/user/heartbeat");
             let user = UserHeart { token: self.store.user_token.clone() };
-            tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                loop {
-                    let _res = reqwest::Client::new().post(&url).json(&user).send().await;
-                    tokio::time::sleep_until(Instant::now() + tokio::time::Duration::from_secs(10)).await;
-                }
+            std::thread::spawn(move || {
+                tokio::runtime::Runtime::new().unwrap().block_on(async move {
+                    loop {
+                        let _res = reqwest::Client::new().post(&url).json(&user).send().await;
+                        tokio::time::sleep_until(Instant::now() + tokio::time::Duration::from_secs(10)).await;
+                    }
+                });
             });
         }
     }
