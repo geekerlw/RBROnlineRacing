@@ -34,11 +34,8 @@ pub struct UserLogin {
 pub struct UserLogout {
     pub token: String,
 }
-
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct UserQuery {
-    pub token: String,
-}
+pub type UserQuery = UserLogout;
+pub type UserHeart = UserLogout;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct RaceQuery {

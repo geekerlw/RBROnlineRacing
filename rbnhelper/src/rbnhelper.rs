@@ -1,9 +1,10 @@
 use std::vec;
 use log::info;
-use rbnproto::httpapi::{RaceInfo, RaceQuery, UserLogin, UserQuery, UserScore};
+use rbnproto::httpapi::{RaceInfo, RaceQuery, UserHeart, UserLogin, UserQuery, UserScore};
 use rbnproto::metaapi::{RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
+use tokio::time::Instant;
 use crate::backend::{RBNBackend, TaskMsg};
 use crate::components::player::OggPlayer;
 use crate::game::plugin::IPlugin;
@@ -127,6 +128,7 @@ impl RBNHelper {
                     let (tx, rx) = channel::<TaskMsg>(16);
                     self.backend.init(&self.store);
                     self.backend.run(tx, rx, &self.tx);
+                    self.keep_alive();
                 }
                 InnerMsg::MsgUpdateNews(news) => {
                     self.store.brief_news = news;
@@ -149,7 +151,7 @@ impl RBNHelper {
     pub fn on_game_mode_changed(&mut self) {
         let mut rbr = RBRGame::default();
 
-        if rbr.game_mode() == 0x0C { // clear notice info when game exit to menu.
+        if rbr.game_mode() == 0x05 { // clear notice info when game start load.
             self.store.noticeinfo.clear();
         }
     }
@@ -181,25 +183,28 @@ impl RBNHelper {
             let info_url = self.store.get_http_url("api/race/info");
             let info_query = RaceQuery {name: self.race_name.clone()};
             return tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().post(join_url).json(&race_join).send().await.unwrap();
-                match res.status() {
-                    StatusCode::OK => {
-                        let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
-                        if res.status() == StatusCode::OK {
-                            let text = res.text().await.unwrap();
-                            let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
-                            RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
-                            RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
-                            OggPlayer::open("join.ogg").play();
-                            return true;
-                        };
-                        return false;
-                    }
-                    _ => {
-                        OggPlayer::open("join_failed.ogg").play();
-                        return false;
+                let res = reqwest::Client::new().post(join_url).json(&race_join).send().await;
+                if let Ok(res) = res {
+                    match res.status() {
+                        StatusCode::OK => {
+                            let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
+                            if res.status() == StatusCode::OK {
+                                let text = res.text().await.unwrap();
+                                let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
+                                RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
+                                RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
+                                OggPlayer::open("join.ogg").play();
+                                return true;
+                            };
+                            return false;
+                        }
+                        _ => {
+                            OggPlayer::open("join_failed.ogg").play();
+                            return false;
+                        }
                     }
                 }
+                return false;
             });
         }
         false
@@ -211,10 +216,12 @@ impl RBNHelper {
             let user: RaceLeave = RaceLeave{ token: self.store.user_token.clone(), room: race.clone() };
             let url = self.store.get_http_url("api/race/leave");
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().post(url).json(&user).send().await.unwrap();
-                if res.status() == StatusCode::OK {
-                    OggPlayer::open("exit.ogg").play();
-                    return true;
+                let res = reqwest::Client::new().post(url).json(&user).send().await;
+                if let Ok(res) = res {
+                    if res.status() == StatusCode::OK {
+                        OggPlayer::open("exit.ogg").play();
+                        return true;
+                    }
                 }
                 return false;
             });
@@ -227,10 +234,12 @@ impl RBNHelper {
             let url = self.store.get_http_url("api/race/news");
             let tx = self.tx.clone();
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().get(&url).send().await.unwrap();
-                if res.status() == StatusCode::OK {
-                    let news = res.text().await.unwrap();
-                    tx.send(InnerMsg::MsgUpdateNews(news)).await.unwrap();
+                let res = reqwest::Client::new().get(&url).send().await;
+                if let Ok(res) = res {
+                    if res.status() == StatusCode::OK {
+                        let news = res.text().await.unwrap();
+                        tx.send(InnerMsg::MsgUpdateNews(news)).await.unwrap();
+                    }
                 }
             });
         }
@@ -242,11 +251,26 @@ impl RBNHelper {
             let query = UserQuery { token: self.store.user_token.clone() };
             let tx = self.tx.clone();
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().get(&url).json(&query).send().await.unwrap();
-                if res.status() == StatusCode::OK {
-                    let text = res.text().await.unwrap();
-                    let userscore: UserScore = serde_json::from_str(&text).unwrap();
-                    tx.send(InnerMsg::MsgUpdateScore(userscore)).await.unwrap();
+                let res = reqwest::Client::new().get(&url).json(&query).send().await;
+                if let Ok(res) = res {
+                    if res.status() == StatusCode::OK {
+                        let text = res.text().await.unwrap();
+                        let userscore: UserScore = serde_json::from_str(&text).unwrap();
+                        tx.send(InnerMsg::MsgUpdateScore(userscore)).await.unwrap();
+                    }
+                }
+            });
+        }
+    }
+
+    pub fn keep_alive(&mut self) {
+        if self.is_logined() {
+            let url = self.store.get_http_url("api/user/heartbeat");
+            let user = UserHeart { token: self.store.user_token.clone() };
+            tokio::runtime::Runtime::new().unwrap().block_on(async move {
+                loop {
+                    let _res = reqwest::Client::new().post(&url).json(&user).send().await;
+                    tokio::time::sleep_until(Instant::now() + tokio::time::Duration::from_secs(10)).await;
                 }
             });
         }

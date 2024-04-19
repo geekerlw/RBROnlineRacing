@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use chrono::{DateTime, Local};
 use rbnproto::httpapi::{RaceConfig, RaceState};
 use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceData, MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
@@ -9,6 +10,27 @@ use uuid::Uuid;
 pub struct LobbyPlayer {
     pub tokenstr: String,
     pub profile_name: String,
+
+    #[serde(skip)]
+    lastactive: DateTime<Local>,
+}
+
+impl LobbyPlayer {
+    pub fn new(token: &String, name: &String) -> Self {
+        Self { 
+            tokenstr: token.clone(),
+            profile_name: name.clone(),
+            lastactive: Local::now()
+        }
+    }
+
+    pub fn set_alive(&mut self) {
+        self.lastactive = Local::now();
+    }
+
+    pub fn is_alive(&mut self) -> bool {
+        Local::now().signed_duration_since(self.lastactive) > chrono::Duration::seconds(20)
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

@@ -1,4 +1,5 @@
 use actix_web::{web, App, HttpResponse, HttpServer};
+use chrono::Local;
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::AsyncReadExt;
@@ -8,7 +9,7 @@ use tokio::sync::Mutex;
 use log::{info, trace};
 
 use crate::server::RacingServer;
-use rbnproto::httpapi::{UserLogin, RaceQuery, RaceCreate, UserLogout, RaceInfoUpdate, RaceConfigUpdate, UserQuery};
+use rbnproto::httpapi::{RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceQuery, UserHeart, UserLogin, UserLogout, UserQuery};
 use rbnproto::API_VERSION_STRING;
 use rbnproto::metaapi::{META_HEADER_LEN, RaceUpdate, RaceAccess, RaceJoin, RaceLeave, MetaHeader, DataFormat, MetaRaceData};
 
@@ -49,6 +50,7 @@ async fn main() -> std::io::Result<()>{
         .app_data(web::Data::new(server.clone()))
         .service(handle_http_api_version)
         .service(handle_http_user_login)
+        .service(handle_http_user_heartbeat)
         .service(handle_http_user_logout)
         .service(handle_http_user_fetch_score)
         .service(handle_http_race_fetch_news)
@@ -114,6 +116,16 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     } else {
         HttpResponse::Unauthorized().body("Login failed!")
     }
+}
+
+#[actix_web::post("/api/user/heartbeart")]
+async fn handle_http_user_heartbeat(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserHeart>) -> HttpResponse {
+    let user = body.into_inner();
+    trace!("Received user heartbeat: {:?}", user);
+    let mut server = data.lock().await;
+    server.user_heartbeat(user);
+
+    HttpResponse::Ok().body(Local::now().to_string())
 }
 
 #[actix_web::post("/api/user/logout")]

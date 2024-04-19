@@ -47,4 +47,8 @@ impl RaceLobby {
         }
         None
     }
+
+    pub fn check_players(&mut self) {
+        self.players.retain(|_, v| v.is_alive());
+    }
 }

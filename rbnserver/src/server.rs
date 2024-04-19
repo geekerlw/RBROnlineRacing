@@ -1,5 +1,5 @@
 use log::error;
-use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserQuery, UserScore};
+use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserHeart, UserQuery, UserScore};
 use rbnproto::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
 use rbnproto::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
 use tokio::net::tcp::OwnedWriteHalf;
@@ -45,6 +45,7 @@ impl RacingServer {
     }
 
     pub fn recycle_invalid_players(&mut self) {
+        self.lobby.check_players();
         for (_, race) in self.races.iter_mut() {
             race.check_players(&self.lobby);
         }
@@ -68,10 +69,18 @@ impl RacingServer {
 
         let token = Uuid::new_v4();
         let tokenstr = token.to_string();
-        let player: LobbyPlayer = LobbyPlayer {tokenstr: token.to_string(), profile_name: user.name};
+        let player: LobbyPlayer = LobbyPlayer::new(&tokenstr, &user.name);
         db::RaceDB::default().on_user_login(&player).await;
         self.lobby.push_player(token, player);
         return Some(tokenstr);
+    }
+
+    pub fn user_heartbeat(&mut self, user: UserHeart) {
+        if let Ok(token) = Uuid::parse_str(&user.token) {
+            if let Some(player) = self.lobby.get_player(token) {
+                player.set_alive();
+            }
+        }
     }
 
     pub fn user_logout(&mut self, user: UserLogout) -> bool {

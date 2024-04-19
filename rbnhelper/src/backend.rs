@@ -126,7 +126,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
                 RaceCmd::RaceCmdPrepare(info) => {
                     info!("recv cmd to prepare game: {:?}", info);
                     RBRGame::default().config(&info);
-                    tokio::spawn(start_game_prepare(token.clone(), room.clone(), writer.clone()));
+                    tokio::spawn(start_game_prepare(token.clone(), room.clone(), writer.clone(), notifier.clone()));
                 }
                 RaceCmd::RaceCmdLoad => {
                     info!("recv cmd to load game");
@@ -167,24 +167,28 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
     }
 }
 
-async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
     let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
+    let notifier = notifier.clone();
     tokio::spawn(async move {
         OggPlayer::open("prepare.ogg").play();
         let start_time = std::time::SystemTime::now();
         loop {
-            if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(30) {
+            let remain = std::time::Duration::from_secs(30) - std::time::SystemTime::now().duration_since(start_time).unwrap();
+            if remain <= std::time::Duration::from_secs(0) {
                 break;
             }
 
             let state = rbr.get_race_state();
             match state {
                 RaceState::RaceLoading => break,
-                _ => {}
+                _ => {
+                    notifier.send(InnerMsg::MsgUpdateNotice(format!("Game will auto enter in {}.{} seconds.", remain.as_secs(), remain.subsec_millis()))).await.unwrap();
+                }
             }
-            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
         }
 
         let update = RaceUpdate {token: user_token.clone(), room: room_name.clone(), state: RaceState::RaceReady};
