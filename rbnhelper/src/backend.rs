@@ -173,11 +173,10 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
     let room_name = room.clone();
     let notifier = notifier.clone();
     tokio::spawn(async move {
-        OggPlayer::open("prepare.ogg").play();
+        OggPlayer::open("prepare.ogg").set_timeout(5).play();
         let start_time = std::time::SystemTime::now();
         loop {
-            let remain = std::time::Duration::from_secs(30) - std::time::SystemTime::now().duration_since(start_time).unwrap();
-            if remain <= std::time::Duration::from_secs(0) {
+            if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(30) {
                 break;
             }
 
@@ -185,7 +184,8 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
             match state {
                 RaceState::RaceLoading => break,
                 _ => {
-                    notifier.send(InnerMsg::MsgUpdateNotice(format!("Game will auto enter in {}.{} seconds.", remain.as_secs(), remain.subsec_millis()))).await.unwrap();
+                    let remain = std::time::Duration::from_secs(30) - std::time::SystemTime::now().duration_since(start_time).unwrap();
+                    notifier.send(InnerMsg::MsgUpdateNotice(format!("Check Car tyre and setup, Game will auto enter in {}.{} seconds.", remain.as_secs(), remain.subsec_millis()))).await.unwrap();
                 }
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;

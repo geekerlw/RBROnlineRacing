@@ -118,7 +118,7 @@ async fn handle_http_user_login(data: web::Data<Arc<Mutex<RacingServer>>>, body:
     }
 }
 
-#[actix_web::post("/api/user/heartbeart")]
+#[actix_web::post("/api/user/heartbeat")]
 async fn handle_http_user_heartbeat(data: web::Data<Arc<Mutex<RacingServer>>>, body: web::Json<UserHeart>) -> HttpResponse {
     let user = body.into_inner();
     trace!("Received user heartbeat: {:?}", user);
