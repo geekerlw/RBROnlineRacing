@@ -50,6 +50,9 @@ impl RBRGame {
                     let color1 = CString::new(conf.get_from_or(Some("Color"), "UserColor1", "0xFF0000FF")).unwrap();
                     let color2 = CString::new(conf.get_from_or(Some("Color"), "UserColor2", "0x00FF00FF")).unwrap();
                     RBR_CfgProfileStyle(color1.as_ptr(), color2.as_ptr());
+                    let dashfontsize = conf.get_from_or(Some("Font"), "DashFontSize", "16").parse().unwrap();
+                    let textfontsize = conf.get_from_or(Some("Font"), "TextFontSize", "14").parse().unwrap();
+                    RBR_CfgFontSize(dashfontsize, textfontsize);
                 }
             }
         }

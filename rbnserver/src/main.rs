@@ -88,7 +88,7 @@ async fn main() -> std::io::Result<()>{
                 race.framed_schedule();
             }
             drop(server);
-            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         }
     });
 

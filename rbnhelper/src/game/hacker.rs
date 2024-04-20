@@ -25,6 +25,7 @@ extern "C" {
     pub fn RBR_CfgProgressBarPos(posx: u16, posy: u16);
     pub fn RBR_CfgProgressBarStyle(ProgressBarBackColor: *const c_char, ProgressBarSplitColor: *const c_char, ProgressBarPointerColor: *const c_char);
     pub fn RBR_CfgProfileStyle(UserColor1: *const c_char, UserColor2: *const c_char);
+    pub fn RBR_CfgFontSize(dashFontSize: i32, textFontSize: i32);
     pub fn RBR_DrawTextOverRsf(x: i16, y: i16, color: u32, text: *const c_char);
     pub fn RBR_DrawTextOverRsfMain(x: i16, y: i16, color: u32, text: *const c_char);
     pub fn RBR_DrawTextOverRsfHotlap(x: i16, y: i16, color: u32, text: *const c_char);

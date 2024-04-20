@@ -275,7 +275,7 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
                 },
                 _ => {},
             }
-            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         }
     });
 }
