@@ -242,6 +242,7 @@ impl Daily {
 
             if self.room.is_racing_started() {
                 self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", self.room.players.len(), self.room.guess_race_remain()));
+                self.pit.notify_all_players_race_state();
                 self.room.notify_all_players_race_state();
             } else {
                 self.pit.notify_all_players_race_notice(format!("Next Race will start at {}, remain {} seconds.", self.start_time, (self.start_time - Local::now()).num_seconds()));
