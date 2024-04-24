@@ -48,9 +48,8 @@ mkdir "%RELEASE_FOLDER%\"
 mkdir "%RELEASE_FOLDER%\Plugins\"
 mkdir "%RELEASE_FOLDER%\Plugins\%APPNAME%\"
 
-xcopy /s "resource\*.*"      "%RELEASE_FOLDER%"
-copy "README.md"             "%RELEASE_FOLDER%\Plugins\%APPNAME%\Readme.%APPNAME%.txt"
-copy "README_cn.md"             "%RELEASE_FOLDER%\Plugins\%APPNAME%\Readme_cn.%APPNAME%.txt"
+xcopy /s "rbnhelper\rbr\Plugins\*.*"      "%RELEASE_FOLDER%\Plugins"
+copy "README_cn.md"             "%RELEASE_FOLDER%\Plugins\%APPNAME%\Readme.%APPNAME%.txt"
 copy "LICENSE"               "%RELEASE_FOLDER%\Plugins\%APPNAME%\"
 copy "target\i686-pc-windows-msvc\release\rbnhelper.dll"    "%RELEASE_FOLDER%\Plugins"
 
