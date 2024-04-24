@@ -67,6 +67,7 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_race_join)
         .service(handle_http_race_leave)
         .service(handle_http_race_destroy)
+        .service(handle_web_rankboard)
     })
     .bind(http_addr)?
     .run();
@@ -386,4 +387,17 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
         }
         _ => {}
     }
+}
+
+#[actix_web::get("/rankboard")]
+async fn handle_web_rankboard(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+    let server = data.lock().await;
+
+    let mut context = tera::Context::new();
+    context.insert("name", "John Doe");
+
+    let rendered = server.tera.render("rankboard.html", &context)
+        .expect("Failed to render template");
+
+    HttpResponse::Ok().content_type("text/html").body(rendered)
 }

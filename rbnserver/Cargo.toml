@@ -22,3 +22,4 @@ rand = "0.8.5"
 unicode-normalization = "0.1.22"
 sqlx = { version = "0.7.4", features = ["sqlite", "runtime-tokio"] }
 sqlx-sqlite = "0.7.4"
+tera = "1.19.1"

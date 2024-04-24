@@ -14,15 +14,18 @@ use crate::series::Series;
 use std::collections::HashMap;
 use std::process::exit;
 use std::sync::Arc;
+use tera::Tera;
 
 #[derive(Default)]
 pub struct RacingServer {
+    pub tera: Tera,
     pub lobby: RaceLobby,
     pub races: HashMap<String, Box<dyn Series + Send + Sync>>,
 }
 
 impl RacingServer {
     pub fn init(mut self) -> Self {
+        self.tera = Tera::new("templates/**/*").expect("Failed to compile templates");
         self.check_environment();
         self.races.insert("Daily Challenge".to_string(), Box::new(Daily::default().init()));
         self
