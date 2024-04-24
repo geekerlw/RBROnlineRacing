@@ -106,6 +106,10 @@ impl RacingServer {
         None
     }
 
+    pub async fn get_all_user_score(&mut self) -> Vec<UserScore> {
+        db::RaceDB::default().query_all_user_score().await
+    }
+
     pub fn get_race_news(&mut self) -> String {
         let mut count = 0u32;
         self.races.iter_mut().for_each(|(_, race)| {

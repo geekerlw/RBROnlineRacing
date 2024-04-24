@@ -66,10 +66,26 @@ impl RaceDB {
         .await.unwrap_or_default();
 
         if let Some(user) = user {
-            return Some(UserScore { license: user.license.clone(), score: user.score.clone() });
+            return Some(UserScore { name: user.name.clone(), license: user.license.clone(), score: user.score.clone() });
         }
 
         None
+    }
+
+    pub async fn query_all_user_score(&mut self) -> Vec<UserScore> {
+        let conn = self.connect().await;
+        let users: Option<Vec<User>> = sqlx::query_as::<_, User>("SELECT * FROM user order by score desc")
+        .fetch_all(&conn)
+        .await.ok();
+
+        let mut result = vec![];
+        if let Some(users) = users {
+            for user in users {
+                result.push(UserScore { name: user.name.clone(), license: user.license.clone(), score: user.score.clone() });
+            }
+        }
+
+        result
     }
 
     pub async fn on_user_login(&mut self, player: &LobbyPlayer) {

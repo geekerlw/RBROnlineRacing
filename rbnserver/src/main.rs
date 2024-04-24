@@ -391,10 +391,11 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
 
 #[actix_web::get("/rankboard")]
 async fn handle_web_rankboard(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
-    let server = data.lock().await;
+    let mut server = data.lock().await;
 
     let mut context = tera::Context::new();
-    context.insert("name", "John Doe");
+    let players = server.get_all_user_score().await;
+    context.insert("players", &players);
 
     let rendered = server.tera.render("rankboard.html", &context)
         .expect("Failed to render template");

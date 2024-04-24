@@ -44,6 +44,7 @@ pub struct RaceQuery {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct UserScore {
+    pub name: String,
     pub license: String,
     pub score: i32,
 }

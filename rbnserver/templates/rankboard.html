@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
 </head>
 <body>
     <div class="wrapper">
@@ -17,18 +18,14 @@
                 <div class="cell">联机等级</div>
                 <div class="cell">联机积分</div>
             </div>
-            <div class="row">
-                <div class="cell">1</div>
-                <div class="cell">Lw_Ziye</div>
-                <div class="cell">Master</div>
-                <div class="cell">1500</div>
-            </div>
-            <div class="row">
-                <div class="cell">2</div>
-                <div class="cell">Old worn</div>
-                <div class="cell">Rookie</div>
-                <div class="cell">4</div>
-            </div>
+            {% for player in players %}
+                <div class="row">
+                    <div class="cell">{{ loop.index }}</div>
+                    <div class="cell">{{ player.name }}</div>
+                    <div class="cell">{{ player.license }}</div>
+                    <div class="cell">{{ player.score }}</div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 </body>
