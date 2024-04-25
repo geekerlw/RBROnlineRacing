@@ -67,6 +67,8 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_race_join)
         .service(handle_http_race_leave)
         .service(handle_http_race_destroy)
+        .service(handle_http_image_get)
+        .service(handle_web_index)
         .service(handle_web_rankboard)
     })
     .bind(http_addr)?
@@ -331,6 +333,16 @@ async fn handle_http_race_destroy(data: web::Data<Arc<Mutex<RacingServer>>>, bod
     }
 }
 
+#[actix_web::get("/api/image/{file}")]
+async fn handle_http_image_get(data: web::Data<Arc<Mutex<RacingServer>>>, path: web::Path<String>) -> HttpResponse {
+    let image_file = path.into_inner();
+    let mut server = data.lock().await;
+    if let Some(image_data) = server.load_image(&image_file).await {
+        return HttpResponse::Ok().content_type("image/png").body(image_data);
+    }
+    return HttpResponse::NoContent().body("No such file.");
+}
+
 async fn handle_data_stream(stream: TcpStream, data: Arc<Mutex<RacingServer>>) {
     let mut recvbuf = vec![0u8; 1024];
     let mut remain = Vec::<u8>::new();
@@ -389,6 +401,16 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
     }
 }
 
+#[actix_web::get("/")]
+async fn handle_web_index(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
+    let server = data.lock().await;
+    let context = tera::Context::new();
+    let rendered = server.tera.render("index.html", &context)
+        .expect("failed to render template");
+
+    HttpResponse::Ok().content_type("text/html").body(rendered)
+}
+
 #[actix_web::get("/rankboard")]
 async fn handle_web_rankboard(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
     let mut server = data.lock().await;
@@ -397,7 +419,7 @@ async fn handle_web_rankboard(data: web::Data<Arc<Mutex<RacingServer>>>) -> Http
     let players = server.get_all_user_score().await;
     context.insert("players", &players);
 
-    let rendered = server.tera.render("rankboard.html", &context)
+    let rendered = server.tera.render("rank.html", &context)
         .expect("Failed to render template");
 
     HttpResponse::Ok().content_type("text/html").body(rendered)

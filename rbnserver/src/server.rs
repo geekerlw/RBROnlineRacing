@@ -25,7 +25,7 @@ pub struct RacingServer {
 
 impl RacingServer {
     pub fn init(mut self) -> Self {
-        self.tera = Tera::new("templates/**/*").expect("Failed to compile templates");
+        self.tera = Tera::new("templates/**/*.html").expect("Failed to compile templates");
         self.check_environment();
         self.races.insert("Daily Challenge".to_string(), Box::new(Daily::default().init()));
         self
@@ -273,5 +273,11 @@ impl RacingServer {
             return race.update_player_data(&data.token, data.clone());
         }
         return false;
+    }
+
+    pub async fn load_image(&mut self, image: &String) -> Option<Vec<u8>> {
+        let path = std::env::current_exe().unwrap().parent().unwrap().join("templates").join("assets");
+        let image_file = path.join(image);
+        tokio::fs::read(image_file).await.ok()
     }
 }
