@@ -132,7 +132,7 @@ impl RaceRandomer {
         }
     }
 
-    fn load_game_stage_weathers(&mut self, stage_id: &u32) -> Option<Vec<RBRStageWeather>> {
+    fn load_game_stage_weathers(&self, stage_id: &u32) -> Option<Vec<RBRStageWeather>> {
         let filepath = self.rsfdata_path.clone().join("stages_tracksettings.json");
         if let Ok(file) = std::fs::File::open(filepath) {
             if let Ok(mut weathers) = serde_json::from_reader::<std::fs::File, Vec<RBRStageWeather>>(file) {
@@ -157,21 +157,8 @@ impl RaceRandomer {
     }
 
     pub fn random(&mut self) -> RaceInfo {
-        let select_stage = thread_rng().gen_range(0..self.stages.len());
-        let select_wetness = thread_rng().gen_range(0..self.wetness.len());
-        let select_weather = thread_rng().gen_range(0..self.weathers.len());
-        let select_car = thread_rng().gen_range(0..self.cars.len());
-        let select_damage = thread_rng().gen_range(0..self.damages.len());
-        let mut skytype = "Default".to_string();
-        let mut select_skytype = 0 as usize;
-        let stage_id: u32 = self.stages[select_stage].stage_id.parse().unwrap();
-        if let Some(weathers) = self.load_game_stage_weathers(&stage_id) {
-            self.skytypes = weathers;
-            select_skytype = thread_rng().gen_range(0..self.skytypes.len());
-            skytype = self.skytypes[select_skytype].get_weather_string();
-        }
-
         if !self.fixed_stage {
+            let select_stage = thread_rng().gen_range(0..self.stages.len());
             self.raceinfo.stage = self.stages[select_stage].name.clone();
             self.raceinfo.stage_id = self.stages[select_stage].stage_id.parse().unwrap();
             self.raceinfo.stage_type = self.stages[select_stage].get_surface();
@@ -179,19 +166,33 @@ impl RaceRandomer {
         }
 
         if !self.fixed_weather {
+            let select_weather = thread_rng().gen_range(0..self.weathers.len());
             self.raceinfo.weather = select_weather as u32;
+            let select_wetness = thread_rng().gen_range(0..self.wetness.len());
             self.raceinfo.wetness = select_wetness as u32;
+
+            let mut skytype = "Default".to_string();
+            let mut select_skytype = 0 as usize;
+
+            if let Some(weathers) = self.load_game_stage_weathers(&self.raceinfo.stage_id) {
+                self.skytypes = weathers;
+                select_skytype = thread_rng().gen_range(0..self.skytypes.len());
+                skytype = self.skytypes[select_skytype].get_weather_string();
+            }
+
             self.raceinfo.skytype = skytype;
             self.raceinfo.skytype_id = select_skytype as u32;
         }
 
         if !self.fixed_car {
+            let select_car = thread_rng().gen_range(0..self.cars.len());
             self.raceinfo.car_fixed = false;
             self.raceinfo.car = self.cars[select_car].name.clone();
             self.raceinfo.car_id = self.cars[select_car].id.parse().unwrap();
         }
         
         if !self.fixed_damage {
+            let select_damage = thread_rng().gen_range(0..self.damages.len());
             self.raceinfo.damage = select_damage as u32;
         }
 
