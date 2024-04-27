@@ -307,12 +307,7 @@ impl RaceRoom {
     pub fn guess_race_remain(&mut self) -> u32 {
         if let Some(player) = self.players.get(0) {
             let leftlen = (player.race_data.stagelen - player.race_data.progress) / player.race_data.stagelen * self.info.stage_len as f32;
-            if player.race_data.speed != 0f32 {
-                return (leftlen / player.race_data.speed * 3.6) as u32;
-            }
-            else {
-                return (leftlen / 80.0 * 3.6) as u32; // default 80km/h as 3.6m/s.
-            }
+            return (leftlen / 80.0 * 3.6) as u32; // default average speed 80km/h as 3.6m/s.
         }
 
         return 0u32;
