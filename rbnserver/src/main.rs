@@ -68,6 +68,7 @@ async fn main() -> std::io::Result<()>{
         .service(handle_http_race_leave)
         .service(handle_http_race_destroy)
         .service(handle_http_image_get)
+        .service(handle_http_file_download)
         .service(handle_web_index)
         .service(handle_web_rankboard)
     })
@@ -343,6 +344,18 @@ async fn handle_http_image_get(data: web::Data<Arc<Mutex<RacingServer>>>, path: 
     return HttpResponse::NoContent().body("No such file.");
 }
 
+#[actix_web::get("/api/download/{file}")]
+async fn handle_http_file_download(data: web::Data<Arc<Mutex<RacingServer>>>, path: web::Path<String>) -> HttpResponse {
+    let download_file = path.into_inner();
+    let mut server = data.lock().await;
+    if let Some(file_data) = server.load_file(&download_file).await {
+        return HttpResponse::Ok().content_type("application/zip")
+        .append_header(("Content-Disposition", format!("attachment; filename={}", download_file)))
+        .body(file_data);
+    }
+    return HttpResponse::NoContent().body("No such file.");
+}
+
 async fn handle_data_stream(stream: TcpStream, data: Arc<Mutex<RacingServer>>) {
     let mut recvbuf = vec![0u8; 1024];
     let mut remain = Vec::<u8>::new();
@@ -404,7 +417,8 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
 #[actix_web::get("/")]
 async fn handle_web_index(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
     let server = data.lock().await;
-    let context = tera::Context::new();
+    let mut context = tera::Context::new();
+    context.insert("last_release", &format!("RBNHelper_{}.zip", std::env!("CARGO_PKG_VERSION")));
     let rendered = server.tera.render("index.html", &context)
         .expect("failed to render template");
 

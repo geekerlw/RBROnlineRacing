@@ -280,4 +280,10 @@ impl RacingServer {
         let image_file = path.join(image);
         tokio::fs::read(image_file).await.ok()
     }
+
+    pub async fn load_file(&mut self, file: &String) -> Option<Vec<u8>> {
+        let path = std::env::current_exe().unwrap().parent().unwrap().join("downloads");
+        let filepath = path.join(file);
+        tokio::fs::read(filepath).await.ok()
+    }
 }
