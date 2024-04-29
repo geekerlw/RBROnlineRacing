@@ -3,6 +3,7 @@ use chrono::Local;
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::AsyncReadExt;
+use tokio::signal;
 use clap::Parser;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -91,16 +92,26 @@ async fn main() -> std::io::Result<()>{
             for (_, race) in server.races.iter_mut() {
                 race.framed_schedule();
             }
+            if cfg!(debug_assertions) {
+                server.dynamic_reload_templates();
+            }
+
             drop(server);
             tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         }
+    });
+
+    let sig_task = tokio::spawn(async move {
+        signal::ctrl_c().await.expect("Failed to signal ctrl_c");
+        println!("Received SIGINT signal, terminating...");
+        std::process::exit(0);
     });
 
     info!("Rust RBR Online Server Version: V{}", std::env!("CARGO_PKG_VERSION"));
     info!("Http server listening on port {}", args.port);
     info!("Data listener listening on port {}", args.data);
 
-    let _ = tokio::join!(http_server, data_task, mgr_task);
+    let _ = tokio::join!(http_server, data_task, mgr_task, sig_task);
     Ok(())
 }
 

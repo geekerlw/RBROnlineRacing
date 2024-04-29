@@ -1,3 +1,4 @@
+use chrono::{DateTime, Local};
 use log::error;
 use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserHeart, UserQuery, UserScore};
 use rbnproto::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
@@ -19,6 +20,7 @@ use tera::Tera;
 #[derive(Default)]
 pub struct RacingServer {
     pub tera: Tera,
+    tick_time: DateTime<Local>,
     pub lobby: RaceLobby,
     pub races: HashMap<String, Box<dyn Series + Send + Sync>>,
 }
@@ -29,6 +31,13 @@ impl RacingServer {
         self.check_environment();
         self.races.insert("Daily Challenge".to_string(), Box::new(Daily::default().init()));
         self
+    }
+
+    pub fn dynamic_reload_templates(&mut self) {
+        if Local::now().signed_duration_since(self.tick_time) > chrono::Duration::seconds(1) {
+            self.tick_time = Local::now();
+            self.tera.full_reload().expect("Failed to watch tera template directory.");
+        }
     }
 
     pub fn check_environment(&mut self) {

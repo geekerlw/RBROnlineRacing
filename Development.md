@@ -11,11 +11,11 @@ use ./package.sh version debug|release to generate working environment.
 ./package.sh [version_str] [build_type]
 ```
 
-2. copy test `rbndata.db` into `target/[build_type]` like `target/debug`
+2. after copy test `rbndata.db` into `target/[build_type]` like `target/debug`
 ```
-cd target/debug
+cd rbnserver
 export RUST_LOG=info
-./rbnserver &
+cargo run
 ```
 
 3. after server running, access web via localhost:
