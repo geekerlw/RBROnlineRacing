@@ -1,6 +1,9 @@
 ## RUN RBNServer in localhost
 
-### 
+### Prepare
+rbnserver require sqlite3, please install by yourself. and manual copy `rbrdata.db` into the execute path near `rbrserver`
+
+### Build and Run
 
 1. build and pack files to target dir;
 use ./package.sh version debug|release to generate working environment.
@@ -10,6 +13,7 @@ use ./package.sh version debug|release to generate working environment.
 
 2. copy test `rbndata.db` into `target/[build_type]` like `target/debug`
 ```
+cd target/debug
 export RUST_LOG=info
 ./rbnserver &
 ```
