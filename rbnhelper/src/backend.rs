@@ -2,8 +2,10 @@ use log::info;
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::{Sender, Receiver};
 use tokio::task::JoinHandle;
+use tokio::time::Instant;
 use std::sync::Arc;
-use rbnproto::httpapi::RaceState;
+use std::time::Duration;
+use rbnproto::httpapi::{RaceInfo, RaceState};
 use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceAccess, RaceCmd, RaceUpdate, META_HEADER_LEN};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
@@ -125,8 +127,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
             match cmd {
                 RaceCmd::RaceCmdPrepare(info) => {
                     info!("recv cmd to prepare game: {:?}", info);
-                    RBRGame::default().config(&info);
-                    tokio::spawn(start_game_prepare(token.clone(), room.clone(), writer.clone(), notifier.clone()));
+                    tokio::spawn(start_game_prepare(token.clone(), room.clone(), writer.clone(), info, notifier.clone()));
                 }
                 RaceCmd::RaceCmdLoad => {
                     info!("recv cmd to load game");
@@ -167,13 +168,16 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
     }
 }
 
-async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, notifier: Sender<InnerMsg>) {
+async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, info: RaceInfo, notifier: Sender<InnerMsg>) {
     let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
     let notifier = notifier.clone();
+    rbr.config(&info);
     tokio::spawn(async move {
+        tokio::time::sleep_until(Instant::now() + Duration::from_secs(3)).await;
         OggPlayer::open("prepare.ogg").set_timeout(5).play();
+        tokio::time::sleep_until(Instant::now() + Duration::from_secs(5)).await;
         let start_time = std::time::SystemTime::now();
         loop {
             if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(30) {

@@ -29,7 +29,7 @@ impl LobbyPlayer {
     }
 
     pub fn is_alive(&mut self) -> bool {
-        Local::now().signed_duration_since(self.lastactive) < chrono::Duration::seconds(20)
+        Local::now().signed_duration_since(self.lastactive) < chrono::Duration::seconds(60)
     }
 }
 
