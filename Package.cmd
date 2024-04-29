@@ -43,6 +43,8 @@ echo Do you want to create the pkg RELEASE\%RELEASE_PKG%?
 echo Press CTRL-C to quit, other key to continue...
 pause
 
+cargo build --release --package rbnhelper
+
 rem Create release folders and copy the release versions of plugin files there
 mkdir "%RELEASE_FOLDER%\"
 mkdir "%RELEASE_FOLDER%\Plugins\"
