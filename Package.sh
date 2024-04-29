@@ -41,9 +41,6 @@ if [ "$2" == "release" ]; then
 	RELEASE_FILE="RBNServer_$1.tar.gz"
 
 	if [ -d "$RELEASE_DIR/RBNServer" ]; then
-		if [ -f "$RELEASE_TEMP/rbndata.db" ]; then
-			cp -a "$RELEASE_TEMP/rbndata.db" "$RELEASE_DIR/rbndata.db.bak"
-		fi
 		rm -rvf "$RELEASE_TEMP"
 	fi
 
