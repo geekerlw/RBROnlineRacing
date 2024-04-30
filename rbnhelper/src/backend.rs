@@ -175,7 +175,6 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
     let notifier = notifier.clone();
     rbr.config(&info);
     tokio::spawn(async move {
-        tokio::time::sleep_until(Instant::now() + Duration::from_secs(3)).await;
         OggPlayer::open("prepare.ogg").set_timeout(5).play();
         tokio::time::sleep_until(Instant::now() + Duration::from_secs(5)).await;
         let start_time = std::time::SystemTime::now();
