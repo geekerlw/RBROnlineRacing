@@ -220,6 +220,7 @@ impl RaceRoom {
             else {
                 result.difffirst = difflength / 10.0 * 3.6; // default 10km/h as 3.6m/s.
             }
+            result.carlook = player.race_data.carlook.clone();
             result.carpos = player.race_data.carpos.clone();
             results.push(result);
         }

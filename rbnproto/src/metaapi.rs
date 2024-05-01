@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::{httpapi::RaceInfo, D3DMATRIX};
+use crate::{httpapi::RaceInfo, D3DQuaternion};
 use super::httpapi::RaceState;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -81,7 +81,8 @@ pub struct MetaRaceData {
     pub splittime1: f32,
     pub splittime2: f32,
     pub finishtime: f32,
-    pub carpos: D3DMATRIX,
+    pub carlook: D3DQuaternion,
+    pub carpos: D3DQuaternion,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -89,7 +90,8 @@ pub struct MetaRaceProgress {
     pub profile_name: String,
     pub progress: f32,
     pub difffirst: f32,
-    pub carpos: D3DMATRIX,
+    pub carlook: D3DQuaternion,
+    pub carpos: D3DQuaternion,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

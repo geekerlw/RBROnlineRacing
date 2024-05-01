@@ -1,10 +1,10 @@
 use libc::{c_uchar, c_float, c_uint};
 use crate::httpapi::{RaceInfo, RaceConfig};
 use crate::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState};
-use crate::D3DMATRIX;
+use crate::{D3DMatrix, D3DQuaternion};
 use serde::{Serialize, Deserialize};
 use std::mem::size_of;
-
+use nalgebra::{Quaternion, UnitQuaternion};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RBRStageData {
@@ -206,7 +206,9 @@ pub struct RBRRaceItem {
     pub name: [c_uchar; 32],
     pub progress: c_float,
     pub difffirst: c_float,
-    pub carpos: D3DMATRIX,
+    pub carlook: D3DQuaternion,
+    pub carpos: D3DQuaternion,
+    pub ghost: D3DMatrix,
 }
 
 #[derive(Default)]
@@ -233,7 +235,9 @@ impl RBRRaceData {
             }
             racedata.data[index].progress = item.progress.clone();
             racedata.data[index].difffirst = item.difffirst.clone();
+            racedata.data[index].carlook = item.carlook.clone();
             racedata.data[index].carpos = item.carpos.clone();
+            racedata.data[index].ghost = Self::generate_ghost(&item.carlook, &item.carpos);
         }
         racedata
     }
@@ -245,6 +249,19 @@ impl RBRRaceData {
             std::ptr::copy(ptr, bytes.as_mut_ptr(), size_of::<RBRRaceData>());
         };
         bytes
+    }
+
+    pub fn generate_ghost(quat: &D3DQuaternion, pos: &D3DQuaternion) -> D3DMatrix {
+        let quaternion = Quaternion::new(quat.m[3], quat.m[0], quat.m[2], quat.m[1]);
+        let rotation = UnitQuaternion::from_quaternion(quaternion);
+        let matrix = rotation.to_homogeneous();
+
+        let mut ghost = D3DMatrix::default();
+        ghost.m[0] = [matrix.m11, matrix.m12, matrix.m13, matrix.m14];
+        ghost.m[1] = [matrix.m21, matrix.m22, matrix.m23, matrix.m24];
+        ghost.m[2] = [matrix.m31, matrix.m32, matrix.m33, matrix.m34];
+        ghost.m[3] = [pos.m[0], pos.m[2], pos.m[1], matrix.m44];
+        ghost
     }
 }
 

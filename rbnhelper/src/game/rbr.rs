@@ -116,6 +116,7 @@ impl RBRGame {
             data.splittime1 = RBR_ReadSplitTime1();
             data.splittime2 = RBR_ReadSplitTime2();
             data.finishtime = RBR_ReadFinishTime();
+            data.carlook = RBR_ReadCarLook();
             data.carpos = RBR_ReadCarPos();
         }
         data

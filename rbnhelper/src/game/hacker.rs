@@ -1,5 +1,5 @@
 use libc::{c_char, c_void};
-use rbnproto::{rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting, RBRRaceState}, D3DMATRIX};
+use rbnproto::{rsfdata::{RBRRaceData, RBRRaceResult, RBRRaceSetting, RBRRaceState}, D3DQuaternion};
 
 #[link(name = "RBRHacker", kind = "static")]
 extern "C" {
@@ -54,5 +54,6 @@ extern "C" {
     pub fn RBR_ReadSplitTime1() -> f32;
     pub fn RBR_ReadSplitTime2() -> f32;
     pub fn RBR_ReadFinishTime() -> f32;
-    pub fn RBR_ReadCarPos() -> D3DMATRIX;
+    pub fn RBR_ReadCarLook() -> D3DQuaternion;
+    pub fn RBR_ReadCarPos() -> D3DQuaternion;
 }
