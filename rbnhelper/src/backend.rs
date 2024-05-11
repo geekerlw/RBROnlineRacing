@@ -12,7 +12,7 @@ use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex, OnceCell};
 
-use crate::components::player::OggPlayer;
+use crate::components::player::AudioPlayer;
 use crate::components::store::RacingStore;
 use crate::game::rbr::RBRGame;
 use crate::rbnhelper::InnerMsg;
@@ -175,7 +175,7 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
     let notifier = notifier.clone();
     rbr.config(&info);
     tokio::spawn(async move {
-        OggPlayer::open("prepare.ogg").set_timeout(5).play();
+        AudioPlayer::open("prepare.wav").set_timeout(5).play();
         tokio::time::sleep_until(Instant::now() + Duration::from_secs(5)).await;
         let start_time = std::time::SystemTime::now();
         loop {
@@ -208,7 +208,7 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
     let room_name = room.clone();
     rbr.load();
     tokio::spawn(async move {
-        OggPlayer::open("load_race.ogg").play();
+        AudioPlayer::open("load_race.wav").set_timeout(5).play();
         loop {
             let state = rbr.get_race_state();
             match state {
@@ -230,7 +230,7 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
 async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let user_token = token.clone();
     let room_name = room.clone();
-    OggPlayer::open("begin_race.ogg").play();
+    AudioPlayer::open("begin_race.wav").play();
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
     RBRGame::default().start();
     tokio::spawn(async move {

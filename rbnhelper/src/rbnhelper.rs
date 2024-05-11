@@ -6,7 +6,7 @@ use rbnproto::API_VERSION_STRING;
 use reqwest::StatusCode;
 use tokio::time::Instant;
 use crate::backend::{RBNBackend, TaskMsg};
-use crate::components::player::OggPlayer;
+use crate::components::player::AudioPlayer;
 use crate::game::plugin::IPlugin;
 use crate::game::hacker::*;
 use crate::game::rbr::RBRGame;
@@ -193,13 +193,13 @@ impl RBNHelper {
                                 let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
                                 RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
                                 RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
-                                OggPlayer::open("join.ogg").play();
+                                AudioPlayer::open("join.wav").play();
                                 return true;
                             };
                             return false;
                         }
                         _ => {
-                            OggPlayer::open("join_failed.ogg").play();
+                            AudioPlayer::open("join_failed.wav").play();
                             return false;
                         }
                     }
@@ -219,7 +219,7 @@ impl RBNHelper {
                 let res = reqwest::Client::new().post(url).json(&user).send().await;
                 if let Ok(res) = res {
                     if res.status() == StatusCode::OK {
-                        OggPlayer::open("exit.ogg").play();
+                        AudioPlayer::open("exit.wav").play();
                         return true;
                     }
                 }
