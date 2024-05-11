@@ -114,7 +114,7 @@ impl Series for Daily {
     }
 
     fn get_players_counts(&mut self) -> u32 {
-        self.room.players.len() as u32
+        (self.room.players.len() + self.pit.players.len()) as u32
     }
 
     fn get_players_state(&mut self) -> Vec<RaceUserState> {
