@@ -6,7 +6,7 @@ use rbnproto::{httpapi::RaceInfo, rsfdata::{RBRCarData, RBRStageData, RBRStageWe
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RBRStageExclude {
-    pub id: String,
+    pub id: u32,
     pub name: String
 }
 
@@ -67,7 +67,7 @@ impl RaceRandomer {
         let filepath = self.rsfdata_path.clone().join("stages_exclude.json");
         if let Ok(file) = std::fs::File::open(filepath) {
             if let Ok(excludes) = serde_json::from_reader::<std::fs::File, Vec<RBRStageExclude>>(file) {
-                self.stages.retain_mut(|x| excludes.iter().all(|a| a.id != x.id));
+                self.stages.retain_mut(|x| excludes.iter().all(|a| a.id.to_string() != x.id));
             }
         }
         self
