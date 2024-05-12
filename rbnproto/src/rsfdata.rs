@@ -183,7 +183,7 @@ impl RBRRaceState {
 
             let statestr = format!("{:?}", item.state);
             let bytes = statestr.as_bytes();
-            for i in 0..bytes.len() {
+            for i in 4..bytes.len() { // trim 'Race' in RaceState like RaceReady.
                 racestate.data[index].state[i] = bytes[i];
             }
         }

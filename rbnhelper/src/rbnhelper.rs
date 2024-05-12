@@ -106,6 +106,8 @@ impl RBNHelper {
                             let token = res.text().await.unwrap();
                             tx.send(InnerMsg::MsgUserLogined(token)).await.unwrap();
                         }
+                    } else {
+                        tx.send(InnerMsg::MsgUpdateNotice("Version is out of date, browse https://www.rbrlover.cn to update.".to_string())).await.unwrap();
                     }
                 }
             }
