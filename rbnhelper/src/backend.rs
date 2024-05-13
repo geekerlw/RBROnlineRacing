@@ -176,7 +176,7 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
     rbr.config(&info);
     tokio::spawn(async move {
         AudioPlayer::open("prepare.wav").set_timeout(5).play();
-        tokio::time::sleep_until(Instant::now() + Duration::from_secs(5)).await;
+        tokio::time::sleep_until(Instant::now() + Duration::from_secs(1)).await;
         let start_time = std::time::SystemTime::now();
         loop {
             if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(30) {
@@ -188,7 +188,7 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
                 RaceState::RaceLoading => break,
                 _ => {
                     let remain = std::time::Duration::from_secs(30) - std::time::SystemTime::now().duration_since(start_time).unwrap();
-                    notifier.send(InnerMsg::MsgUpdateNotice(format!("Check Car tyre and setup, Game will auto enter in {}.{} seconds.", remain.as_secs(), remain.subsec_millis()))).await.unwrap();
+                    notifier.send(InnerMsg::MsgUpdateNotice(format!("Check Car tyre and setup, Stage will auto start after {}.{} seconds.", remain.as_secs(), remain.subsec_millis()))).await.unwrap();
                 }
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;

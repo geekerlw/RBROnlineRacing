@@ -11,8 +11,8 @@ pub struct CopyRight {
 impl Default for CopyRight {
     fn default() -> Self {
         Self {
-            posx: (1920 - 680) / 2,
-            posy: 1000,
+            posx: (1920 - 720) / 2,
+            posy: 1010,
             content: CString::new(format!("RBN Helper [{}], https:://www.rbrlover.cn, Copyright (C) Lw_Ziye 2023-2024.", std::env!("CARGO_PKG_VERSION"))).expect("Failed to init copyright."),
         }
     }
@@ -20,8 +20,8 @@ impl Default for CopyRight {
 
 impl Overlay for CopyRight {
     fn init(&mut self, width: i16, height: i16) {
-        self.posx = (width - 680) / 2;
-        self.posy = height - 60;
+        self.posx = (width - 720) / 2;
+        self.posy = height - 70;
     }
 
     fn draw_ui(&mut self, _store: &RacingStore) {
