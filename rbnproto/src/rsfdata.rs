@@ -163,7 +163,7 @@ pub struct RBRRaceStateItem {
 pub struct RBRRaceState {
     pub external: c_uint,
     pub count: c_uint,
-    pub data: [RBRRaceStateItem; 8],
+    pub data: [RBRRaceStateItem; 16],
 }
 
 impl RBRRaceState {
@@ -171,7 +171,7 @@ impl RBRRaceState {
         let mut racestate = RBRRaceState::default();
         racestate.external = 1;
         for (index, item) in result.iter().enumerate() {
-            if index >= 8 {
+            if index >= 16 {
                 break;
             }
 
