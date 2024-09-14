@@ -1,6 +1,6 @@
 [package]
 name = "rbnhelper"
-version = "2.3.3"
+version = "2.3.5"
 edition = "2021"
 description = "Richard Burns Rally (RSF) realtime online racing plugin."
 authors = ["Lw_Ziye <geekerlw@gmail.com>"]
