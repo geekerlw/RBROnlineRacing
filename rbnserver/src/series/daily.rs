@@ -194,7 +194,7 @@ impl Daily {
             loop {
                 if let Some(next_time) = scheduler.upcoming(chrono::Local).take(1).next() {
                     let duration = next_time - Local::now();
-                    trace!("next time to start next stage [{}], remain [{}]", next_time, duration);
+                    trace!("next stage start at [{}], with [{}] seconds remain.", next_time, duration);
                     tx.send(DailyMsg::MsgNextStage(next_time)).await.unwrap();
                     tokio::time::sleep_until(Instant::now() + Duration::from_secs(duration.num_seconds() as u64)).await;
                     tx.send(DailyMsg::MsgStartStage).await.unwrap();

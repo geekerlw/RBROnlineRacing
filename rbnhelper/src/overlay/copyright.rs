@@ -13,7 +13,7 @@ impl Default for CopyRight {
         Self {
             posx: (1920 - 720) / 2,
             posy: 1010,
-            content: CString::new(format!("RBN Helper [{}], https:://www.rbrlover.cn, Copyright (C) Lw_Ziye 2023-2024.", std::env!("CARGO_PKG_VERSION"))).expect("Failed to init copyright."),
+            content: CString::new(format!("RBN Helper [{}], Copyright (C) Lw_Ziye 2023-2024.", std::env!("CARGO_PKG_VERSION"))).expect("Failed to init copyright."),
         }
     }
 }

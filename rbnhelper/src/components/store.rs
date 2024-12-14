@@ -30,14 +30,6 @@ impl RacingStore {
     }
 
     pub fn load_config(&mut self) {
-        if cfg!(debug_assertions) {
-            self.server_addr = String::from("127.0.0.1");
-        } else {
-            self.server_addr = String::from("8.137.36.254");
-        }
-        self.server_port = 23555;
-        self.meta_port = 23556;
-
         self.user_name = RBRGame::default().get_user().to_string();
         self.user_passwd = String::from("simrallycn");
         info!("Parsed game user [{}] success", self.user_name);
@@ -49,7 +41,14 @@ impl RacingStore {
             let conf_file = game_path.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
             if let Ok(conf) = Ini::load_from_file(&conf_file) {
                 self.autojoin = conf.get_from_or(Some("Setting"), "AutoJoinRace", "true").parse().unwrap();
+                self.server_addr = conf.get_from_or(Some("Server"), "Host", "127.0.0.1").parse().unwrap();
+                self.server_port = conf.get_from_or(Some("Server"), "HttpPort", 23555).parse().unwrap();
+                self.meta_port = conf.get_from_or(Some("Server"), "DataPort", 23556).parse().unwrap();
             }
+        }
+
+        if cfg!(debug_assertions) {
+            self.server_addr = String::from("127.0.0.1");
         }
     }
 
