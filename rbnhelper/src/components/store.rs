@@ -42,8 +42,8 @@ impl RacingStore {
             if let Ok(conf) = Ini::load_from_file(&conf_file) {
                 self.autojoin = conf.get_from_or(Some("Setting"), "AutoJoinRace", "true").parse().unwrap();
                 self.server_addr = conf.get_from_or(Some("Server"), "Host", "127.0.0.1").parse().unwrap();
-                self.server_port = conf.get_from_or(Some("Server"), "HttpPort", 23555).parse().unwrap();
-                self.meta_port = conf.get_from_or(Some("Server"), "DataPort", 23556).parse().unwrap();
+                self.server_port = conf.get_from_or(Some("Server"), "HttpPort", "23555").parse().unwrap();
+                self.meta_port = conf.get_from_or(Some("Server"), "DataPort", "23556").parse().unwrap();
             }
         }
 
