@@ -1,35 +1,37 @@
-# RBROnlineRacing
-Richard Burns Rally (RSF) realtime online racing support。
-
-## How to Install
-Download RBNHelper_xxx.zip file and unzip into your Richard Burns Rally game root folder.
-
-## How to Unintall
-Only need to remove the rbnhelper.dll in the game `Plugins` folder.
-Or another simple way is disable the plugin by Rsf launcher.
+# RBR Online Racing
+Richard Burns Rally (RSF) realtime online racing support.
 
 ## Features
-- Fully automatic workflow, racer just need to select car,setup and play game.
-- Automatically select stages,weather with random way and start the game at three-minute intervals
-- Voice notice race join, leave, prepare, load and start etc.
-- Start Countdown notice when waiting next race and race prepare time.
-- Rank with score record, players has at least 3 score but -5 if you retired.
-- Online Ghost Car support, but only one ghost with your previous player.
-- Exclude some maps, such as mazes, bad roads, and too long maps.
+- Fully automated lobby workflow, you just need to select car, set it up and *wait*.
+- Real-time leaderboard and progress bar in game.
+- Ranking system with score record, 3 points if you finish race, -5 if you retired.
+- Online Ghost Car support, but only one ghost per race, **and** if you previously set up any time on the current track (recorded any ghost).
+- Races start every three minutes with randomised stage, weather.
+- Voice announcer when join, leave, prepare etc.
+- Some maps are excluded from pool such as mazes, bad roads, and too long maps.
 
-## Custom configures
+## How to install
+Download latest RBNHelper_xxx.zip release and unzip it into the root of your Richard Burns Rally folder.
+
+## How to race with others
+1. Open game normally and Login to RSF main menu.
+2. You will see info about the server, such as how many players online and time duration to next race in top center of your screen.
+3. Join race by Enter `Hotlap` or `Practice` anytime, **just stay at this menu page, dont start race manually**.
+4. After the countdown ends, there will be additional 30 seconds to prepare, then you will be automatically launched into the race.
+5. **Be patient, dont press anything.** Once all players loaded, server will pull the handbrakes for everybody at the same time, and start 5 second timer.
+6. Drive carefully, you can see other player's progress on the screen left and an brief leaderboard on the top-left screen.
+7. If you are first to the finish line, wait in results page, leaderboard will be updating.
+8. Go back to `Hotlap` or `Practice` menu, and wait for the next race to begin.
+
+## Custom configuration
 You can Find an `RBNHelper.ini` file under `Plugins\RBNHelper` folder, edit it and *restart game*.
-I provide the following configurations:
-- function switchers in the `Setting` section.
-- positions of online leaderboard and progressbar, x, y is offset from the top-left position.
-- leaderboard and progressbar's color styles.
+Configurations available for you to change:
+- main plugin features.
+- colors, font size of leaderboard and progress bar.
+- positions of online leaderboard and progress bar on the screen.
+- server you want to play on.
+- announcer voice, volume and speed.
 
-## How to Race with others
-1. Open game and normally Login to RSF main menu
-2. You can find some notice in the top center of screen, such as how many players online and time duration to next race.
-3. Join race by Enter `Hotlap` or `Practice` anytime, if race in started, you will auto joined next race, just stay at this menu page.
-4. Once next race begined, there are 30 seconds to prepare, game will auto start when time occurs.
-5. Once all players loaded, server will pull the handbrake at the same time, 5 seconds countdown to begin driving.
-6. Be careful to your driving, you can see other player's progress on the screen left and an brief leaderboard on the top-left screen.
-7. Ok, finally we finished race, if you are first, please wait at the result page, once all players finished, a leaderboard with score change will show over the result page.
-8. Go back to `Hotlap` or `Practice` menu, and waiting next race begin.
+## How to uninstall
+Only need to remove the rbnhelper.dll and `RBNHelper` folder from the game's `Plugins` folder.
+Or just disable the plugin from RSF launcher.
