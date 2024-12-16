@@ -1,6 +1,6 @@
 use libc::c_char;
 
-#[allow(non_snake_case)]
+#[allow(non_snake_case, dead_code)]
 pub trait IPlugin {
     fn GetName(&mut self) -> *const c_char;
     fn DrawFrontEndPage(&mut self) {}
