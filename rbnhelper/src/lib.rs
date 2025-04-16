@@ -42,6 +42,7 @@ extern fn rbn_on_rsf_menu_changed(menu: i32) {
     plugin.on_rsf_menu_changed(menu);
 }
 
+#[cfg(target_os = "windows")]
 #[no_mangle]
 extern "stdcall" fn DllMain(_hinst: usize, _reason: u32, _reserved: *mut ()) -> bool {
     true
