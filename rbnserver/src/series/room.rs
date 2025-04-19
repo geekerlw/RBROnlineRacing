@@ -294,7 +294,6 @@ impl RaceRoom {
 
             for (i, player) in self.players.iter_mut().enumerate() {
                 if self.rank.len() != players.len() {
-                    info!("no rank data, skip ridicule notify.");
                     break;
                 }
 
@@ -308,9 +307,7 @@ impl RaceRoom {
                 let mut ridicules = MetaRaceRidicule::default();
                 ridicules.players = loser.iter().map(|x| x.profile_name.clone()).collect();
     
-                info!("handle notify ridicule: {}, player racetime: {}", player.profile_name, player.race_data.racetime);
-
-                if player.race_data.racetime > 20.0f32 
+                if player.race_data.racetime > 20.0f32 && ridicules.players.len() > 0
                 && Local::now().signed_duration_since(player.lastredicule) > chrono::Duration::seconds(10) {
                     let mut playerc = player.clone();
                     tokio::spawn(async move {
