@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use chrono::{DateTime, Local};
 use rbnproto::httpapi::{RaceConfig, RaceState};
-use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceData, MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceCmd};
+use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceData, MetaRaceProgress, MetaRaceResult, MetaRaceRidicule, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
 use tokio::{sync::Mutex, net::tcp::OwnedWriteHalf, io::AsyncWriteExt};
 use uuid::Uuid;
@@ -43,6 +43,8 @@ pub struct RacePlayer {
     pub state: RaceState,
     pub race_data: MetaRaceData,
     pub race_cfg: RaceConfig,
+    #[serde(skip)]
+    pub lastredicule: DateTime<Local>,
 }
 
 impl RacePlayer {
@@ -55,6 +57,7 @@ impl RacePlayer {
             state: RaceState::default(),
             race_data: MetaRaceData::default(),
             race_cfg: RaceConfig::default(),
+            lastredicule: Local::now(),
         }
     }
 
@@ -97,6 +100,14 @@ impl RacePlayer {
     pub async fn notify_racedata(&self, result: &Vec::<MetaRaceProgress>) {
         let body = bincode::serialize(result).unwrap();
         let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceData}).unwrap();
+        if let Some(writer) = &self.writer {
+            writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
+        }
+    }
+
+    pub async fn notify_ridicule(&mut self, result: &MetaRaceRidicule) {
+        let body = bincode::serialize(result).unwrap();
+        let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtSyncRaceRidicule}).unwrap();
         if let Some(writer) = &self.writer {
             writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());
         }

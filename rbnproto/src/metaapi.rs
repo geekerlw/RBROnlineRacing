@@ -25,6 +25,7 @@ pub enum DataFormat {
     FmtSyncRaceData = 6,
     FmtSyncRaceResult = 7,
     FmtSyncRaceNotice = 8,
+    FmtSyncRaceRidicule = 9,
     FmtResponse = 0x8000,
 }
 
@@ -92,6 +93,11 @@ pub struct MetaRaceProgress {
     pub difffirst: f32,
     pub carlook: D3DQuaternion,
     pub carpos: D3DQuaternion,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct MetaRaceRidicule {
+    pub players: Vec<String>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

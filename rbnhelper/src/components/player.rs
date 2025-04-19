@@ -2,6 +2,7 @@ use std::{fs::File, path::PathBuf};
 use std::io::BufReader;
 use ini::Ini;
 use rodio::OutputStream;
+use rand::{thread_rng, Rng};
 
 pub struct AudioPlayer {
     file: PathBuf,
@@ -22,7 +23,7 @@ impl Default for AudioPlayer {
 }
 
 impl AudioPlayer {
-    pub fn open(file: &str) -> Self {
+    pub fn notification(filename: &str) -> Self {
         let mut player = AudioPlayer::default();
         if let Some(game_root) = std::env::current_exe().unwrap().parent() {
             let conf_path = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
@@ -30,13 +31,37 @@ impl AudioPlayer {
                 player.announcer = conf.get_from_or(Some("Audio"), "Announcer", "xiaoxiao").to_string();
                 player.volume = conf.get_from_or(Some("Audio"), "Volume", "0.4").parse().unwrap();
             }
-            player.file = game_root.join("Plugins").join("RBNHelper").join("audio").join(player.announcer.as_str()).join(file);
+            player.file = game_root.join("Plugins").join("RBNHelper")
+                .join("audio").join("notification")
+                .join(player.announcer.as_str()).join(filename);
         }
         player
     }
 
+    pub fn overtake(player_name: &str) -> Self {
+        let mut player = AudioPlayer::default();
+        if let Some(game_root) = std::env::current_exe().unwrap().parent() {
+            let conf_path = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
+            if let Ok(conf) = Ini::load_from_file(&conf_path) {
+                player.volume = conf.get_from_or(Some("Audio"), "Volume", "0.4").parse().unwrap();
+            }
+            
+            let filename = format!("overtake-{}.wav", thread_rng().gen_range(0..3));
+            let target_file = game_root.join("Plugins").join("RBNHelper")
+                .join("audio").join("ridicule")
+                .join(player_name).join(filename);
 
-    #[allow(dead_code)]
+            if !target_file.exists() {
+                player.file = game_root.join("Plugins").join("RBNHelper")
+                    .join("audio").join("ridicule")
+                    .join("overtake-default.wav");
+            } else {
+                player.file = target_file;
+            }
+        }
+        player
+    }
+
     pub fn set_timeout(mut self, secs: u64) -> Self {
         self.timeout = secs;
         self

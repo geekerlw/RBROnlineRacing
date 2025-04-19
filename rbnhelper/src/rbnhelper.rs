@@ -195,13 +195,13 @@ impl RBNHelper {
                                 let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
                                 RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
                                 RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
-                                AudioPlayer::open("join.wav").play();
+                                AudioPlayer::notification("join.wav").play();
                                 return true;
                             };
                             return false;
                         }
                         _ => {
-                            AudioPlayer::open("join_failed.wav").play();
+                            AudioPlayer::notification("join_failed.wav").play();
                             return false;
                         }
                     }
@@ -221,7 +221,7 @@ impl RBNHelper {
                 let res = reqwest::Client::new().post(url).json(&user).send().await;
                 if let Ok(res) = res {
                     if res.status() == StatusCode::OK {
-                        AudioPlayer::open("exit.wav").play();
+                        AudioPlayer::notification("exit.wav").play();
                         return true;
                     }
                 }

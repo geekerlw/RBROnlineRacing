@@ -6,7 +6,7 @@ use tokio::time::Instant;
 use std::sync::Arc;
 use std::time::Duration;
 use rbnproto::httpapi::{RaceInfo, RaceState};
-use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceAccess, RaceCmd, RaceUpdate, META_HEADER_LEN};
+use rbnproto::metaapi::{DataFormat, MetaHeader, MetaRaceProgress, MetaRaceResult, MetaRaceRidicule, MetaRaceState, RaceAccess, RaceCmd, RaceUpdate, META_HEADER_LEN};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
@@ -155,6 +155,12 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
             RBRGame::default().feed_race_data(&progress);
         }
 
+        DataFormat::FmtSyncRaceRidicule => {
+            let ridicule: MetaRaceRidicule = bincode::deserialize(pack_data).unwrap();
+            info!("recv cmd to ridicule: {:?}", ridicule);
+            tokio::spawn(start_game_ridicule(ridicule));
+        }
+
         DataFormat::FmtSyncRaceResult => {
             let result: Vec<MetaRaceResult> = bincode::deserialize(pack_data).unwrap();
             RBRGame::default().feed_race_result(&result);
@@ -175,7 +181,7 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
     let notifier = notifier.clone();
     rbr.config(&info);
     tokio::spawn(async move {
-        AudioPlayer::open("prepare.wav").set_timeout(5).play();
+        AudioPlayer::notification("prepare.wav").set_timeout(5).play();
         tokio::time::sleep_until(Instant::now() + Duration::from_secs(1)).await;
         let start_time = std::time::SystemTime::now();
         loop {
@@ -208,7 +214,7 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
     let room_name = room.clone();
     rbr.load();
     tokio::spawn(async move {
-        AudioPlayer::open("load_race.wav").set_timeout(5).play();
+        AudioPlayer::notification("load_race.wav").set_timeout(5).play();
         loop {
             let state = rbr.get_race_state();
             match state {
@@ -230,7 +236,7 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
 async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
     let user_token = token.clone();
     let room_name = room.clone();
-    AudioPlayer::open("begin_race.wav").play();
+    AudioPlayer::notification("begin_race.wav").play();
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
     RBRGame::default().start();
     tokio::spawn(async move {
@@ -281,4 +287,10 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
             tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         }
     });
+}
+
+async fn start_game_ridicule(ridicule: MetaRaceRidicule) {
+    for profile in ridicule.players {
+        AudioPlayer::overtake(&profile).set_timeout(5).play();
+    }
 }

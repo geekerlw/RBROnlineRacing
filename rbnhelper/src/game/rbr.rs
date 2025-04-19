@@ -50,9 +50,11 @@ impl RBRGame {
                     let color1 = CString::new(conf.get_from_or(Some("Color"), "UserColor1", "0xFF0000FF")).unwrap();
                     let color2 = CString::new(conf.get_from_or(Some("Color"), "UserColor2", "0x00FF00FF")).unwrap();
                     RBR_CfgProfileStyle(color1.as_ptr(), color2.as_ptr());
-                    let dashfontsize = conf.get_from_or(Some("Font"), "DashFontSize", "16").parse().unwrap();
-                    let textfontsize = conf.get_from_or(Some("Font"), "TextFontSize", "14").parse().unwrap();
-                    RBR_CfgFontSize(dashfontsize, textfontsize);
+                    let dashfontsize: i32 = conf.get_from_or(Some("Font"), "DashFontSize", "16").parse().unwrap();
+                    let textfontsize: i32 = conf.get_from_or(Some("Font"), "TextFontSize", "14").parse().unwrap();
+
+                    let scale_factor = self.get_system_scaling_factor();
+                    RBR_CfgFontSize(dashfontsize * scale_factor as i32, textfontsize * scale_factor as i32);
                 }
             }
         }
@@ -166,5 +168,24 @@ impl RBRGame {
                 conf.write_to_file(conf_path).unwrap();
             }
         }
+    }
+
+    #[cfg(target_os = "windows")]
+    fn get_system_scaling_factor(&self) -> f32 {
+        use winapi::um::wingdi::{LOGPIXELSY, GetDeviceCaps};
+
+        let hdc = unsafe { winapi::um::winuser::GetDC(std::ptr::null_mut()) };
+        if hdc.is_null() {
+            return 1.0; // 默认值
+        }
+        let dpi = unsafe { GetDeviceCaps(hdc, LOGPIXELSY) as f32 };
+        unsafe { winapi::um::winuser::ReleaseDC(std::ptr::null_mut(), hdc) };
+        dpi / 96.0 // 计算缩放比例
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn get_system_scaling_factor(&self) -> f32 {
+        // 在非Windows平台上返回默认值
+        1.0
     }
 }

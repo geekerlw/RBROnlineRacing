@@ -1,9 +1,10 @@
 use log::info;
 use rbnproto::httpapi::{RaceInfo, RaceState, RoomState};
-use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceCmd};
+use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceRidicule, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
 use crate::db;
 use crate::player::RacePlayer;
+use chrono::Local;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum RoomRaceState {
@@ -30,6 +31,7 @@ pub struct RaceRoom {
     pub race_state: RoomRaceState,
     limit: Option<usize>,
     passwd: Option<String>,
+    rank: Vec<RacePlayer>,
 }
 
 impl RaceRoom {
@@ -279,6 +281,40 @@ impl RaceRoom {
         });
     }
 
+    pub fn notify_all_players_race_ridicule(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+        if self.rank.is_empty() { //first initialize.
+            self.rank = self.players.clone();
+        }
+
+        let players = self.players.clone();
+
+        for (i, player) in self.players.iter_mut().enumerate() {
+            let mut loser = players[i..].to_vec();
+            let rank_index = self.rank.iter().position(|x| x.tokenstr == player.tokenstr).unwrap_or(0);
+            let loser_old = self.rank[rank_index..].to_vec();
+            loser.retain(|x| {
+                loser_old.iter().all(|item| &x.tokenstr != &item.tokenstr)
+            });
+
+            let mut ridicules = MetaRaceRidicule::default();
+            ridicules.players = loser.iter().map(|x| x.profile_name.clone()).collect();
+
+            if player.race_data.racetime > 20.0f32 
+            && Local::now().signed_duration_since(player.lastredicule) > chrono::Duration::seconds(10) {
+                let mut playerc = player.clone();
+                tokio::spawn(async move {
+                    playerc.notify_ridicule(&ridicules).await;
+                });
+            }
+            player.lastredicule = Local::now();
+        }
+
+        self.rank = self.players.clone();
+    }
+
     pub fn notify_all_players_race_result(&mut self) {
         if self.is_empty() {
             return;
@@ -366,6 +402,7 @@ impl RaceRoom {
             }
             RoomRaceState::RoomRaceRunning => {
                 self.notify_all_players_race_data();
+                self.notify_all_players_race_ridicule();
                 if self.is_all_players_finish() {
                     self.race_state = RoomRaceState::RoomRaceFinished;
                 }
