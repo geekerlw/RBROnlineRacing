@@ -306,6 +306,10 @@ impl RaceRoom {
     
                 let mut ridicules = MetaRaceRidicule::default();
                 ridicules.players = loser.iter().map(|x| x.profile_name.clone()).collect();
+
+                let old_rank = self.rank.iter().map(|x| x.profile_name.clone()).collect::<Vec<String>>();
+                let new_rank = players.iter().map(|x| x.profile_name.clone()).collect::<Vec<String>>();
+                info!("old rank: {:?}, new rank: {:?}", old_rank, new_rank);
     
                 if player.race_data.racetime > 20.0f32 && ridicules.players.len() > 0
                 && Local::now().signed_duration_since(player.lastredicule) > chrono::Duration::seconds(10) {
