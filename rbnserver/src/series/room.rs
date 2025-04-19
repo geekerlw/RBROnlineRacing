@@ -4,7 +4,7 @@ use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceRidicule, Meta
 use serde::{Serialize, Deserialize};
 use crate::db;
 use crate::player::RacePlayer;
-use chrono::Local;
+use chrono::{DateTime, Local};
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum RoomRaceState {
@@ -32,6 +32,7 @@ pub struct RaceRoom {
     limit: Option<usize>,
     passwd: Option<String>,
     rank: Vec<RacePlayer>,
+    rank_tick: DateTime<Local>,
 }
 
 impl RaceRoom {
@@ -282,37 +283,47 @@ impl RaceRoom {
     }
 
     pub fn notify_all_players_race_ridicule(&mut self) {
-        if self.is_empty() {
+        if self.is_empty() || self.race_state != RoomRaceState::RoomRaceRunning{
             return;
         }
-        if self.rank.is_empty() { //first initialize.
+
+        if Local::now().signed_duration_since(self.rank_tick) > chrono::Duration::seconds(2) {
+            self.rank_tick = Local::now();
+
+            let players = self.players.clone();
+
+            for (i, player) in self.players.iter_mut().enumerate() {
+                if self.rank.len() != players.len() {
+                    info!("no rank data, skip ridicule notify.");
+                    break;
+                }
+
+                let mut loser = players[i..].to_vec();
+                let rank_index = self.rank.iter().position(|x| x.tokenstr == player.tokenstr).unwrap_or(0);
+                let loser_old = self.rank[rank_index..].to_vec();
+                loser.retain(|x| {
+                    loser_old.iter().all(|item| &x.tokenstr != &item.tokenstr)
+                });
+    
+                let mut ridicules = MetaRaceRidicule::default();
+                ridicules.players = loser.iter().map(|x| x.profile_name.clone()).collect();
+    
+                info!("handle notify ridicule: {}, player racetime: {}", player.profile_name, player.race_data.racetime);
+
+                if player.race_data.racetime > 20.0f32 
+                && Local::now().signed_duration_since(player.lastredicule) > chrono::Duration::seconds(10) {
+                    let mut playerc = player.clone();
+                    tokio::spawn(async move {
+                        playerc.notify_ridicule(&ridicules).await;
+                        info!("notify ridicule to player: {} with: {:?}", playerc.profile_name, ridicules);
+                    });
+                    player.lastredicule = Local::now();
+                }
+            }
+
+            self.sort_players_by_progress();
             self.rank = self.players.clone();
         }
-
-        let players = self.players.clone();
-
-        for (i, player) in self.players.iter_mut().enumerate() {
-            let mut loser = players[i..].to_vec();
-            let rank_index = self.rank.iter().position(|x| x.tokenstr == player.tokenstr).unwrap_or(0);
-            let loser_old = self.rank[rank_index..].to_vec();
-            loser.retain(|x| {
-                loser_old.iter().all(|item| &x.tokenstr != &item.tokenstr)
-            });
-
-            let mut ridicules = MetaRaceRidicule::default();
-            ridicules.players = loser.iter().map(|x| x.profile_name.clone()).collect();
-
-            if player.race_data.racetime > 20.0f32 
-            && Local::now().signed_duration_since(player.lastredicule) > chrono::Duration::seconds(10) {
-                let mut playerc = player.clone();
-                tokio::spawn(async move {
-                    playerc.notify_ridicule(&ridicules).await;
-                });
-            }
-            player.lastredicule = Local::now();
-        }
-
-        self.rank = self.players.clone();
     }
 
     pub fn notify_all_players_race_result(&mut self) {
@@ -402,7 +413,6 @@ impl RaceRoom {
             }
             RoomRaceState::RoomRaceRunning => {
                 self.notify_all_players_race_data();
-                self.notify_all_players_race_ridicule();
                 if self.is_all_players_finish() {
                     self.race_state = RoomRaceState::RoomRaceFinished;
                 }
