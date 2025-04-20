@@ -29,6 +29,7 @@ impl RacingServer {
     pub fn init(mut self) -> Self {
         self.tera = Tera::new("templates/**/*.html").expect("Failed to compile templates");
         self.check_environment();
+        self.races.insert("Daily Challenge".to_string(), Box::new(Daily::default().init()));
         self.races.insert("Time Trial".to_string(), Box::new(Daily::named("Time Trial").init()));
         self.races.insert("Practice".to_string(), Box::new(Daily::named("Practice").init()));
         self
