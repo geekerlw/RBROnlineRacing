@@ -293,10 +293,9 @@ impl RaceRoom {
         if Local::now().signed_duration_since(self.rank_tick) > chrono::Duration::seconds(1) {
             self.rank_tick = Local::now();
 
-            self.sort_players_by_progress();
             let players = self.players.clone();
-
             for (i, player) in self.players.iter_mut().enumerate() {
+                let players_temp = players.clone();
                 let player_pos = player.race_data.progress / player.race_data.stagelen * self.info.stage_len as f32;
                 let player_last_pos = player.last_race_data.progress / player.last_race_data.stagelen * self.info.stage_len as f32;
 
@@ -304,7 +303,7 @@ impl RaceRoom {
                     continue; // player is in backward state or progress too short.
                 }
 
-                let winer: Vec<String> = players[0..i]
+                let winer: Vec<String> = players_temp[..i]
                     .iter()
                     .filter(|x| {
                         let pos = x.race_data.progress / player.race_data.stagelen * self.info.stage_len as f32;
