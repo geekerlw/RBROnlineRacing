@@ -195,7 +195,7 @@ impl Daily {
     pub fn trigger_next_stage(&mut self) {
         let tx = self.tx.clone();
         tokio::spawn(async move {
-            let mut scheduler = cron::Schedule::from_str("0 0/3 * * * *").unwrap();
+            let mut scheduler = cron::Schedule::from_str("0 0/2 * * * *").unwrap();
             if cfg!(debug_assertions) {
                 scheduler = cron::Schedule::from_str("0/30 * * * * *").unwrap();
             }

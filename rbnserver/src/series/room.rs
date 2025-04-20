@@ -304,21 +304,12 @@ impl RaceRoom {
                     continue; // player is in backward state or progress too short.
                 }
 
-                info!("player: {} with progress: {} and last progress: {}", player.profile_name, player_pos, player_last_pos);
-
                 let winer: Vec<String> = players[0..i]
                     .iter()
                     .filter(|x| {
                         let pos = x.race_data.progress / player.race_data.stagelen * self.info.stage_len as f32;
                         let last_pos = x.last_race_data.progress / player.last_race_data.stagelen * self.info.stage_len as f32;
-
-                        info!("winer: {} with progress: {} and last progress: {}", x.profile_name, pos, last_pos);
-
-                        if pos > player_pos && last_pos < player_last_pos {
-                            info!("retain player: {} with progress: {} and last progress: {}", x.profile_name, pos, last_pos);
-                            return true;
-                        }
-                        false
+                        pos > player_pos && last_pos < player_last_pos
                     })
                     .map(|x| x.profile_name.clone())
                     .collect();
