@@ -4,8 +4,6 @@ version = "2.5.0"
 edition = "2021"
 description = "Richard Burns Rally (RSF) realtime online racing plugin."
 authors = ["Lw_Ziye <geekerlw@gmail.com>"]
-
-[target.'cfg(target_os="windows")'.package]
 build = "build.rs"
 
 [lib]
