@@ -44,7 +44,10 @@ pub struct RacePlayer {
     pub race_data: MetaRaceData,
     pub race_cfg: RaceConfig,
     #[serde(skip)]
-    pub lastredicule: DateTime<Local>,
+    pub lastridicule: DateTime<Local>,
+    #[serde(skip)]
+    pub lastupdate: DateTime<Local>,
+    pub last_race_data: MetaRaceData,
 }
 
 impl RacePlayer {
@@ -57,8 +60,18 @@ impl RacePlayer {
             state: RaceState::default(),
             race_data: MetaRaceData::default(),
             race_cfg: RaceConfig::default(),
-            lastredicule: Local::now(),
+            lastridicule: Local::now(),
+            lastupdate: Local::now(),
+            last_race_data: MetaRaceData::default(),
         }
+    }
+
+    pub fn update_race_data(&mut self, data: &MetaRaceData) {
+        if Local::now().signed_duration_since(self.lastupdate) > chrono::Duration::milliseconds(500) {
+            self.last_race_data = self.race_data.clone();
+            self.lastupdate = Local::now();
+        }
+        self.race_data = data.clone();
     }
 
     pub fn sort_by_progress(&self, player: &RacePlayer) -> std::cmp::Ordering {

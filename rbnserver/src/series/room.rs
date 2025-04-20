@@ -31,7 +31,6 @@ pub struct RaceRoom {
     pub race_state: RoomRaceState,
     limit: Option<usize>,
     passwd: Option<String>,
-    rank: Vec<RacePlayer>,
     rank_tick: DateTime<Local>,
 }
 
@@ -283,7 +282,7 @@ impl RaceRoom {
     }
 
     pub fn notify_all_players_race_ridicule(&mut self) {
-        if self.is_empty() || self.race_state != RoomRaceState::RoomRaceRunning{
+        if self.is_empty() {
             return;
         }
 
@@ -293,37 +292,36 @@ impl RaceRoom {
             let players = self.players.clone();
 
             for (i, player) in self.players.iter_mut().enumerate() {
-                if self.rank.len() != players.len() {
-                    break;
+                let player_pos = player.race_data.progress / player.race_data.stagelen * self.info.stage_len as f32;
+                let player_last_pos = player.last_race_data.progress / player.last_race_data.stagelen * self.info.stage_len as f32;
+                if player_pos < player_last_pos || player_pos < 100.0f32 {
+                    continue; // player is in backward state or progress too short.
                 }
 
-                let mut loser = players[i..].to_vec();
-                let rank_index = self.rank.iter().position(|x| x.tokenstr == player.tokenstr).unwrap_or(0);
-                let loser_old = self.rank[rank_index..].to_vec();
-                loser.retain(|x| {
-                    loser_old.iter().all(|item| &x.tokenstr != &item.tokenstr)
-                });
-    
-                let mut ridicules = MetaRaceRidicule::default();
-                ridicules.players = loser.iter().map(|x| x.profile_name.clone()).collect();
+                let winer: Vec<String> = players[0..i]
+                    .iter()
+                    .filter(|x| {
+                        let pos = x.race_data.progress / player.race_data.stagelen * self.info.stage_len as f32;
+                        let last_pos = x.last_race_data.progress / player.last_race_data.stagelen * self.info.stage_len as f32;
+                        pos > player_pos && last_pos < player_last_pos
+                    })
+                    .map(|x| x.profile_name.clone())
+                    .collect();
 
-                let old_rank = self.rank.iter().map(|x| x.profile_name.clone()).collect::<Vec<String>>();
-                let new_rank = players.iter().map(|x| x.profile_name.clone()).collect::<Vec<String>>();
-                info!("old rank: {:?}, new rank: {:?}", old_rank, new_rank);
-    
-                if player.race_data.racetime > 20.0f32 && ridicules.players.len() > 0
-                && Local::now().signed_duration_since(player.lastredicule) > chrono::Duration::seconds(10) {
-                    let mut playerc = player.clone();
-                    tokio::spawn(async move {
-                        playerc.notify_ridicule(&ridicules).await;
-                        info!("notify ridicule to player: {} with: {:?}", playerc.profile_name, ridicules);
-                    });
-                    player.lastredicule = Local::now();
-                }
+                if winer.len() > 0 {
+                    let mut ridicules = MetaRaceRidicule::default();
+                    ridicules.players = winer;
+            
+                    if Local::now().signed_duration_since(player.lastridicule) > chrono::Duration::seconds(10) {
+                        let mut playerc = player.clone();
+                        tokio::spawn(async move {
+                            info!("notify ridicule to player: {} with: {:?}", playerc.profile_name, ridicules);
+                            playerc.notify_ridicule(&ridicules).await;
+                        });
+                        player.lastridicule = Local::now();
+                    }
+                }     
             }
-
-            self.sort_players_by_progress();
-            self.rank = self.players.clone();
         }
     }
 
@@ -414,6 +412,7 @@ impl RaceRoom {
             }
             RoomRaceState::RoomRaceRunning => {
                 self.notify_all_players_race_data();
+                self.notify_all_players_race_ridicule();
                 if self.is_all_players_finish() {
                     self.race_state = RoomRaceState::RoomRaceFinished;
                 }

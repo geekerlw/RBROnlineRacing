@@ -128,6 +128,7 @@ impl Series for Daily {
 
     fn update_player_state(&mut self, token: &String, state: RaceState) -> bool {
         if let Some(player) = self.room.get_player(token) {
+            info!("update player state: {} -> {:?}", player.profile_name, state);
             player.state = state;
             return true;
         }
@@ -136,7 +137,7 @@ impl Series for Daily {
 
     fn update_player_data(&mut self, token: &String, data: MetaRaceData) -> bool {
         if let Some(player) = self.room.get_player(token) {
-            player.race_data = data;
+            player.update_race_data(&data);
             return true;
         }
         false
@@ -244,7 +245,6 @@ impl Daily {
                 self.pit.notify_all_players_race_notice(format!("Please wait, {} players is still in racing, maybe finished in {} seconds.", self.room.players.len(), self.room.guess_race_remain()));
                 self.pit.notify_all_players_race_state();
                 self.room.notify_all_players_race_state();
-                self.room.notify_all_players_race_ridicule();
             } else {
                 self.pit.notify_all_players_race_notice(format!("Next Race will start at {}, remain {} seconds.", self.start_time, (self.start_time - Local::now()).num_seconds()));
                 self.pit.notify_all_players_race_state();

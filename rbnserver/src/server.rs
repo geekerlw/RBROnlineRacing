@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use log::error;
+use log::{error, info};
 use rbnproto::httpapi::{RaceConfig, RaceConfigUpdate, RaceCreate, RaceInfoUpdate, RaceUserState, UserHeart, UserQuery, UserScore};
 use rbnproto::httpapi::{UserLogin, UserLogout, RaceInfo, RaceBrief};
 use rbnproto::metaapi::{RaceJoin, RaceUpdate, RaceAccess, MetaRaceData};
@@ -83,6 +83,7 @@ impl RacingServer {
         let tokenstr = token.to_string();
         let player: LobbyPlayer = LobbyPlayer::new(&tokenstr, &user.name);
         db::RaceDB::default().on_user_login(&player).await;
+        info!("User {} login with token {}", player.profile_name, tokenstr);
         self.lobby.push_player(token, player);
         return Some(tokenstr);
     }
@@ -236,6 +237,7 @@ impl RacingServer {
             if let Some(player) = self.lobby.get_player(token) {
                 if let Some(race) = self.races.get_mut(&join.room) {
                     if race.is_joinable(&join) {
+                        info!(" Player {} join into race {}", player.profile_name, join.room);
                         race.join(player);
                         return true;
                     }
