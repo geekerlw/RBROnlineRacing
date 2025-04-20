@@ -67,7 +67,7 @@ impl RacePlayer {
     }
 
     pub fn update_race_data(&mut self, data: &MetaRaceData) {
-        if Local::now().signed_duration_since(self.lastupdate) > chrono::Duration::milliseconds(500) {
+        if Local::now().signed_duration_since(self.lastupdate) > chrono::Duration::seconds(2) {
             self.last_race_data = self.race_data.clone();
             self.lastupdate = Local::now();
         }
