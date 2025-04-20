@@ -289,6 +289,7 @@ impl RaceRoom {
         if Local::now().signed_duration_since(self.rank_tick) > chrono::Duration::seconds(1) {
             self.rank_tick = Local::now();
 
+            self.sort_players_by_progress();
             let players = self.players.clone();
 
             for (i, player) in self.players.iter_mut().enumerate() {
@@ -297,7 +298,7 @@ impl RaceRoom {
 
                 info!("player: {} with progress: {} and last progress: {}", player.profile_name, player_pos, player_last_pos);
 
-                if player_pos < player_last_pos || player_pos < 100.0f32 {
+                if player_pos < player_last_pos || player.race_data.racetime < 10.0 {
                     continue; // player is in backward state or progress too short.
                 }
 
@@ -330,7 +331,9 @@ impl RaceRoom {
                         });
                         player.lastridicule = Local::now();
                     }
-                }     
+                }
+
+                player.last_race_data = player.race_data.clone();
             }
         }
     }

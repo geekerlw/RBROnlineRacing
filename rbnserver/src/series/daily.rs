@@ -139,7 +139,7 @@ impl Series for Daily {
 
     fn update_player_data(&mut self, token: &String, data: MetaRaceData) -> bool {
         if let Some(player) = self.room.get_player(token) {
-            player.update_race_data(&data);
+            player.race_data = data;
             return true;
         }
         false
