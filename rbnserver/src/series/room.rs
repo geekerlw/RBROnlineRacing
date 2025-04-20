@@ -1,6 +1,6 @@
 use log::info;
-use rbnproto::httpapi::{RaceInfo, RaceState, RoomState};
-use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceRidicule, MetaRaceState, RaceCmd};
+use rbnproto::httpapi::{RaceConfig, RaceInfo, RaceState, RoomState};
+use rbnproto::metaapi::{MetaRaceData, MetaRaceProgress, MetaRaceResult, MetaRaceRidicule, MetaRaceState, RaceCmd};
 use serde::{Serialize, Deserialize};
 use crate::db;
 use crate::player::RacePlayer;
@@ -165,6 +165,10 @@ impl RaceRoom {
     pub fn reset_all_players_state(&mut self) {
         self.players.iter_mut().for_each(|x| {
             x.state = RaceState::RaceDefault;
+            x.race_cfg = RaceConfig::default();
+            x.last_race_data = MetaRaceData::default();
+            x.race_data = MetaRaceData::default();
+            x.lastridicule = Local::now();
         });
     }
 
@@ -296,11 +300,11 @@ impl RaceRoom {
                 let player_pos = player.race_data.progress / player.race_data.stagelen * self.info.stage_len as f32;
                 let player_last_pos = player.last_race_data.progress / player.last_race_data.stagelen * self.info.stage_len as f32;
 
-                info!("player: {} with progress: {} and last progress: {}", player.profile_name, player_pos, player_last_pos);
-
                 if player_pos < player_last_pos || player.race_data.racetime < 10.0 {
                     continue; // player is in backward state or progress too short.
                 }
+
+                info!("player: {} with progress: {} and last progress: {}", player.profile_name, player_pos, player_last_pos);
 
                 let winer: Vec<String> = players[0..i]
                     .iter()
