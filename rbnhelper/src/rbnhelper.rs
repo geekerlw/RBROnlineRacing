@@ -164,7 +164,15 @@ impl RBNHelper {
         self.fetch_race_news();
         self.fetch_user_score();
 
-        if last_menu == 0 && (menu == 2 || menu == 3) {
+        if last_menu == 0 && menu == 2 {
+            self.race_name = "Time Trial".to_string();
+            if self.join_race(&self.race_name.clone()) {
+                self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
+            }
+        }
+
+        if last_menu == 0 && menu == 3 {
+            self.race_name = "Practice".to_string();
             if self.join_race(&self.race_name.clone()) {
                 self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
             }
@@ -183,7 +191,7 @@ impl RBNHelper {
             let race_join = RaceJoin {token: self.store.user_token.clone(), room: race.clone(), passwd: None};
             let join_url = self.store.get_http_url("api/race/join");
             let info_url = self.store.get_http_url("api/race/info");
-            let info_query = RaceQuery {name: self.race_name.clone()};
+            let info_query = RaceQuery {name: race.clone()};
             return tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let res = reqwest::Client::new().post(join_url).json(&race_join).send().await;
                 if let Ok(res) = res {

@@ -18,6 +18,7 @@ enum DailyMsg {
 }
 
 pub struct Daily {
+    room_name: String,
     start_time: DateTime<Local>,
     tick_time: DateTime<Local>,
     pit: RacePitHouse,
@@ -30,6 +31,7 @@ impl Default for Daily {
     fn default() -> Self {
         let (tx, rx) = channel::<DailyMsg>(8);
         Self {
+            room_name: "Daily Challenge".to_string(),
             start_time: Local::now(),
             tick_time: Local::now(),
             pit: RacePitHouse::default(), 
@@ -152,6 +154,12 @@ impl Series for Daily {
 }
 
 impl Daily {
+    pub fn named(name: &str) -> Self {
+        let mut series = Daily::default();
+        series.room_name = name.to_string();
+        series
+    }
+
     pub fn init(mut self) -> Self {
         self.generate_next_stage();
         self.generate_players();
@@ -171,7 +179,7 @@ impl Daily {
 
     pub fn generate_next_stage(&mut self) {
         let mut randomer = RaceRandomer::build()
-            .with_name("Daily Challenge".to_string())
+            .with_name(self.room_name.clone())
             .with_owner("Lw_Ziye".to_string())
             .with_exclude()
             .fixed_damage(3);
