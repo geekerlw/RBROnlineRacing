@@ -429,7 +429,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], data: Arc<Mutex
 async fn handle_web_index(data: web::Data<Arc<Mutex<RacingServer>>>) -> HttpResponse {
     let server = data.lock().await;
     let mut context = tera::Context::new();
-    context.insert("last_release", &format!("RBNHelper_{}.zip", std::env!("CARGO_PKG_VERSION")));
+    context.insert("last_release", "RBNHelper_latest.zip");
     let rendered = server.tera.render("index.html", &context)
         .expect("failed to render template");
 
