@@ -54,7 +54,7 @@ impl RBRGame {
                     let textfontsize: i32 = conf.get_from_or(Some("Font"), "TextFontSize", "14").parse().unwrap();
 
                     let scale_factor = self.get_system_scaling_factor();
-                    RBR_CfgFontSize(dashfontsize * scale_factor as i32, textfontsize * scale_factor as i32);
+                    RBR_CfgFontSize(dashfontsize / scale_factor as i32, textfontsize / scale_factor as i32);
                 }
             }
         }
