@@ -1,8 +1,9 @@
 use std::{fs::File, path::PathBuf};
 use std::io::BufReader;
 use ini::Ini;
+use rand::seq::SliceRandom;
 use rodio::OutputStream;
-use rand::{thread_rng, Rng};
+use rand::thread_rng;
 
 pub struct AudioPlayer {
     file: PathBuf,
@@ -45,18 +46,19 @@ impl AudioPlayer {
             if let Ok(conf) = Ini::load_from_file(&conf_path) {
                 player.volume = conf.get_from_or(Some("Audio"), "Volume", "0.4").parse().unwrap();
             }
-            
-            let filename = format!("overtake-{}.wav", thread_rng().gen_range(0..3));
-            let target_file = game_root.join("Plugins").join("RBNHelper")
-                .join("audio").join("ridicule")
-                .join(player_name).join(filename);
 
-            if !target_file.exists() {
-                player.file = game_root.join("Plugins").join("RBNHelper")
+            let mut target_path = game_root.join("Plugins").join("RBNHelper")
+                .join("audio").join("ridicule")
+                .join(player_name);
+            if !target_path.exists() {
+                target_path = game_root.join("Plugins").join("RBNHelper")
                     .join("audio").join("ridicule")
-                    .join("overtake-default.wav");
-            } else {
-                player.file = target_file;
+                    .join("default");
+            }
+
+            let entrys: Vec<_> = std::fs::read_dir(target_path).unwrap().filter_map(Result::ok).collect();
+            if let Some(entry) = entrys.choose(&mut thread_rng()) {
+                player.file = entry.path();
             }
         }
         player
@@ -74,7 +76,7 @@ impl AudioPlayer {
     }
 
     pub fn play(&mut self) {
-        if self.file.exists() && self.file.is_file() {
+        if self.file.exists() && self.file.is_file() && self.file.extension().map_or(false, |ext| ext == "wav") {
             let audio_file = self.file.clone();
             let timeout = self.timeout.clone();
             let volume = self.volume.clone();
