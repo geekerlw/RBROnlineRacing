@@ -291,6 +291,6 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
 
 async fn start_game_ridicule(ridicule: MetaRaceRidicule) {
     for profile in ridicule.players {
-        AudioPlayer::overtake(&profile).set_timeout(5).play();
+        AudioPlayer::ridicule(&profile, "overtake").set_timeout(5).play();
     }
 }

@@ -39,7 +39,7 @@ impl AudioPlayer {
         player
     }
 
-    pub fn overtake(player_name: &str) -> Self {
+    pub fn ridicule(player_name: &str, prefix: &str) -> Self {
         let mut player = AudioPlayer::default();
         if let Some(game_root) = std::env::current_exe().unwrap().parent() {
             let conf_path = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
@@ -56,7 +56,10 @@ impl AudioPlayer {
                     .join("default");
             }
 
-            let entrys: Vec<_> = std::fs::read_dir(target_path).unwrap().filter_map(Result::ok).collect();
+            let entrys: Vec<_> = std::fs::read_dir(target_path).unwrap()
+                .filter_map(Result::ok)
+                .filter(|entry| entry.file_name().to_string_lossy().starts_with(prefix))
+                .collect();
             if let Some(entry) = entrys.choose(&mut thread_rng()) {
                 player.file = entry.path();
             }
