@@ -60,6 +60,26 @@ impl RaceRoom {
         None
     }
 
+    pub fn get_player_nearby(&mut self, tokenstr: &String, dist: f32) -> Option<Vec<RacePlayer>> {
+        if let Some(center) = self.get_player(tokenstr) {
+            let center_pos = center.race_data.progress / center.race_data.stagelen * self.info.stage_len as f32;
+
+            let mut players = Vec::<RacePlayer>::new();
+            for player in &self.players {
+                if &player.tokenstr == tokenstr {
+                    continue;
+                }
+
+                let player_pos = player.race_data.progress / player.race_data.stagelen * self.info.stage_len as f32;
+                if player_pos > center_pos - dist && player_pos < center_pos + dist {
+                    players.push(player.clone());
+                }
+            }
+            return Some(players);
+        }
+        None
+    }
+
     pub fn is_player_exist(&mut self, name: &String) -> bool {
         for player in &self.players {
             if &player.profile_name == name {
@@ -283,6 +303,20 @@ impl RaceRoom {
                 player.notify_racedata(&results).await;
             }
         });
+    }
+
+    pub fn notify_near_players_horn(&mut self, tokenstr: &String) {
+        if self.is_empty() {
+            return;
+        }
+
+        if let Some(players) = self.get_player_nearby(tokenstr, 5.0) {
+            tokio::spawn(async move {
+                for player in players {
+                    player.notify_user_cmd(&RaceCmd::RaceCmdHorn).await;
+                }
+            });
+        }
     }
 
     pub fn notify_all_players_race_ridicule(&mut self) {

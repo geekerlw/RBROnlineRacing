@@ -141,6 +141,10 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
                     info!("recv cmd to upload race data");
                     tokio::spawn(start_game_upload(token.clone(), room.clone(), writer.clone()));
                 }
+                RaceCmd::RaceCmdHorn => {
+                    info!("recv cmd to play horn");
+                    AudioPlayer::horn().set_timeout(2).play();
+                }
                 _ => {}
             }
         }
@@ -275,9 +279,14 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
                     }).await;
                 },
                 RaceState::RaceRunning => {
+                    let horn = rbr.is_horn_pressed();
+                    if horn {
+                        AudioPlayer::horn().set_timeout(2).play();
+                    }
                     let mut data = rbr.get_race_data();
                     data.token = user_token.clone();
                     data.room = room_name.clone();
+                    data.horn = horn;
                     let body = bincode::serialize(&data).unwrap();
                     let head = bincode::serialize(&MetaHeader{length: body.len() as u16, format: DataFormat::FmtUploadData}).unwrap();
                     writer.lock().await.write_all(&[&head[..], &body[..]].concat()).await.unwrap_or(());

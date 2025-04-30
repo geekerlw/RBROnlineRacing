@@ -11,6 +11,7 @@ pub enum RaceCmd {
     RaceCmdStart,
     RaceCmdUpload,
     RaceCmdFinish,
+    RaceCmdHorn,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -84,6 +85,7 @@ pub struct MetaRaceData {
     pub finishtime: f32,
     pub carlook: D3DQuaternion,
     pub carpos: D3DQuaternion,
+    pub horn: bool,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

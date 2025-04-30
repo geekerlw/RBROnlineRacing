@@ -142,6 +142,11 @@ impl Series for Daily {
             player.race_data = data;
             return true;
         }
+
+        if data.horn {
+            self.room.notify_near_players_horn(token);
+        }
+
         false
     }
 

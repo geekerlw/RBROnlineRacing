@@ -67,6 +67,21 @@ impl AudioPlayer {
         player
     }
 
+    pub fn horn() -> Self {
+        let mut player = AudioPlayer::default();
+        if let Some(game_root) = std::env::current_exe().unwrap().parent() {
+            let conf_path = game_root.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
+            if let Ok(conf) = Ini::load_from_file(&conf_path) {
+                player.volume = conf.get_from_or(Some("Audio"), "Volume", "0.4").parse().unwrap();
+            }
+
+            player.file = game_root.join("Plugins").join("RBNHelper")
+                .join("audio").join("ridicule")
+                .join("default").join("horn.wav");
+        }
+        player
+    }
+
     pub fn set_timeout(mut self, secs: u64) -> Self {
         self.timeout = secs;
         self
