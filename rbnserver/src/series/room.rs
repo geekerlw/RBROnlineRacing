@@ -351,7 +351,8 @@ impl RaceRoom {
                     let mut ridicules = MetaRaceRidicule::default();
                     ridicules.players = winer;
             
-                    if Local::now().signed_duration_since(player.lastridicule) > chrono::Duration::seconds(10) {
+                    if Local::now().signed_duration_since(player.lastridicule) > chrono::Duration::seconds(10) 
+                    && player.state == RaceState::RaceRunning {
                         let mut playerc = player.clone();
                         tokio::spawn(async move {
                             info!("notify ridicule to player: {} with: {:?}", playerc.profile_name, ridicules);
