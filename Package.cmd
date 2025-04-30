@@ -47,9 +47,11 @@ cargo build --release --package rbnhelper --target i686-pc-windows-msvc
 
 rem Create release folders and copy the release versions of plugin files there
 mkdir "%RELEASE_FOLDER%\"
+mkdir "%RELEASE_FOLDER%\GhostCars\"
 mkdir "%RELEASE_FOLDER%\Plugins\"
 mkdir "%RELEASE_FOLDER%\Plugins\%APPNAME%\"
 
+xcopy /s "rbnhelper\rbr\GhostCars\*.*" "%RELEASE_FOLDER%\GhostCars"
 xcopy /s "rbnhelper\rbr\Plugins\*.*"      "%RELEASE_FOLDER%\Plugins"
 copy "README_cn.md"             "%RELEASE_FOLDER%\Plugins\%APPNAME%\Readme.%APPNAME%.txt"
 copy "LICENSE"               "%RELEASE_FOLDER%\Plugins\%APPNAME%\"
