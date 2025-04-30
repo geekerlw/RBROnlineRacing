@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [package.metadata.winres]
 OriginalFilename = "rbnhelper.dll"
-LegalCopyright = "Copyright © 2023-2024 Lw_Ziye. All rights reserved."
+LegalCopyright = "Copyright © 2023-2025 Lw_Ziye. All rights reserved."
 FileDescription = "SimRallyCn RBR联机对战助手"
 ProductName = "SimRallyCn RBR联机对战助手"
 ProductVersion = "1.1"
