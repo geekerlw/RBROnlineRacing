@@ -140,14 +140,13 @@ impl Series for Daily {
     fn update_player_data(&mut self, token: &String, data: MetaRaceData) -> bool {
         if let Some(player) = self.room.get_player(token) {
             player.race_data = data;
-            return true;
         }
 
         if data.horn {
             self.room.notify_near_players_horn(token);
         }
 
-        false
+        true
     }
 
     fn framed_schedule(&mut self) {
