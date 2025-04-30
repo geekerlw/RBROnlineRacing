@@ -76,8 +76,8 @@ impl AudioPlayer {
             }
 
             player.file = game_root.join("Plugins").join("RBNHelper")
-                .join("audio").join("ridicule")
-                .join("default").join("horn.wav");
+                .join("audio").join("notification")
+                .join("horn.wav");
         }
         player
     }
