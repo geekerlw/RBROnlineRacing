@@ -12,6 +12,7 @@ mod game;
 mod overlay;
 mod backend;
 mod rbnhelper;
+mod menu;
 
 lazy_static! {
     static ref RBNHELPER: Mutex<RBNHelper> = Mutex::new(RBNHelper::default());
@@ -28,6 +29,12 @@ extern fn rbn_init() -> *const c_char {
 extern fn rbn_on_end_frame() {
     let mut plugin = RBNHELPER.lock().unwrap();
     plugin.draw_on_end_frame();
+}
+
+#[no_mangle]
+extern fn rbn_on_draw_frontend_page() {
+    let mut plugin = RBNHELPER.lock().unwrap();
+    plugin.draw_frontend_page();
 }
 
 #[no_mangle]
@@ -71,6 +78,7 @@ extern "cdecl" fn RBR_CreatePlugin(rbrgame: *mut c_void) -> *mut c_void {
         RBR_SetOnEndScene(rbn_on_end_frame);
         RBR_SetOnRsfMenuChanged(rbn_on_rsf_menu_changed);
         RBR_SetOnGameModeChanged(rbn_on_game_mode_changed);
+        RBR_SetDrawFrontEndPage(rbn_on_draw_frontend_page);
 
         return plugin;
     };

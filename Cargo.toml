@@ -2,5 +2,6 @@
 members = [
     "rbnserver",
     "rbnhelper",
+    "rbrproxy",
 ]
 resolver = "2"

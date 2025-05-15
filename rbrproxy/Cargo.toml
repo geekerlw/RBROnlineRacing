@@ -1,0 +1,12 @@
+[package]
+name = "rbrproxy"
+version = "1.0.0"
+edition = "2024"
+description = "SimRallyCn Proxy Service Plugin."
+authors = ["Lw_Ziye <geekerlw@gmail.com>"]
+build = "build.rs"
+
+[dependencies]
+rbnproto = { path = "../rbnproto" }
+libc = "0.2.151"
+rust-ini = "0.20.0"

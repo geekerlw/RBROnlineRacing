@@ -11,12 +11,14 @@ use crate::game::plugin::IPlugin;
 use crate::game::hacker::*;
 use crate::game::rbr::RBRGame;
 use crate::components::store::RacingStore;
+use crate::menu::Menu;
 use crate::overlay::copyright::CopyRight;
 use crate::overlay::news::RaceNews;
 use crate::overlay::notice::RaceNotice;
 use crate::overlay::scoreboard::ScoreBoard;
 use crate::overlay::Overlay;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
+use crate::menu::entry::EntryMenu;
 
 pub enum InnerMsg {
     MsgUserLogined(String),
@@ -33,6 +35,7 @@ pub struct RBNHelper {
     rsf_menu: i32,
     race_name: String,
     overlays: Vec<Box<dyn Overlay + Send + Sync>>,
+    menu: EntryMenu,
 }
 
 impl Default for RBNHelper {
@@ -46,6 +49,7 @@ impl Default for RBNHelper {
             rsf_menu: 0,
             race_name: String::from("Daily Challenge"),
             overlays: vec![],
+            menu: EntryMenu::default(),
         }
     }
 }
@@ -63,6 +67,7 @@ impl RBNHelper {
         self.load_dashboard_config();
         self.check_and_login();
         self.init_overlays();
+        self.menu.init();
     }
 
     pub fn is_logined(&self) -> bool {
@@ -148,6 +153,10 @@ impl RBNHelper {
     pub fn draw_on_end_frame(&mut self) {
         self.async_message_handle();
         self.draw_overlays();
+    }
+
+    pub fn draw_frontend_page(&mut self) {
+        self.menu.draw();
     }
 
     pub fn on_game_mode_changed(&mut self) {

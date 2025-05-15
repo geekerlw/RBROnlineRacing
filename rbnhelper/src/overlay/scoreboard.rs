@@ -24,6 +24,6 @@ impl Overlay for ScoreBoard {
 
     fn draw_ui(&mut self, store: &RacingStore) {
         let text = CString::new(format!("{} {}", store.scoreinfo.license, store.scoreinfo.score)).unwrap_or_default();
-        unsafe { RBR_DrawTextOverRsf(self.posx, self.posy, 0xFFFFFFFF, text.as_ptr()) };
+        //unsafe { RBR_DrawTextOverRsf(self.posx, self.posy, 0xFFFFFFFF, text.as_ptr()) };
     }
 }
