@@ -1,7 +1,5 @@
 use log::info;
 
-use crate::game::hacker::{RBR_DrawMenuText, RBR_DrawTextOverRsf};
-
 pub mod entry;
 
 const MENU_LINE_HEIGHT: i16 = 21;

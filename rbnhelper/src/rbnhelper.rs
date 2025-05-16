@@ -7,15 +7,9 @@ use reqwest::StatusCode;
 use tokio::time::Instant;
 use crate::backend::{RBNBackend, TaskMsg};
 use crate::components::player::AudioPlayer;
-use crate::game::plugin::IPlugin;
-use crate::game::hacker::*;
-use crate::game::rbr::RBRGame;
+use rbrproxy::game::RBRGame;
 use crate::components::store::RacingStore;
 use crate::menu::Menu;
-use crate::overlay::copyright::CopyRight;
-use crate::overlay::news::RaceNews;
-use crate::overlay::notice::RaceNotice;
-use crate::overlay::scoreboard::ScoreBoard;
 use crate::overlay::Overlay;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use crate::menu::entry::EntryMenu;
@@ -54,13 +48,6 @@ impl Default for RBNHelper {
     }
 }
 
-impl IPlugin for RBNHelper {
-    fn GetName(&mut self) -> *const libc::c_char {
-        let name = std::ffi::CString::new("RBN Helper").unwrap();
-        name.into_raw()
-    }
-}
-
 impl RBNHelper {
     pub fn init(&mut self) {
         self.store.init();
@@ -84,9 +71,9 @@ impl RBNHelper {
         self.overlays.push(Box::new(RaceNews::default()));
         self.overlays.push(Box::new(RaceNotice::default()));
 
-        let window_width = unsafe { RBR_GetD3dWindowWidth() };
-        let window_height = unsafe { RBR_GetD3dWindowHeight() };
-        self.overlays.iter_mut().for_each(|x| x.init(window_width, window_height));
+        //TODO: let window_width = unsafe { RBR_GetD3dWindowWidth() };
+        //TODO: let window_height = unsafe { RBR_GetD3dWindowHeight() };
+        //TODO: self.overlays.iter_mut().for_each(|x| x.init(window_width, window_height));
     }
 
     pub fn draw_overlays(&mut self) {
@@ -122,7 +109,7 @@ impl RBNHelper {
     fn load_dashboard_config(&mut self) {
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let conf_path = game_path.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
-            RBRGame::default().cfg_dashboard_style(conf_path);
+            //TODO: RBRGame::default().cfg_dashboard_style(conf_path);
         }
     }
 
@@ -210,8 +197,8 @@ impl RBNHelper {
                             if res.status() == StatusCode::OK {
                                 let text = res.text().await.unwrap();
                                 let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
-                                RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
-                                RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
+                                //TODO: RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
+                                //TODO: RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
                                 AudioPlayer::notification("join.wav").play();
                                 return true;
                             };

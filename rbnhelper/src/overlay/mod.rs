@@ -1,12 +1,10 @@
 use crate::components::store::RacingStore;
 
-pub mod copyright;
-pub mod scoreboard;
-pub mod news;
-pub mod notice;
+pub mod leaderboard;
+pub mod progressbar;
 
 pub trait Overlay {
-    fn init(&mut self, width: i16, height: i16);
+    fn init(&mut self);
 
-    fn draw_ui(&mut self, _store: &RacingStore);
+    fn draw(&self, _store: &RacingStore);
 }

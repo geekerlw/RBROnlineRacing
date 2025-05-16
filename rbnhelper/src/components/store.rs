@@ -1,8 +1,7 @@
 use ini::Ini;
 use log::info;
-use rbnproto::httpapi::UserScore;
-
-use crate::game::rbr::RBRGame;
+use rbnproto::{httpapi::UserScore, metaapi::MetaRaceProgress};
+use rbrproxy::game::RBRGame;
 
 #[derive(Default, Clone)]
 pub struct RacingStore {
@@ -16,6 +15,7 @@ pub struct RacingStore {
     pub brief_news: String,
     pub noticeinfo: String,
     pub scoreinfo: UserScore,
+    pub racedata: Vec<MetaRaceProgress>,
 }
 
 impl RacingStore {

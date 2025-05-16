@@ -12,9 +12,10 @@ use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex, OnceCell};
 
+use crate::components::input::is_horn_pressed;
 use crate::components::player::AudioPlayer;
 use crate::components::store::RacingStore;
-use crate::game::rbr::RBRGame;
+use rbrproxy::game::RBRGame;
 use crate::rbnhelper::InnerMsg;
 
 
@@ -151,12 +152,12 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
         DataFormat::FmtSyncRaceState => {
             let state: Vec<MetaRaceState> = bincode::deserialize(pack_data).unwrap();
-            RBRGame::default().feed_race_state(&state);
+            //TODO: RBRGame::default().feed_race_state(&state);
         }
 
         DataFormat::FmtSyncRaceData => {
             let progress: Vec<MetaRaceProgress> = bincode::deserialize(pack_data).unwrap();
-            RBRGame::default().feed_race_data(&progress);
+            //TODO: RBRGame::default().feed_race_data(&progress);
         }
 
         DataFormat::FmtSyncRaceRidicule => {
@@ -167,7 +168,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
         DataFormat::FmtSyncRaceResult => {
             let result: Vec<MetaRaceResult> = bincode::deserialize(pack_data).unwrap();
-            RBRGame::default().feed_race_result(&result);
+            //TODO: RBRGame::default().feed_race_result(&result);
         }
 
         DataFormat::FmtSyncRaceNotice => {
@@ -183,7 +184,7 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
     let user_token = token.clone();
     let room_name = room.clone();
     let notifier = notifier.clone();
-    rbr.config(&info);
+    //TODO: rbr.config(&info);
     tokio::spawn(async move {
         AudioPlayer::notification("prepare.wav").set_timeout(5).play();
         tokio::time::sleep_until(Instant::now() + Duration::from_secs(1)).await;
@@ -279,7 +280,7 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
                     }).await;
                 },
                 RaceState::RaceRunning => {
-                    let horn = rbr.is_horn_pressed();
+                    let horn = is_horn_pressed();
                     if horn {
                         AudioPlayer::horn().set_timeout(2).play();
                     }
