@@ -3,7 +3,7 @@ use hacker::*;
 use libc::{c_char, c_void};
 use rbnproto::D3DQuaternion;
 
-pub mod hacker;
+mod hacker;
 
 pub struct RBRProxy;
 
