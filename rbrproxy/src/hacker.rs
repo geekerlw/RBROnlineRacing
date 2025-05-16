@@ -1,4 +1,6 @@
+#[cfg(target_os = "windows")]
 use libc::{c_char, c_void};
+#[cfg(target_os = "windows")]
 use rbnproto::D3DQuaternion;
 
 #[cfg(target_os = "windows")]

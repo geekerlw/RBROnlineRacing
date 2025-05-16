@@ -1,13 +1,13 @@
+#[allow(unused_imports)]
 use hacker::*;
 use libc::{c_char, c_void};
 use rbnproto::D3DQuaternion;
-#[cfg(not(target_os = "windows"))]
-use std::ptr::null;
 
 pub mod hacker;
 
 pub struct RBRProxy;
 
+#[allow(unused_variables)]
 impl RBRProxy {
     pub fn init(&self) {
         #[cfg(target_os = "windows")]
@@ -84,7 +84,7 @@ impl RBRProxy {
         };
 
         #[cfg(not(target_os = "windows"))]
-        return null()
+        return std::ptr::null_mut()
     }
 
     pub fn destroy_graph_render(render: *mut c_void) {
@@ -229,7 +229,7 @@ impl RBRProxy {
         };
 
         #[cfg(not(target_os = "windows"))]
-        return 0f32
+        return false
     }
 
     pub fn read_car_look() -> D3DQuaternion {
