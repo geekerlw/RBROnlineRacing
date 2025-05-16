@@ -3,6 +3,7 @@ use log::info;
 use rbnproto::httpapi::{RaceInfo, RaceQuery, UserHeart, UserLogin, UserQuery, UserScore};
 use rbnproto::metaapi::{RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
+use rbrproxy::plugin::IPlugin;
 use reqwest::StatusCode;
 use tokio::time::Instant;
 use crate::backend::{RBNBackend, TaskMsg};
@@ -12,7 +13,7 @@ use crate::components::store::RacingStore;
 use crate::menu::Menu;
 use crate::overlay::Overlay;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
-use crate::menu::entry::EntryMenu;
+use crate::menu::loby::LobyMenu;
 
 pub enum InnerMsg {
     MsgUserLogined(String),
@@ -26,10 +27,9 @@ pub struct RBNHelper {
     rx: Receiver<InnerMsg>,
     tx: Sender<InnerMsg>,
     store: RacingStore,
-    rsf_menu: i32,
     race_name: String,
     overlays: Vec<Box<dyn Overlay + Send + Sync>>,
-    menu: EntryMenu,
+    menu: LobyMenu,
 }
 
 impl Default for RBNHelper {
@@ -40,18 +40,27 @@ impl Default for RBNHelper {
             rx,
             tx,
             store: RacingStore::default(),
-            rsf_menu: 0,
             race_name: String::from("Daily Challenge"),
             overlays: vec![],
-            menu: EntryMenu::default(),
+            menu: LobyMenu::default(),
         }
+    }
+}
+
+impl IPlugin for RBNHelper {
+    fn get_name(&mut self) -> *const libc::c_char {
+        let name = std::ffi::CString::new("Online Battle").unwrap();
+        name.into_raw()
+    }
+
+    fn draw_menu(&mut self) {
+        self.menu.draw();
     }
 }
 
 impl RBNHelper {
     pub fn init(&mut self) {
         self.store.init();
-        self.load_dashboard_config();
         self.check_and_login();
         self.init_overlays();
         self.menu.init();
@@ -66,10 +75,10 @@ impl RBNHelper {
     }
 
     pub fn init_overlays(&mut self) {
-        self.overlays.push(Box::new(CopyRight::default()));
-        self.overlays.push(Box::new(ScoreBoard::default()));
-        self.overlays.push(Box::new(RaceNews::default()));
-        self.overlays.push(Box::new(RaceNotice::default()));
+        // self.overlays.push(Box::new(CopyRight::default()));
+        // self.overlays.push(Box::new(ScoreBoard::default()));
+        // self.overlays.push(Box::new(RaceNews::default()));
+        // self.overlays.push(Box::new(RaceNotice::default()));
 
         //TODO: let window_width = unsafe { RBR_GetD3dWindowWidth() };
         //TODO: let window_height = unsafe { RBR_GetD3dWindowHeight() };
@@ -78,7 +87,7 @@ impl RBNHelper {
 
     pub fn draw_overlays(&mut self) {
         self.overlays.iter_mut().for_each(|x| {
-            x.draw_ui(&self.store);
+            x.draw(&self.store);
         });
     }
 
@@ -104,13 +113,6 @@ impl RBNHelper {
                 }
             }
         });
-    }
-
-    fn load_dashboard_config(&mut self) {
-        if let Some(game_path) = std::env::current_exe().unwrap().parent() {
-            let conf_path = game_path.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
-            //TODO: RBRGame::default().cfg_dashboard_style(conf_path);
-        }
     }
 
     pub fn async_message_handle(&mut self) {
@@ -144,41 +146,6 @@ impl RBNHelper {
 
     pub fn draw_frontend_page(&mut self) {
         self.menu.draw();
-    }
-
-    pub fn on_game_mode_changed(&mut self) {
-        let mut rbr = RBRGame::default();
-
-        if rbr.game_mode() == 0x05 { // clear notice info when game start load.
-            self.store.noticeinfo.clear();
-        }
-    }
-
-    pub fn on_rsf_menu_changed(&mut self, menu: i32) {
-        let last_menu = self.rsf_menu;
-        self.rsf_menu = menu;
-        self.fetch_race_news();
-        self.fetch_user_score();
-
-        if last_menu == 0 && menu == 2 {
-            self.race_name = "Time Trial".to_string();
-            if self.join_race(&self.race_name.clone()) {
-                self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
-            }
-        }
-
-        if last_menu == 0 && menu == 3 {
-            self.race_name = "Practice".to_string();
-            if self.join_race(&self.race_name.clone()) {
-                self.backend.trigger(TaskMsg::MsgStartStage(self.race_name.clone()));
-            }
-        }
-
-        if (last_menu == 2 || last_menu == 3) && menu == 0 {
-            if self.leave_race(&self.race_name.clone()) {
-                self.backend.trigger(TaskMsg::MsgStopStage);
-            }
-        }
     }
 
     // need to call by hooking hotlap and practice menu in.

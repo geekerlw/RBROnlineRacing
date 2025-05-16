@@ -1,18 +1,14 @@
 use std::ffi::{c_void, CString};
-
 use rbrproxy::RBRProxy;
-
 use crate::components::time::format_seconds;
-
 use super::Overlay;
-
 
 pub struct LeaderBoard {
     pos: [i16; 2],
-    player_colors: [i32; 8],
+    player_colors: [u32; 8],
     player_name: String,
-    own_color: i32,
-    other_color: i32,
+    own_color: u32,
+    other_color: u32,
     rbrproxy: RBRProxy,
     render: *mut c_void,
 }

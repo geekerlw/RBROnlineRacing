@@ -1,10 +1,11 @@
-use log::info;
+use std::ffi::CString;
+use rbrproxy::RBRProxy;
 
-pub mod entry;
+pub mod loby;
 
-const MENU_LINE_HEIGHT: i16 = 21;
+const MENU_LINE_HEIGHT: f32 = 21.0f32;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub enum EFonts {
     #[default]
     FontSmall,
@@ -13,7 +14,18 @@ pub enum EFonts {
     FontHead,
 }
 
-#[derive(Default)]
+impl Into<i32> for EFonts {
+    fn into(self) -> i32 {
+        match self {
+            EFonts::FontSmall => 0,
+            EFonts::FontBig => 1,
+            EFonts::FontDebug => 2,
+            EFonts::FontHead => 3,
+        }
+    }
+}
+
+#[derive(Default, Clone)]
 pub enum EMenuColors {
     MenuBkground,
     MenuSelection,
@@ -23,9 +35,21 @@ pub enum EMenuColors {
     MenuHeading,
 }
 
+impl Into<i32> for EMenuColors {
+    fn into(self) -> i32 {
+        match self {
+            EMenuColors::MenuBkground => 0,
+            EMenuColors::MenuSelection => 1,
+            EMenuColors::MenuIcon => 2,
+            EMenuColors::MenuText => 3,
+            EMenuColors::MenuHeading => 4,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct MenuEntry {
-    text: String,
+    text: CString,
     selectable: bool,
     tips: Option<String>,
     font: Option<EFonts>,
@@ -54,6 +78,7 @@ pub trait Menu {
 pub struct MenuOp {
     select_index: usize,
     entries: Vec<MenuEntry>,
+    rbrproxy: RBRProxy,
 }
 
 impl MenuOp {
@@ -87,39 +112,36 @@ impl MenuOp {
     }
 
     fn select(&mut self, menu: &mut (dyn Menu + 'static)) {
-        if let Some(entry) = self.entries.get_mut(self.select_index) {
-            menu.select(self.select_index);
-        }
+        menu.select(self.select_index);
     }
 
     fn draw(&self) {
-        let mut x = 65i16;
-        let mut y = 80i16;
+        let mut x = 65.0f32;
+        let mut y = 80.0f32;
         for (line, entry) in self.entries.iter().enumerate() {
             if let Some(font) = &entry.font {
-                // game set font.
-            }
-
-            if let Some(color) = &entry.color {
-                // game set color
+                self.rbrproxy.set_font_size(font.clone().into());
             }
 
             if let Some(menu_color) = &entry.menu_color {
-                // game set menu color
+                self.rbrproxy.set_menu_color(menu_color.clone().into());
             }
             else if let Some(color) = &entry.color {
-                // game set color
+                self.rbrproxy.set_color(color[0], color[1], color[2],color[3]);
             }
 
             if let Some(pos) = &entry.position {
-                x = pos[0] as i16;
-                y = pos[1] as i16;
+                x = pos[0];
+                y = pos[1];
+            }
+            
+            if line == self.select_index {
+                self.rbrproxy.draw_selection(x, y - 10.0, 200f32);
             }
 
-            unsafe { RBR_DrawTextOverRsf(x, y, 0xFFFFFFFF, entry.text.as_ptr()) };
+            self.rbrproxy.draw_text(x, y, entry.text.as_ptr());
 
             y += MENU_LINE_HEIGHT;
-            info!("steven: draw text in [{}, {}], {}", x, y, entry.text);
         }
     }
 }
