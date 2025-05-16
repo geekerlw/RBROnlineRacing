@@ -1,6 +1,8 @@
 use hacker::*;
-use libc::c_char;
+use libc::{c_char, c_void};
 use rbnproto::D3DQuaternion;
+#[cfg(not(target_os = "windows"))]
+use std::ptr::null;
 
 pub mod hacker;
 
@@ -70,6 +72,51 @@ impl RBRProxy {
     pub fn set_color(r: f32, g: f32, b: f32, a: f32) {
         #[cfg(target_os = "windows")]
         unsafe { RBR_SetColor(r, g, b, a);}
+    }
+
+    /**
+     * Functions to draw in game overlay or graph.
+     */
+    pub fn create_graph_render(fontsize: i32, bold: bool) -> *mut c_void {
+        #[cfg(target_os = "windows")]
+        return unsafe {
+            RBR_CreateGraphRender(fontsize, bold)
+        };
+
+        #[cfg(not(target_os = "windows"))]
+        return null()
+    }
+
+    pub fn destroy_graph_render(render: *mut c_void) {
+        #[cfg(target_os = "windows")]
+        return unsafe {
+            RBR_DestroyGraphRender(render)
+        };
+    }
+
+    pub fn graph_begin_draw(render: *mut c_void) {
+        #[cfg(target_os = "windows")]
+        unsafe { RBR_GraphBeginDraw(render) }
+    }
+
+    pub fn graph_end_draw(render: *mut c_void) {
+        #[cfg(target_os = "windows")]
+        unsafe { RBR_GraphEndDraw(render) }
+    }
+
+    pub fn graph_draw_string(render: *mut c_void, x: i16, y: i16, color: i32, text: *const c_char) {
+        #[cfg(target_os = "windows")]
+        unsafe {RBR_GraphDrawString(render, x, y, color, text)}
+    }
+
+    pub fn graph_draw_line(render: *mut c_void, x1: i16, y1: i16, x2: i16, y2: i16, color: i32) {
+        #[cfg(target_os = "windows")]
+        unsafe {RBR_GraphDrawLine(render, x1, y1, x2, y2, color)}
+    }
+
+    pub fn graph_draw_filled_box(render: *mut c_void, x: i16, y: i16, width: i16, height: i16, color: i32) {
+        #[cfg(target_os = "windows")]
+        unsafe {RBR_GraphDrawFilledBox(render, x, y, width, height, color)}
     }
 
     /*
