@@ -10,3 +10,4 @@ build = "build.rs"
 rbnproto = { path = "../rbnproto" }
 libc = "0.2.151"
 rust-ini = "0.20.0"
+winapi = { version = "0.3", features = ["winuser", "windef", "wingdi"] }

@@ -1,5 +1,7 @@
+use std::ffi::c_char;
+
 #[cfg(target_os = "windows")]
-use libc::{c_char, c_void};
+use libc::c_void;
 #[cfg(target_os = "windows")]
 use rbnproto::D3DQuaternion;
 
@@ -12,9 +14,24 @@ unsafe extern "C" {
     pub fn RBR_ProxyInit();
 
     /**
+     * Funtions to access DirectX9.
+     */
+    pub fn RBR_GetD3dWindowWidth() -> i16;
+
+    pub fn RBR_GetD3dWindowHeight() -> i16;
+
+    pub fn RBR_GetD3dWindowFps() -> i16;
+
+    /**
      * Functions to control game flow.
      */
-    pub fn RBR_StartGame(imap: i32, icar: i32, weather: i32, tyre: i32, setup: *const c_char);
+    pub fn RBR_PrepapreStage(iMap: u32, timeofday: u32, skycloudtype: u32, timeofday2: u32, skytype: u32, surfacetype: u32);
+
+    pub fn RBR_PrepapreCar(carid: u32, tyre: u32, setup: *const c_char);
+
+    pub fn RBR_LoadGame();
+
+    pub fn RBR_StartGame();
 
     /*
      * ui functions.

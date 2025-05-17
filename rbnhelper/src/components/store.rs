@@ -1,21 +1,21 @@
 use ini::Ini;
 use log::info;
-use rbnproto::{httpapi::UserScore, metaapi::MetaRaceProgress};
-use rbrproxy::game::RBRGame;
+use rbnproto::{httpapi::UserScore, metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState}};
 
 #[derive(Default, Clone)]
 pub struct RacingStore {
     server_addr: String,
     server_port: u16,
     meta_port: u16,
-    pub autojoin: bool,
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,
     pub brief_news: String,
     pub noticeinfo: String,
     pub scoreinfo: UserScore,
+    pub racestate: Vec<MetaRaceState>,
     pub racedata: Vec<MetaRaceProgress>,
+    pub raceresult: Vec<MetaRaceResult>,
 }
 
 impl RacingStore {
@@ -30,7 +30,7 @@ impl RacingStore {
     }
 
     pub fn load_config(&mut self) {
-        self.user_name = RBRGame::default().get_user().to_string();
+        self.user_name = "username".to_string(); //TODO: RBRGame::default().get_user().to_string();
         self.user_passwd = String::from("simrallycn");
         info!("Parsed game user [{}] success", self.user_name);
 
@@ -40,7 +40,6 @@ impl RacingStore {
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let conf_file = game_path.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
             if let Ok(conf) = Ini::load_from_file(&conf_file) {
-                self.autojoin = conf.get_from_or(Some("Setting"), "AutoJoinRace", "true").parse().unwrap();
                 self.server_addr = conf.get_from_or(Some("Server"), "Host", "127.0.0.1").parse().unwrap();
                 self.server_port = conf.get_from_or(Some("Server"), "HttpPort", "23555").parse().unwrap();
                 self.meta_port = conf.get_from_or(Some("Server"), "DataPort", "23556").parse().unwrap();
@@ -49,17 +48,6 @@ impl RacingStore {
 
         if cfg!(debug_assertions) {
             self.server_addr = String::from("127.0.0.1");
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn save_config(&mut self) {
-        if let Some(game_path) = std::env::current_exe().unwrap().parent() {
-            let conf_file = game_path.join("Plugins").join("RBNHelper").join("RBNHelper.ini");
-            if let Ok(mut conf) = Ini::load_from_file(&conf_file) {
-                conf.with_section(Some("Setting")).set("AutoJoinRace", self.autojoin.to_string());
-                conf.write_to_file(conf_file).unwrap();
-            }
         }
     }
 

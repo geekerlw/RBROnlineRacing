@@ -12,9 +12,10 @@ use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex, OnceCell};
 
-use crate::components::input::is_horn_pressed;
+use rbrproxy::game::{RBRInput, RBRMemReader};
 use crate::components::player::AudioPlayer;
 use crate::components::store::RacingStore;
+use crate::components::utils::{get_race_data, get_race_state};
 use rbrproxy::game::RBRGame;
 use crate::rbnhelper::InnerMsg;
 
@@ -152,12 +153,12 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
         DataFormat::FmtSyncRaceState => {
             let state: Vec<MetaRaceState> = bincode::deserialize(pack_data).unwrap();
-            //TODO: RBRGame::default().feed_race_state(&state);
+            notifier.send(InnerMsg::MsgUpdateRaceState(state)).await.unwrap();
         }
 
         DataFormat::FmtSyncRaceData => {
             let progress: Vec<MetaRaceProgress> = bincode::deserialize(pack_data).unwrap();
-            //TODO: RBRGame::default().feed_race_data(&progress);
+            notifier.send(InnerMsg::MsgUpdateRaceData(progress)).await.unwrap();
         }
 
         DataFormat::FmtSyncRaceRidicule => {
@@ -168,7 +169,7 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 
         DataFormat::FmtSyncRaceResult => {
             let result: Vec<MetaRaceResult> = bincode::deserialize(pack_data).unwrap();
-            //TODO: RBRGame::default().feed_race_result(&result);
+            notifier.send(InnerMsg::MsgUpdateRaceResult(result)).await.unwrap();
         }
 
         DataFormat::FmtSyncRaceNotice => {
@@ -180,21 +181,21 @@ async fn meta_message_handle(head: MetaHeader, pack_data: &[u8], token: &String,
 }
 
 async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>, info: RaceInfo, notifier: Sender<InnerMsg>) {
-    let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
     let notifier = notifier.clone();
-    //TODO: rbr.config(&info);
+    RBRGame::default().prepare_stage(info.stage_id, 3, 3, 0, 4, 2);
     tokio::spawn(async move {
         AudioPlayer::notification("prepare.wav").set_timeout(5).play();
         tokio::time::sleep_until(Instant::now() + Duration::from_secs(1)).await;
         let start_time = std::time::SystemTime::now();
+        let memreader = RBRMemReader::default();
         loop {
             if std::time::SystemTime::now().duration_since(start_time).unwrap() > std::time::Duration::from_secs(30) {
                 break;
             }
 
-            let state = rbr.get_race_state();
+            let state = get_race_state(&memreader);
             match state {
                 RaceState::RaceLoading => break,
                 _ => {
@@ -214,14 +215,14 @@ async fn start_game_prepare(token: String, room: String, writer: Arc<Mutex<Owned
 
 // need to start this task when stage loaded.
 async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
-    let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
-    rbr.load();
+    RBRGame::default().load();
     tokio::spawn(async move {
         AudioPlayer::notification("load_race.wav").set_timeout(5).play();
+        let memreader = RBRMemReader::default();
         loop {
-            let state = rbr.get_race_state();
+            let state = get_race_state(&memreader);
             match state {
                 RaceState::RaceLoaded | RaceState::RaceRunning => {
                     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -238,7 +239,7 @@ async fn start_game_load(token: String, room: String, writer: Arc<Mutex<OwnedWri
     });
 }
 
-async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
+async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>,) {
     let user_token = token.clone();
     let room_name = room.clone();
     AudioPlayer::notification("begin_race.wav").play();
@@ -253,13 +254,13 @@ async fn start_game_race(token: String, room: String, writer: Arc<Mutex<OwnedWri
 }
 
 async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedWriteHalf>>) {
-    let mut rbr = RBRGame::default();
     let user_token = token.clone();
     let room_name = room.clone();
     tokio::spawn(async move {
+        let memreader = RBRMemReader::default();
         let once_finished: OnceCell<()> = OnceCell::new();
         loop {
-            let state = rbr.get_race_state();
+            let state = get_race_state(&memreader);
             match state {
                 RaceState::RaceExitMenu => {
                     tokio::time::sleep(tokio::time::Duration::from_secs(5)).await; // give some time to execute exit to menu state.
@@ -280,11 +281,11 @@ async fn start_game_upload(token: String, room: String, writer: Arc<Mutex<OwnedW
                     }).await;
                 },
                 RaceState::RaceRunning => {
-                    let horn = is_horn_pressed();
+                    let horn = RBRInput::default().is_key_pressed(0x48); // H key
                     if horn {
                         AudioPlayer::horn().set_timeout(2).play();
                     }
-                    let mut data = rbr.get_race_data();
+                    let mut data = get_race_data(&memreader);
                     data.token = user_token.clone();
                     data.room = room_name.clone();
                     data.horn = horn;

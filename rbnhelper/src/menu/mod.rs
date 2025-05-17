@@ -1,5 +1,6 @@
 use std::ffi::CString;
-use rbrproxy::RBRProxy;
+
+use rbrproxy::game::RBRMenu;
 
 pub mod loby;
 
@@ -78,7 +79,7 @@ pub trait Menu {
 pub struct MenuOp {
     select_index: usize,
     entries: Vec<MenuEntry>,
-    rbrproxy: RBRProxy,
+    rbr_menu: RBRMenu,
 }
 
 impl MenuOp {
@@ -120,14 +121,14 @@ impl MenuOp {
         let mut y = 80.0f32;
         for (line, entry) in self.entries.iter().enumerate() {
             if let Some(font) = &entry.font {
-                self.rbrproxy.set_font_size(font.clone().into());
+                self.rbr_menu.set_font_size(font.clone().into());
             }
 
             if let Some(menu_color) = &entry.menu_color {
-                self.rbrproxy.set_menu_color(menu_color.clone().into());
+                self.rbr_menu.set_menu_color(menu_color.clone().into());
             }
             else if let Some(color) = &entry.color {
-                self.rbrproxy.set_color(color[0], color[1], color[2],color[3]);
+                self.rbr_menu.set_color(color[0], color[1], color[2],color[3]);
             }
 
             if let Some(pos) = &entry.position {
@@ -136,10 +137,10 @@ impl MenuOp {
             }
             
             if line == self.select_index {
-                self.rbrproxy.draw_selection(x, y - 10.0, 200f32);
+                self.rbr_menu.draw_selection(x, y - MENU_LINE_HEIGHT / 2.0, 200f32);
             }
 
-            self.rbrproxy.draw_text(x, y, entry.text.as_ptr());
+            self.rbr_menu.draw_text(x, y, entry.text.as_ptr());
 
             y += MENU_LINE_HEIGHT;
         }

@@ -1,14 +1,13 @@
 use std::vec;
 use log::info;
-use rbnproto::httpapi::{RaceInfo, RaceQuery, UserHeart, UserLogin, UserQuery, UserScore};
-use rbnproto::metaapi::{RaceJoin, RaceLeave};
+use rbnproto::httpapi::{UserHeart, UserLogin, UserQuery, UserScore};
+use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
 use rbrproxy::plugin::IPlugin;
 use reqwest::StatusCode;
 use tokio::time::Instant;
 use crate::backend::{RBNBackend, TaskMsg};
 use crate::components::player::AudioPlayer;
-use rbrproxy::game::RBRGame;
 use crate::components::store::RacingStore;
 use crate::menu::Menu;
 use crate::overlay::Overlay;
@@ -20,6 +19,9 @@ pub enum InnerMsg {
     MsgUpdateNews(String),
     MsgUpdateScore(UserScore),
     MsgUpdateNotice(String),
+    MsgUpdateRaceState(Vec<MetaRaceState>),
+    MsgUpdateRaceData(Vec<MetaRaceProgress>),
+    MsgUpdateRaceResult(Vec<MetaRaceResult>),
 }
 
 pub struct RBNHelper {
@@ -48,12 +50,13 @@ impl Default for RBNHelper {
 }
 
 impl IPlugin for RBNHelper {
-    fn get_name(&mut self) -> *const libc::c_char {
+    fn plugin_init(&mut self) -> *const libc::c_char {
+        self.init();
         let name = std::ffi::CString::new("Online Battle").unwrap();
         name.into_raw()
     }
 
-    fn draw_menu(&mut self) {
+    fn plugin_draw_menu(&mut self) {
         self.menu.draw();
     }
 }
@@ -62,27 +65,11 @@ impl RBNHelper {
     pub fn init(&mut self) {
         self.store.init();
         self.check_and_login();
-        self.init_overlays();
         self.menu.init();
     }
 
     pub fn is_logined(&self) -> bool {
         !self.store.user_token.is_empty()
-    }
-
-    pub fn is_autojoin(&self) -> bool {
-        self.store.autojoin
-    }
-
-    pub fn init_overlays(&mut self) {
-        // self.overlays.push(Box::new(CopyRight::default()));
-        // self.overlays.push(Box::new(ScoreBoard::default()));
-        // self.overlays.push(Box::new(RaceNews::default()));
-        // self.overlays.push(Box::new(RaceNotice::default()));
-
-        //TODO: let window_width = unsafe { RBR_GetD3dWindowWidth() };
-        //TODO: let window_height = unsafe { RBR_GetD3dWindowHeight() };
-        //TODO: self.overlays.iter_mut().for_each(|x| x.init(window_width, window_height));
     }
 
     pub fn draw_overlays(&mut self) {
@@ -135,6 +122,15 @@ impl RBNHelper {
                 InnerMsg::MsgUpdateNotice(notice) => {
                     self.store.noticeinfo = notice;
                 }
+                InnerMsg::MsgUpdateRaceState(state) => {
+                    self.store.racestate = state;
+                }
+                InnerMsg::MsgUpdateRaceData(progress) => {
+                    self.store.racedata = progress;
+                }
+                InnerMsg::MsgUpdateRaceResult(result) => {
+                    self.store.raceresult = result;
+                }
             }
         }
     }
@@ -144,32 +140,18 @@ impl RBNHelper {
         self.draw_overlays();
     }
 
-    pub fn draw_frontend_page(&mut self) {
-        self.menu.draw();
-    }
-
     // need to call by hooking hotlap and practice menu in.
     pub fn join_race(&mut self, race: &String) -> bool {
-        if self.is_logined() && self.is_autojoin() {
+        if self.is_logined() {
             let race_join = RaceJoin {token: self.store.user_token.clone(), room: race.clone(), passwd: None};
             let join_url = self.store.get_http_url("api/race/join");
-            let info_url = self.store.get_http_url("api/race/info");
-            let info_query = RaceQuery {name: race.clone()};
             return tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let res = reqwest::Client::new().post(join_url).json(&race_join).send().await;
                 if let Ok(res) = res {
                     match res.status() {
                         StatusCode::OK => {
-                            let res = reqwest::Client::new().get(&info_url).json(&info_query).send().await.unwrap();
-                            if res.status() == StatusCode::OK {
-                                let text = res.text().await.unwrap();
-                                let raceinfo: RaceInfo = serde_json::from_str(text.as_str()).unwrap();
-                                //TODO: RBRGame::default().fast_set_race_stage(&raceinfo.stage_id);
-                                //TODO: RBRGame::default().fast_set_race_car_damage(&raceinfo.damage);
-                                AudioPlayer::notification("join.wav").play();
-                                return true;
-                            };
-                            return false;
+                            AudioPlayer::notification("join.wav").play();
+                            return true;
                         }
                         _ => {
                             AudioPlayer::notification("join_failed.wav").play();
@@ -185,7 +167,7 @@ impl RBNHelper {
 
     // need to call by hooking exit hotlap and practice menu.
     pub fn leave_race(&mut self, race: &String) -> bool {
-        if self.is_logined() && self.is_autojoin() {
+        if self.is_logined() {
             let user: RaceLeave = RaceLeave{ token: self.store.user_token.clone(), room: race.clone() };
             let url = self.store.get_http_url("api/race/leave");
             tokio::runtime::Runtime::new().unwrap().block_on(async move {

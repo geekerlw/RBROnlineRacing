@@ -17,29 +17,35 @@ lazy_static! {
 #[no_mangle]
 extern fn plugin_init() -> *const c_char {
     let mut plugin = RBNHELPER.lock().unwrap();
-    plugin.get_name()
+    plugin.plugin_init()
 }
 
 #[no_mangle]
 extern fn plugin_draw_menu() {
     let mut plugin = RBNHELPER.lock().unwrap();
-    plugin.draw_menu()
+    plugin.plugin_draw_menu()
 }
 
 #[no_mangle]
 extern fn plugin_draw_result() {
     let mut plugin = RBNHELPER.lock().unwrap();
-    plugin.draw_result()
+    plugin.plugin_draw_result()
 }
 
 #[no_mangle]
 extern fn plugin_handle_input(keycode: c_char, up: bool, down: bool, left: bool, right: bool, select: bool) {
     let mut plugin = RBNHELPER.lock().unwrap();
-    plugin.handle_input(keycode, up, down, left, right, select);
+    plugin.plugin_handle_input(keycode, up, down, left, right, select);
 }
 
 #[no_mangle]
 extern fn plugin_tick_render(time_delta: f32) {
     let mut plugin = RBNHELPER.lock().unwrap();
-    plugin.tick_render(time_delta);
+    plugin.plugin_tick_render(time_delta);
+}
+
+#[no_mangle]
+extern fn plugin_on_end_scene() {
+    let mut plugin = RBNHELPER.lock().unwrap();
+    plugin.draw_on_end_frame();
 }
