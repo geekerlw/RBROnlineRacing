@@ -1,15 +1,15 @@
 use std::ffi::CString;
-
 use rbrproxy::game::RBRMenu;
 
 pub mod loby;
 
 const MENU_LINE_HEIGHT: f32 = 21.0f32;
 
+#[allow(dead_code)]
 #[derive(Default, Clone)]
 pub enum EFonts {
-    #[default]
     FontSmall,
+    #[default]
     FontBig,
     FontDebug,
     FontHead,
@@ -26,6 +26,7 @@ impl Into<i32> for EFonts {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default, Clone)]
 pub enum EMenuColors {
     MenuBkground,
@@ -51,12 +52,11 @@ impl Into<i32> for EMenuColors {
 #[derive(Default)]
 pub struct MenuEntry {
     text: CString,
-    selectable: bool,
-    tips: Option<String>,
-    font: Option<EFonts>,
-    menu_color: Option<EMenuColors>,
+    font: EFonts,
+    menu_color: EMenuColors,
     color: Option<[f32; 4]>,
     position: Option<[f32; 2]>,
+    width: Option<f32>,
 }
 
 pub trait Menu {
@@ -66,11 +66,11 @@ pub trait Menu {
 
     fn down(&mut self);
 
-    fn left(&mut self, _index: usize) {}
+    fn left(&mut self) {}
 
-    fn right(&mut self, _index: usize) {}
+    fn right(&mut self) {}
 
-    fn select(&mut self, _index: usize) {}
+    fn select(&mut self) {}
 
     fn draw(&self);
 }
@@ -96,39 +96,16 @@ impl MenuOp {
         self.select_index = (self.select_index + 1) % self.entries.len();
     }
 
-    fn left(&mut self, menu: &mut (dyn Menu + 'static)) {
-        if let Some(entry) = self.entries.get_mut(self.select_index) {
-            if entry.selectable {
-                menu.left(self.select_index);
-            }
-        }
-    }
-
-    fn right(&mut self, menu: &mut (dyn Menu + 'static)) {
-        if let Some(entry) = self.entries.get_mut(self.select_index) {
-            if entry.selectable {
-                menu.right(self.select_index);
-            }
-        }
-    }
-
-    fn select(&mut self, menu: &mut (dyn Menu + 'static)) {
-        menu.select(self.select_index);
-    }
-
-    fn draw(&self) {
-        let mut x = 65.0f32;
-        let mut y = 80.0f32;
+    fn draw(&self) -> f32 {
+        let mut x = 72.0f32;
+        let mut y = 72.0f32;
         for (line, entry) in self.entries.iter().enumerate() {
-            if let Some(font) = &entry.font {
-                self.rbr_menu.set_font_size(font.clone().into());
-            }
+            self.rbr_menu.set_font_size(entry.font.clone().into());
 
-            if let Some(menu_color) = &entry.menu_color {
-                self.rbr_menu.set_menu_color(menu_color.clone().into());
-            }
-            else if let Some(color) = &entry.color {
+            if let Some(color) = &entry.color {
                 self.rbr_menu.set_color(color[0], color[1], color[2],color[3]);
+            } else {
+                self.rbr_menu.set_menu_color(entry.menu_color.clone().into());
             }
 
             if let Some(pos) = &entry.position {
@@ -137,12 +114,13 @@ impl MenuOp {
             }
             
             if line == self.select_index {
-                self.rbr_menu.draw_selection(x, y - MENU_LINE_HEIGHT / 2.0, 200f32);
+                self.rbr_menu.draw_selection(0.0, y - 2.0, entry.width.unwrap_or(260.0), 21.0f32);
             }
 
             self.rbr_menu.draw_text(x, y, entry.text.as_ptr());
 
             y += MENU_LINE_HEIGHT;
         }
+        y
     }
 }

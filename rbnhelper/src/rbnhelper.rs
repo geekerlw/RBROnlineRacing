@@ -5,11 +5,14 @@ use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceJoi
 use rbnproto::API_VERSION_STRING;
 use rbrproxy::plugin::IPlugin;
 use reqwest::StatusCode;
+use simplelog::WriteLogger;
 use tokio::time::Instant;
 use crate::backend::{RBNBackend, TaskMsg};
 use crate::components::player::AudioPlayer;
 use crate::components::store::RacingStore;
 use crate::menu::Menu;
+use crate::overlay::leaderboard::LeaderBoard;
+use crate::overlay::progressbar::ProgressBar;
 use crate::overlay::Overlay;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use crate::menu::loby::LobyMenu;
@@ -52,17 +55,36 @@ impl Default for RBNHelper {
 impl IPlugin for RBNHelper {
     fn plugin_init(&mut self) -> *const libc::c_char {
         self.init();
-        let name = std::ffi::CString::new("Online Battle").unwrap();
+        let name = std::ffi::CString::new("RBNHelper").unwrap();
         name.into_raw()
     }
 
     fn plugin_draw_menu(&mut self) {
         self.menu.draw();
     }
+
+    fn plugin_handle_input(&mut self, txt: libc::c_char, up: bool, down: bool, left: bool, right: bool, select: bool) {
+        if up {
+            self.menu.up();
+        }
+        if down {
+            self.menu.down();
+        }
+        if left {
+            self.menu.left();
+        }
+        if right {
+            self.menu.right();
+        }
+        if select {
+            self.menu.select();
+        }
+    }
 }
 
 impl RBNHelper {
     pub fn init(&mut self) {
+        self.init_env();
         self.store.init();
         self.check_and_login();
         self.menu.init();
@@ -72,10 +94,24 @@ impl RBNHelper {
         !self.store.user_token.is_empty()
     }
 
+    fn init_overlays(&mut self) {
+        for overlay in &mut self.overlays {
+            overlay.init();
+        }
+    }
+
     pub fn draw_overlays(&mut self) {
         self.overlays.iter_mut().for_each(|x| {
             x.draw(&self.store);
         });
+    }
+
+    fn init_env(&mut self) {
+        if let Some(game_path) = std::env::current_exe().unwrap().parent() {
+            let log_file = game_path.join("SimrallyCN").join("rbnhelper.log");
+            WriteLogger::init(log::LevelFilter::Info, 
+                simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();
+        }
     }
 
     fn check_and_login(&mut self) {

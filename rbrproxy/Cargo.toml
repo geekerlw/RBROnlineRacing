@@ -6,6 +6,9 @@ description = "SimRallyCn Proxy Service Plugin."
 authors = ["Lw_Ziye <geekerlw@gmail.com>"]
 build = "build.rs"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 rbnproto = { path = "../rbnproto" }
 libc = "0.2.151"

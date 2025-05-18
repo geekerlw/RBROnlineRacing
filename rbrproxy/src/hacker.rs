@@ -25,9 +25,9 @@ unsafe extern "C" {
     /**
      * Functions to control game flow.
      */
-    pub fn RBR_PrepapreStage(iMap: u32, timeofday: u32, skycloudtype: u32, timeofday2: u32, skytype: u32, surfacetype: u32);
+    pub fn RBR_PrepareStage(iMap: u32, timeofday: u32, skycloudtype: u32, timeofday2: u32, skytype: u32, surfacetype: u32);
 
-    pub fn RBR_PrepapreCar(carid: u32, tyre: u32, setup: *const c_char);
+    pub fn RBR_PrepareCar(carid: u32, tyre: u32, setup: *const c_char);
 
     pub fn RBR_LoadGame();
 
@@ -41,7 +41,7 @@ unsafe extern "C" {
     pub fn RBR_DrawBox(iBox: u32, x: f32, y: f32);
     pub fn RBR_DrawBlackOut(x: f32, y: f32, w: f32, h: f32);
     pub fn RBR_DrawFlatBox(x: f32, y: f32, w: f32, h: f32);
-    pub fn RBR_DrawSelection(x: f32, y: f32, w: f32);
+    pub fn RBR_DrawSelection(x: f32, y: f32, w: f32, h: f32);
     pub fn RBR_SetDrawMode(mode: i32);
     pub fn RBR_ReSetDrawMode(mode: i32);
     pub fn RBR_SetFontSize(font: i32);

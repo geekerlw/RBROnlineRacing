@@ -1,5 +1,5 @@
 use std::ffi::{c_char, c_void, c_int};
-use rbnproto::{httpapi::RaceInfo, D3DQuaternion};
+use rbnproto::D3DQuaternion;
 use super::hacker::*;
 
 #[derive(Default)]
@@ -78,9 +78,9 @@ impl RBRMenu {
         unsafe { RBR_DrawFlatBox(x, y, w, h); }
     }
 
-    pub fn draw_selection(&self, x: f32, y: f32, w: f32) {
+    pub fn draw_selection(&self, x: f32, y: f32, w: f32, h: f32) {
         #[cfg(target_os = "windows")]
-        unsafe { RBR_DrawSelection(x, y, w); }
+        unsafe { RBR_DrawSelection(x, y, w, h); }
     }
 
     pub fn set_draw_mode(&self, mode: i32) {
@@ -109,21 +109,24 @@ impl RBRMenu {
     } 
 }
 
+#[derive(Default)]
 pub struct RBRGrapher {
-    handle: *mut c_void,
+    handle: Option<*mut c_void>,
 }
 
 impl Drop for RBRGrapher {
     fn drop(&mut self) {
         #[cfg(target_os = "windows")]
         return unsafe {
-            RBR_DestroyGraphRender(self.handle)
+            if let Some(handle) = self.handle {
+                RBR_DestroyGraphRender(handle)
+            }
         };
     }
 }
 
 impl RBRGrapher {
-    pub fn new(fontsize: i32, bold: bool) -> Self {
+    pub fn init(&mut self, fontsize: i32, bold: bool) {
         #[cfg(target_os = "windows")]
         let handle = unsafe {
             RBR_CreateGraphRender(fontsize, bold)
@@ -132,32 +135,32 @@ impl RBRGrapher {
         #[cfg(not(target_os = "windows"))]
         let handle = std::ptr::null_mut();
 
-        Self { handle: handle }
+        self.handle = Some(handle);
     }
 
     pub fn begin_draw(&self) {
         #[cfg(target_os = "windows")]
-        unsafe { RBR_GraphBeginDraw(self.handle) }
+        unsafe { RBR_GraphBeginDraw(self.handle.unwrap()) }
     }
 
     pub fn end_draw(&self) {
         #[cfg(target_os = "windows")]
-        unsafe { RBR_GraphEndDraw(self.handle) }
+        unsafe { RBR_GraphEndDraw(self.handle.unwrap()) }
     }
 
     pub fn draw_string(&self, x: i16, y: i16, color: u32, text: *const c_char) {
         #[cfg(target_os = "windows")]
-        unsafe {RBR_GraphDrawString(self.handle, x, y, color, text)}
+        unsafe {RBR_GraphDrawString(self.handle.unwrap(), x, y, color, text)}
     }
 
     pub fn draw_line(&self, x1: i16, y1: i16, x2: i16, y2: i16, color: u32) {
         #[cfg(target_os = "windows")]
-        unsafe {RBR_GraphDrawLine(self.handle, x1, y1, x2, y2, color)}
+        unsafe {RBR_GraphDrawLine(self.handle.unwrap(), x1, y1, x2, y2, color)}
     }
 
     pub fn draw_filled_box(&self, x: i16, y: i16, width: i16, height: i16, color: u32) {
         #[cfg(target_os = "windows")]
-        unsafe {RBR_GraphDrawFilledBox(self.handle, x, y, width, height, color)}
+        unsafe {RBR_GraphDrawFilledBox(self.handle.unwrap(), x, y, width, height, color)}
     }
 }
 
@@ -321,14 +324,14 @@ impl RBRGame {
     pub fn prepare_stage(&self, map: u32, timeofday: u32, skycloudtype: u32, timeofday2: u32, skytype: u32, surface: u32) {
         #[cfg(target_os = "windows")]
         return unsafe {
-            RBR_PrepapreStage(map, timeofday, skycloudtype, timeofday2, skytype, surface);
+            RBR_PrepareStage(map, timeofday, skycloudtype, timeofday2, skytype, surface);
         };
     }
 
     pub fn prepare_car(&self, carid: u32, tyre: u32, setup: *const c_char) {
         #[cfg(target_os = "windows")]
         return unsafe {
-            RBR_PrepapreCar(carid, tyre, setup);
+            RBR_PrepareCar(carid, tyre, setup);
         };
     }
 

@@ -2,6 +2,7 @@ use std::ffi::CString;
 use rbrproxy::game::RBRGrapher;
 use super::Overlay;
 
+#[derive(Default)]
 pub struct ProgressBar {
     height: i16,
     stagelen: f32,
@@ -17,6 +18,7 @@ pub struct ProgressBar {
 impl Overlay for ProgressBar {
     fn init(&mut self) {
         self.pos = [30, 100];
+        self.grapher.init(14, false);
     }
 
     fn draw(&self, store: &crate::components::store::RacingStore) {

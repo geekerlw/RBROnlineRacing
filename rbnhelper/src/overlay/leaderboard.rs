@@ -3,6 +3,7 @@ use rbrproxy::game::RBRGrapher;
 use crate::components::utils::format_seconds;
 use super::Overlay;
 
+#[derive(Default)]
 pub struct LeaderBoard {
     pos: [i16; 2],
     player_colors: [u32; 8],
@@ -15,6 +16,7 @@ pub struct LeaderBoard {
 impl Overlay for LeaderBoard {
     fn init(&mut self) {
         self.pos = [20, 20];
+        self.grapher.init(16, false);
     }
 
     fn draw(&self, store: &crate::components::store::RacingStore) {
