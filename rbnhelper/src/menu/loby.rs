@@ -71,7 +71,6 @@ impl Menu for LobyMenu {
         self.rbr_menu.draw_text(270.0, 49.0, self.maptitle.as_ptr());
 
         // TODO: draw map and car image
-        self.rbr_menu.set_menu_color(EMenuColors::MenuText.into());
         self.rbr_menu.draw_flatbox(270.0, 72.0, 160.0, 120.0);
         self.rbr_menu.draw_flatbox(432.0, 72.0, 36.0, 36.0);
         self.rbr_menu.draw_flatbox(432.0, 156.0, 36.0, 36.0);

@@ -3,7 +3,7 @@ use log::info;
 use rbnproto::httpapi::{UserHeart, UserLogin, UserQuery, UserScore};
 use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
-use rbrproxy::plugin::IPlugin;
+use rbrproxy::{plugin::IPlugin, rbrproxy_env_init};
 use reqwest::StatusCode;
 use simplelog::WriteLogger;
 use tokio::time::Instant;
@@ -80,11 +80,28 @@ impl IPlugin for RBNHelper {
             self.menu.select();
         }
     }
+
+    fn plugin_on_end_scene(&mut self) {
+        self.async_message_handle();
+    }
+
+    fn plugin_on_stage_start(&mut self, _mapid: i32, _player: *const libc::c_char, _falsestart: bool) {
+        self.overlays.push(Box::new(LeaderBoard::default().init()));
+        self.overlays.push(Box::new(ProgressBar::default().init()));
+    }
+
+    fn plugin_on_stage_end(&mut self, _checkpoint1: f32, _checkpoint2: f32, _finishtime: f32, _player: *const libc::c_char) {
+        self.overlays.clear();
+    }
+
+    fn plugin_on_frame(&mut self) {
+        self.draw_overlays();
+    }
 }
 
 impl RBNHelper {
     pub fn init(&mut self) {
-        self.init_env();
+        self.env_init();
         self.store.init();
         self.check_and_login();
         self.menu.init();
@@ -94,19 +111,14 @@ impl RBNHelper {
         !self.store.user_token.is_empty()
     }
 
-    fn init_overlays(&mut self) {
-        for overlay in &mut self.overlays {
-            overlay.init();
-        }
-    }
-
     pub fn draw_overlays(&mut self) {
         self.overlays.iter_mut().for_each(|x| {
             x.draw(&self.store);
         });
     }
 
-    fn init_env(&mut self) {
+    fn env_init(&mut self) {
+        rbrproxy_env_init();
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let log_file = game_path.join("SimrallyCN").join("rbnhelper.log");
             WriteLogger::init(log::LevelFilter::Info, 
@@ -169,11 +181,6 @@ impl RBNHelper {
                 }
             }
         }
-    }
-
-    pub fn draw_on_end_frame(&mut self) {
-        self.async_message_handle();
-        self.draw_overlays();
     }
 
     // need to call by hooking hotlap and practice menu in.
