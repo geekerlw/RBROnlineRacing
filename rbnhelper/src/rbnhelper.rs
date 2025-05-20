@@ -88,11 +88,8 @@ impl IPlugin for RBNHelper {
     }
 
     fn plugin_on_stage_start(&mut self, _mapid: i32, _player: *const libc::c_char, _falsestart: bool) {
-        self.overlays.push(Box::new(LeaderBoard::default()));
-        self.overlays.push(Box::new(ProgressBar::default()));
-        for overlay in self.overlays.iter_mut() {
-            overlay.init();
-        }
+        self.overlays.push(Box::new(LeaderBoard::default().init()));
+        self.overlays.push(Box::new(ProgressBar::default().init()));
     }
 
     fn plugin_on_stage_end(&mut self, _checkpoint1: f32, _checkpoint2: f32, _finishtime: f32, _player: *const libc::c_char) {
