@@ -1,7 +1,4 @@
 use std::ffi::c_char;
-
-#[cfg(target_os = "windows")]
-use libc::c_void;
 #[cfg(target_os = "windows")]
 use rbnproto::D3DQuaternion;
 
@@ -51,13 +48,11 @@ unsafe extern "C" {
     /**
      * Functions to draw in game overlay or graph.
      */
-    pub fn RBR_CreateGraphRender(fontsize: i32, bold: bool) -> *mut c_void;
-    pub fn RBR_DestroyGraphRender(render: *mut c_void);
-    pub fn RBR_GraphBeginDraw(render: *mut c_void);
-    pub fn RBR_GraphEndDraw(render: *mut c_void);
-    pub fn RBR_GraphDrawString(render: *mut c_void, x: i16, y: i16, color: u32, text: *const c_char);
-    pub fn RBR_GraphDrawLine(render: *mut c_void, x1: i16, y1: i16, x2: i16, y2: i16, color: u32);
-    pub fn RBR_GraphDrawFilledBox(render: *mut c_void, x: i16, y: i16, width: i16, height: i16, color: u32);
+    pub fn RBR_GraphBeginDraw();
+    pub fn RBR_GraphEndDraw();
+    pub fn RBR_GraphDrawString(x: i16, y: i16, color: u32, text: *const c_char);
+    pub fn RBR_GraphDrawLine(x1: i16, y1: i16, x2: i16, y2: i16, color: u32);
+    pub fn RBR_GraphDrawFilledBox(x: i16, y: i16, width: i16, height: i16, color: u32);
 
     /*
      * Reading memory functions.

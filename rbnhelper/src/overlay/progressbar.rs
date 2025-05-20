@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use rbrproxy::game::RBRGrapher;
+use rbrproxy::game::{RBRGame, RBRGrapher, RBRMemReader};
 use super::Overlay;
 
 #[derive(Default)]
@@ -17,8 +17,14 @@ pub struct ProgressBar {
 
 impl Overlay for ProgressBar {
     fn init(&mut self) {
+        self.height = 400;
+        self.stagelen = RBRMemReader::default().read_stage_len();
         self.pos = [30, 100];
-        self.grapher.init(14, false);
+        self.player_name = RBRGame::default().get_user_name();
+        self.bkground_color = 0xFFFFFFFF;
+        self.split_color = 0xFF00FF00;
+        self.own_color = 0xFFFF0000;
+        self.other_color = 0xFF00FF00;
     }
 
     fn draw(&self, store: &crate::components::store::RacingStore) {

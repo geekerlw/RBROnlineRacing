@@ -1,4 +1,4 @@
-use std::ffi::{c_char, c_void, c_int};
+use std::ffi::{c_char, c_int};
 use rbnproto::D3DQuaternion;
 use super::hacker::*;
 
@@ -110,57 +110,32 @@ impl RBRMenu {
 }
 
 #[derive(Default)]
-pub struct RBRGrapher {
-    handle: Option<*mut c_void>,
-}
-
-impl Drop for RBRGrapher {
-    fn drop(&mut self) {
-        #[cfg(target_os = "windows")]
-        return unsafe {
-            if let Some(handle) = self.handle {
-                RBR_DestroyGraphRender(handle)
-            }
-        };
-    }
-}
+pub struct RBRGrapher;
 
 impl RBRGrapher {
-    pub fn init(&mut self, fontsize: i32, bold: bool) {
-        #[cfg(target_os = "windows")]
-        let handle = unsafe {
-            RBR_CreateGraphRender(fontsize, bold)
-        };
-
-        #[cfg(not(target_os = "windows"))]
-        let handle = std::ptr::null_mut();
-
-        self.handle = Some(handle);
-    }
-
     pub fn begin_draw(&self) {
         #[cfg(target_os = "windows")]
-        unsafe { RBR_GraphBeginDraw(self.handle.unwrap()) }
+        unsafe { RBR_GraphBeginDraw() }
     }
 
     pub fn end_draw(&self) {
         #[cfg(target_os = "windows")]
-        unsafe { RBR_GraphEndDraw(self.handle.unwrap()) }
+        unsafe { RBR_GraphEndDraw() }
     }
 
     pub fn draw_string(&self, x: i16, y: i16, color: u32, text: *const c_char) {
         #[cfg(target_os = "windows")]
-        unsafe {RBR_GraphDrawString(self.handle.unwrap(), x, y, color, text)}
+        unsafe {RBR_GraphDrawString(x, y, color, text)}
     }
 
     pub fn draw_line(&self, x1: i16, y1: i16, x2: i16, y2: i16, color: u32) {
         #[cfg(target_os = "windows")]
-        unsafe {RBR_GraphDrawLine(self.handle.unwrap(), x1, y1, x2, y2, color)}
+        unsafe {RBR_GraphDrawLine(x1, y1, x2, y2, color)}
     }
 
     pub fn draw_filled_box(&self, x: i16, y: i16, width: i16, height: i16, color: u32) {
         #[cfg(target_os = "windows")]
-        unsafe {RBR_GraphDrawFilledBox(self.handle.unwrap(), x, y, width, height, color)}
+        unsafe {RBR_GraphDrawFilledBox(x, y, width, height, color)}
     }
 }
 
@@ -321,6 +296,10 @@ impl RBRInput {
 pub struct RBRGame;
 
 impl RBRGame {
+    pub fn get_user_name(&self) -> String {
+        "Lw_Ziye".to_string()
+    }
+
     pub fn prepare_stage(&self, map: u32, timeofday: u32, skycloudtype: u32, timeofday2: u32, skytype: u32, surface: u32) {
         #[cfg(target_os = "windows")]
         return unsafe {

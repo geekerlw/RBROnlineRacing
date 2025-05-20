@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use rbrproxy::game::RBRGrapher;
+use rbrproxy::game::{RBRGame, RBRGrapher};
 use crate::components::utils::format_seconds;
 use super::Overlay;
 
@@ -16,7 +16,13 @@ pub struct LeaderBoard {
 impl Overlay for LeaderBoard {
     fn init(&mut self) {
         self.pos = [20, 20];
-        self.grapher.init(16, false);
+        self.player_colors = [
+            0x00873BEF, 0x0950B4EF, 0xB91F86EF, 0xBC1A15EF,
+            0x37F6FFEF, 0xCEBA52EF, 0x413E25EF, 0x9C353BEF,
+        ];
+        self.player_name = RBRGame::default().get_user_name();
+        self.own_color = 0xFFFF0000;
+        self.other_color = 0xFF00FF00;
     }
 
     fn draw(&self, store: &crate::components::store::RacingStore) {
@@ -52,7 +58,7 @@ impl Overlay for LeaderBoard {
             self.grapher.draw_string(posx + 50, posy, 0xFFFFFFFF, name.as_ptr());
 
             // diff time
-            let diffstr = CString::new(format_seconds(player.difffirst)).expect("failed");
+            let diffstr = CString::new(format!("+{}", format_seconds(player.difffirst))).expect("failed");
             self.grapher.draw_string(posx + 180, posy, 0xFFFFFFFF, diffstr.as_ptr());
 
             posy += 30;

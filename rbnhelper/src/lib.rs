@@ -1,6 +1,6 @@
 use libc::c_char;
 use rbnhelper::RBNHelper;
-use rbrproxy::{plugin::IPlugin, rbrproxy_env_init};
+use rbrproxy::plugin::IPlugin;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
@@ -16,7 +16,6 @@ lazy_static! {
 
 #[no_mangle]
 extern fn plugin_init() -> *const c_char {
-    rbrproxy_env_init();
     let mut plugin = RBNHELPER.lock().unwrap();
     plugin.plugin_init()
 }
@@ -40,13 +39,19 @@ extern fn plugin_handle_input(keycode: c_char, up: bool, down: bool, left: bool,
 }
 
 #[no_mangle]
-extern fn plugin_tick_render(time_delta: f32) {
+extern fn plugin_on_end_scene() {
     let mut plugin = RBNHELPER.lock().unwrap();
-    plugin.plugin_tick_render(time_delta);
+    plugin.plugin_on_end_scene();
 }
 
 #[no_mangle]
-extern fn plugin_on_end_scene() {
+extern fn plugin_on_stage_start(mapid: i32, player: *const c_char, falsestart: bool) {
     let mut plugin = RBNHELPER.lock().unwrap();
-    plugin.draw_on_end_frame();
+    plugin.plugin_on_stage_start(mapid, player, falsestart);
+}
+
+#[no_mangle]
+extern fn plugin_on_stage_end(checkpoint1: f32, checkpoint2: f32, finishtime: f32, player: *const c_char) {
+    let mut plugin = RBNHELPER.lock().unwrap();
+    plugin.plugin_on_stage_end(checkpoint1, checkpoint2, finishtime, player);
 }
