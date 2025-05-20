@@ -1,6 +1,7 @@
 use ini::Ini;
 use log::info;
 use rbnproto::{httpapi::UserScore, metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState}};
+use rbrproxy::game::RBRGame;
 
 #[derive(Default, Clone)]
 pub struct RacingStore {
@@ -30,7 +31,7 @@ impl RacingStore {
     }
 
     pub fn load_config(&mut self) {
-        self.user_name = "username".to_string(); //TODO: RBRGame::default().get_user().to_string();
+        self.user_name = RBRGame::default().get_user_name();
         self.user_passwd = String::from("simrallycn");
         info!("Parsed game user [{}] success", self.user_name);
 

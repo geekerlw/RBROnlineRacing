@@ -31,7 +31,7 @@ impl RBRWindow {
     }
 
     #[cfg(target_os = "windows")]
-    pub fn scall() -> f32 {
+    pub fn scall(&self) -> f32 {
         use winapi::um::wingdi::{LOGPIXELSY, GetDeviceCaps};
 
         let hdc = unsafe { winapi::um::winuser::GetDC(std::ptr::null_mut()) };
@@ -123,17 +123,17 @@ impl RBRGrapher {
         unsafe { RBR_GraphEndDraw() }
     }
 
-    pub fn draw_string(&self, x: i16, y: i16, color: u32, text: *const c_char) {
+    pub fn draw_string(&self, x: f32, y: f32, color: u32, text: *const c_char) {
         #[cfg(target_os = "windows")]
         unsafe {RBR_GraphDrawString(x, y, color, text)}
     }
 
-    pub fn draw_line(&self, x1: i16, y1: i16, x2: i16, y2: i16, color: u32) {
+    pub fn draw_line(&self, x1: f32, y1: f32, x2: f32, y2: f32, color: u32) {
         #[cfg(target_os = "windows")]
         unsafe {RBR_GraphDrawLine(x1, y1, x2, y2, color)}
     }
 
-    pub fn draw_filled_box(&self, x: i16, y: i16, width: i16, height: i16, color: u32) {
+    pub fn draw_filled_box(&self, x: f32, y: f32, width: f32, height: f32, color: u32) {
         #[cfg(target_os = "windows")]
         unsafe {RBR_GraphDrawFilledBox(x, y, width, height, color)}
     }

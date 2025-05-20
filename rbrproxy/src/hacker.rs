@@ -50,9 +50,9 @@ unsafe extern "C" {
      */
     pub fn RBR_GraphBeginDraw();
     pub fn RBR_GraphEndDraw();
-    pub fn RBR_GraphDrawString(x: i16, y: i16, color: u32, text: *const c_char);
-    pub fn RBR_GraphDrawLine(x1: i16, y1: i16, x2: i16, y2: i16, color: u32);
-    pub fn RBR_GraphDrawFilledBox(x: i16, y: i16, width: i16, height: i16, color: u32);
+    pub fn RBR_GraphDrawString(x: f32, y: f32, color: u32, text: *const c_char);
+    pub fn RBR_GraphDrawLine(x1: f32, y1: f32, x2: f32, y2: f32, color: u32);
+    pub fn RBR_GraphDrawFilledBox(x: f32, y: f32, width: f32, height: f32, color: u32);
 
     /*
      * Reading memory functions.

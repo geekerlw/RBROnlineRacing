@@ -4,7 +4,6 @@ use rbnproto::httpapi::{UserHeart, UserLogin, UserQuery, UserScore};
 use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
 use rbrproxy::plugin::IPlugin;
-use rbrproxy::rbrproxy_env_init;
 use reqwest::StatusCode;
 use simplelog::WriteLogger;
 use tokio::time::Instant;
@@ -119,7 +118,6 @@ impl RBNHelper {
     }
 
     fn env_init(&mut self) {
-        rbrproxy_env_init();
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
             let log_file = game_path.join("SimrallyCN").join("rbnhelper.log");
             WriteLogger::init(log::LevelFilter::Info, 
