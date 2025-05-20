@@ -14,7 +14,7 @@ pub struct LeaderBoard {
 }
 
 impl Overlay for LeaderBoard {
-    fn init(mut self) -> Self {
+    fn init(&mut self) {
         self.pos = [20, 20];
         self.player_colors = [
             0x00873BEF, 0x0950B4EF, 0xB91F86EF, 0xBC1A15EF,
@@ -23,7 +23,6 @@ impl Overlay for LeaderBoard {
         self.player_name = RBRGame::default().get_user_name();
         self.own_color = 0xFFFF0000;
         self.other_color = 0xFF00FF00;
-        self
     }
 
     fn draw(&self, store: &crate::components::store::RacingStore) {

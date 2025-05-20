@@ -64,7 +64,7 @@ impl IPlugin for RBNHelper {
         self.menu.draw();
     }
 
-    fn plugin_handle_input(&mut self, txt: libc::c_char, up: bool, down: bool, left: bool, right: bool, select: bool) {
+    fn plugin_handle_input(&mut self, _txt: libc::c_char, up: bool, down: bool, left: bool, right: bool, select: bool) {
         if up {
             self.menu.up();
         }
@@ -88,8 +88,11 @@ impl IPlugin for RBNHelper {
     }
 
     fn plugin_on_stage_start(&mut self, _mapid: i32, _player: *const libc::c_char, _falsestart: bool) {
-        self.overlays.push(Box::new(LeaderBoard::default().init()));
-        self.overlays.push(Box::new(ProgressBar::default().init()));
+        self.overlays.push(Box::new(LeaderBoard::default()));
+        self.overlays.push(Box::new(ProgressBar::default()));
+        for overlay in self.overlays.iter_mut() {
+            overlay.init();
+        }
     }
 
     fn plugin_on_stage_end(&mut self, _checkpoint1: f32, _checkpoint2: f32, _finishtime: f32, _player: *const libc::c_char) {

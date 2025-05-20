@@ -4,7 +4,7 @@ pub mod leaderboard;
 pub mod progressbar;
 
 pub trait Overlay {
-    fn init(mut self) -> Self;
+    fn init(&mut self);
 
     fn draw(&self, _store: &RacingStore);
 }

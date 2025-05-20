@@ -16,7 +16,7 @@ pub struct ProgressBar {
 }
 
 impl Overlay for ProgressBar {
-    fn init(mut self) -> Self {
+    fn init(&mut self) {
         self.height = 400;
         self.stagelen = RBRMemReader::default().read_stage_len();
         self.pos = [30, 100];
@@ -25,7 +25,6 @@ impl Overlay for ProgressBar {
         self.split_color = 0xFF00FF00;
         self.own_color = 0xFFFF0000;
         self.other_color = 0xFF00FF00;
-        self
     }
 
     fn draw(&self, store: &crate::components::store::RacingStore) {

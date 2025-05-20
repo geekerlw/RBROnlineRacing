@@ -109,7 +109,7 @@ impl RBRMenu {
     } 
 }
 
-#[derive(Default, Sync, Copy)]
+#[derive(Default)]
 pub struct RBRGrapher;
 
 impl RBRGrapher {
