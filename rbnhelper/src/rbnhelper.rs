@@ -20,6 +20,8 @@ use crate::menu::loby::LobyMenu;
 
 pub enum InnerMsg {
     MsgUserLogined(String),
+    MsgTriggerBackendStart,
+    MsgTriggerBackendend,
     MsgUpdateNews(String),
     MsgUpdateScore(UserScore),
     MsgUpdateNotice(String),
@@ -172,6 +174,12 @@ impl RBNHelper {
                     self.backend.init(&store);
                     self.backend.run(tx, rx, &self.tx);
                     self.keep_alive();
+                }
+                InnerMsg::MsgTriggerBackendStart => {
+                    self.backend.trigger(TaskMsg::MsgStartStage(store.room_name.clone()));
+                }
+                InnerMsg::MsgTriggerBackendend => {
+                    self.backend.trigger(TaskMsg::MsgStopStage);
                 }
                 InnerMsg::MsgUpdateNews(news) => {
                     store.brief_news = news;
