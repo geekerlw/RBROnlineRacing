@@ -1,3 +1,9 @@
+use std::sync::RwLock;
+use rbnproto::metaapi::{RaceJoin, RaceLeave};
+use reqwest::StatusCode;
+
+use crate::components::{player::AudioPlayer, store::RacingStore};
+
 use super::*;
 
 #[derive(Default)]
@@ -11,14 +17,18 @@ pub struct LobyMenu {
 }
 
 impl Menu for LobyMenu {
-    fn init(&mut self) {
+    fn init(&mut self, store: Arc<RwLock<RacingStore>>) {
         self.headstr = CString::new("RBR LIVE BATTLE").expect("failed");
         self.roomtitle = CString::new("Joined Players:").expect("failed");
         self.maptitle = CString::new("Next Stage:").expect("failed");
         self.copyright = CString::new(format!("Copyright (c) 2023-2025 Lw_Ziye, Plugin Version: {}", std::env!("CARGO_PKG_VERSION"))).expect("failed");
 
+        let storecopy = Arc::clone(&store);
         self.op.entries.push(MenuEntry { 
             text: CString::new("Join Race").expect("failed"),
+            select: Some(Box::new(move || {
+                on_join_race(storecopy.clone());
+            })),
             ..Default::default()
         });
         self.op.entries.push(MenuEntry { 
@@ -33,8 +43,13 @@ impl Menu for LobyMenu {
             text: CString::new("Car Setup").expect("failed"),
             ..Default::default() 
         });
+
+        let storecopy = Arc::clone(&store);
         self.op.entries.push(MenuEntry { 
             text: CString::new("Exit Race").expect("failed"),
+            select: Some(Box::new(move || {
+                on_leave_race(storecopy.clone());
+            })),
             ..Default::default()
         });
     }
@@ -48,15 +63,15 @@ impl Menu for LobyMenu {
     }
 
     fn left(&mut self) {
-
+        self.op.left();
     }
 
     fn right(&mut self) {
-        
+        self.op.right();
     }
 
     fn select(&mut self) {
-        
+        self.op.select();
     }
 
     fn draw(&self) {
@@ -96,4 +111,40 @@ impl Menu for LobyMenu {
         self.rbr_menu.set_menu_color(EMenuColors::MenuText.into());
         self.rbr_menu.draw_text(72.0, 460.0, self.copyright.as_ptr());
     }
+}
+
+fn on_join_race(store: Arc::<RwLock<RacingStore>>) {
+    let store = store.read().unwrap();
+    let race_join = RaceJoin {token: store.user_token.clone(), room: store.room_name.clone(), passwd: None};
+    let join_url = store.get_http_url("api/race/join");
+    return tokio::runtime::Runtime::new().unwrap().block_on(async move {
+        let res = reqwest::Client::new().post(join_url).json(&race_join).send().await;
+        if let Ok(res) = res {
+            match res.status() {
+                StatusCode::OK => {
+                    AudioPlayer::notification("join.wav").play();
+                }
+                _ => {
+                    AudioPlayer::notification("join_failed.wav").play();
+                }
+            }
+        }
+    });
+}
+
+// need to call by hooking exit hotlap and practice menu.
+fn on_leave_race(store: Arc::<RwLock<RacingStore>>) {
+    let store = store.read().unwrap();
+    let user: RaceLeave = RaceLeave{ token: store.user_token.clone(), room: store.room_name.clone() };
+    let url = store.get_http_url("api/race/leave");
+    tokio::runtime::Runtime::new().unwrap().block_on(async move {
+        let res = reqwest::Client::new().post(url).json(&user).send().await;
+        if let Ok(res) = res {
+            if res.status() == StatusCode::OK {
+                AudioPlayer::notification("exit.wav").play();
+                return true;
+            }
+        }
+        return false;
+    });
 }

@@ -6,7 +6,6 @@ use std::sync::Mutex;
 
 mod components;
 mod overlay;
-mod backend;
 mod rbnhelper;
 mod menu;
 

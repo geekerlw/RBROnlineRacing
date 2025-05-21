@@ -1,6 +1,6 @@
-use std::ffi::CString;
+use std::{cell::RefCell, ffi::CString, rc::Rc};
 use rbrproxy::game::{RBRGame, RBRGrapher};
-use crate::components::utils::format_seconds;
+use crate::components::{store::RacingStore, utils::format_seconds};
 use super::Overlay;
 
 #[derive(Default)]
@@ -25,7 +25,7 @@ impl Overlay for LeaderBoard {
         self.other_color = 0x2FFFFFFF;
     }
 
-    fn draw(&self, store: &crate::components::store::RacingStore) {
+    fn draw(&self, store: &RacingStore) {
         let grapher = &self.grapher;
 
         let posx = self.pos[0];

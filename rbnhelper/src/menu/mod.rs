@@ -1,5 +1,7 @@
-use std::ffi::CString;
+use std::{ffi::CString, sync::{Arc, RwLock}};
 use rbrproxy::game::RBRMenu;
+
+use crate::components::store::RacingStore;
 
 pub mod loby;
 
@@ -57,20 +59,23 @@ pub struct MenuEntry {
     color: Option<[f32; 4]>,
     position: Option<[f32; 2]>,
     width: Option<f32>,
+    left: Option<Box<dyn Fn() + Send + 'static>>,
+    right: Option<Box<dyn Fn() + Send + 'static>>,
+    select: Option<Box<dyn Fn() + Send + 'static>>,
 }
 
 pub trait Menu {
-    fn init(&mut self);
+    fn init(&mut self, store: Arc<RwLock<RacingStore>>);
 
     fn up(&mut self);
 
     fn down(&mut self);
 
-    fn left(&mut self) {}
+    fn left(&mut self);
 
-    fn right(&mut self) {}
+    fn right(&mut self);
 
-    fn select(&mut self) {}
+    fn select(&mut self);
 
     fn draw(&self);
 }
@@ -94,6 +99,27 @@ impl MenuOp {
 
     fn down(&mut self) {
         self.select_index = (self.select_index + 1) % self.entries.len();
+    }
+
+    fn left(&mut self) {
+        let entry = &self.entries[self.select_index];
+        if let Some(left_action) = &entry.left {
+            left_action();
+        }
+    }
+
+    fn right(&mut self) {
+        let entry = &self.entries[self.select_index];
+        if let Some(right_action) = &entry.right {
+            right_action();
+        }
+    }
+
+    fn select(&mut self) {
+        let entry = &self.entries[self.select_index];
+        if let Some(select_action) = &entry.select {
+            select_action();
+        }
     }
 
     fn draw(&self) -> f32 {

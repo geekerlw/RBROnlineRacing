@@ -1,15 +1,15 @@
+use std::sync::{Arc, RwLock};
 use std::vec;
 use log::info;
 use rbnproto::httpapi::{UserHeart, UserLogin, UserQuery, UserScore};
-use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceJoin, RaceLeave};
+use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState};
 use rbnproto::API_VERSION_STRING;
 use rbrproxy::plugin::IPlugin;
 use rbrproxy::rbrproxy_env_init;
 use reqwest::StatusCode;
 use simplelog::WriteLogger;
 use tokio::time::Instant;
-use crate::backend::{RBNBackend, TaskMsg};
-use crate::components::player::AudioPlayer;
+use crate::components::backend::{RBNBackend, TaskMsg};
 use crate::components::store::RacingStore;
 use crate::menu::Menu;
 use crate::overlay::leaderboard::LeaderBoard;
@@ -32,7 +32,7 @@ pub struct RBNHelper {
     backend: RBNBackend,
     rx: Receiver<InnerMsg>,
     tx: Sender<InnerMsg>,
-    store: RacingStore,
+    store: Arc::<RwLock<RacingStore>>,
     overlays: Vec<Box<dyn Overlay + Send + Sync>>,
     menu: LobyMenu,
 }
@@ -44,7 +44,7 @@ impl Default for RBNHelper {
             backend: RBNBackend::default(),
             rx,
             tx,
-            store: RacingStore::default(),
+            store: Arc::new(RwLock::new(RacingStore::default())),
             overlays: vec![],
             menu: LobyMenu::default(),
         }
@@ -101,18 +101,20 @@ impl IPlugin for RBNHelper {
 impl RBNHelper {
     pub fn init(&mut self) {
         self.env_init();
-        self.store.init();
+        self.store_init();
         self.check_and_login();
-        self.menu.init();
+        self.menu.init(Arc::clone(&self.store));
     }
 
     pub fn is_logined(&self) -> bool {
-        !self.store.user_token.is_empty()
+        let store = self.store.read().unwrap();
+        !store.user_token.is_empty()
     }
 
     pub fn draw_overlays(&mut self) {
         self.overlays.iter_mut().for_each(|x| {
-            x.draw(&self.store);
+            let store = self.store.read().unwrap();
+            x.draw(&store);
         });
     }
 
@@ -127,10 +129,17 @@ impl RBNHelper {
         }
     }
 
+    fn store_init(&mut self) {
+        let mut store = self.store.write().unwrap();
+        store.init();
+    }
+
     fn check_and_login(&mut self) {
-        let url_ver = self.store.get_http_url("api/version");
-        let url_login = self.store.get_http_url("api/user/login");
-        let user = UserLogin{name: self.store.user_name.clone(), passwd: self.store.user_passwd.clone()};
+        let store = self.store.read().unwrap();
+
+        let url_ver = store.get_http_url("api/version");
+        let url_login = store.get_http_url("api/user/login");
+        let user = UserLogin{name: store.user_name.clone(), passwd: store.user_passwd.clone()};
         let tx = self.tx.clone();
         tokio::runtime::Runtime::new().unwrap().block_on(async move {
             let res = reqwest::get(url_ver).await;
@@ -153,127 +162,93 @@ impl RBNHelper {
 
     pub fn async_message_handle(&mut self) {
         if let Ok(msg) = self.rx.try_recv() {
+            let mut store = self.store.write().unwrap();
+
             match msg {
                 InnerMsg::MsgUserLogined(token) => {
-                    info!("User Logined RBN Server [{}] success.", self.store.get_http_uri());
-                    self.store.user_token = token;
+                    info!("User Logined RBN Server [{}] success.", store.get_http_uri());
+                    store.user_token = token;
                     let (tx, rx) = channel::<TaskMsg>(16);
-                    self.backend.init(&self.store);
+                    self.backend.init(&store);
                     self.backend.run(tx, rx, &self.tx);
                     self.keep_alive();
                 }
                 InnerMsg::MsgUpdateNews(news) => {
-                    self.store.brief_news = news;
+                    store.brief_news = news;
                 }
                 InnerMsg::MsgUpdateScore(score) => {
-                    self.store.scoreinfo = score;
+                    store.scoreinfo = score;
                 }
                 InnerMsg::MsgUpdateNotice(notice) => {
-                    self.store.noticeinfo = notice;
+                    store.noticeinfo = notice;
                 }
                 InnerMsg::MsgUpdateRaceState(state) => {
-                    self.store.racestate = state;
+                    store.racestate = state;
                 }
                 InnerMsg::MsgUpdateRaceData(progress) => {
-                    self.store.racedata = progress;
+                    store.racedata = progress;
                 }
                 InnerMsg::MsgUpdateRaceResult(result) => {
-                    self.store.raceresult = result;
+                    store.raceresult = result;
                 }
             }
         }
     }
 
-    // need to call by hooking hotlap and practice menu in.
-    pub fn join_race(&mut self, race: &String) -> bool {
-        if self.is_logined() {
-            let race_join = RaceJoin {token: self.store.user_token.clone(), room: race.clone(), passwd: None};
-            let join_url = self.store.get_http_url("api/race/join");
-            return tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().post(join_url).json(&race_join).send().await;
-                if let Ok(res) = res {
-                    match res.status() {
-                        StatusCode::OK => {
-                            AudioPlayer::notification("join.wav").play();
-                            return true;
-                        }
-                        _ => {
-                            AudioPlayer::notification("join_failed.wav").play();
-                            return false;
-                        }
-                    }
-                }
-                return false;
-            });
+
+    pub fn fetch_race_news(&self) {
+        if !self.is_logined() {
+            return;
         }
-        false
+        let store = self.store.read().unwrap();
+
+        let url = store.get_http_url("api/race/news");
+        let tx = self.tx.clone();
+        tokio::runtime::Runtime::new().unwrap().block_on(async move {
+            let res = reqwest::Client::new().get(&url).send().await;
+            if let Ok(res) = res {
+                if res.status() == StatusCode::OK {
+                    let news = res.text().await.unwrap();
+                    tx.send(InnerMsg::MsgUpdateNews(news)).await.unwrap();
+                }
+            }
+        });
     }
 
-    // need to call by hooking exit hotlap and practice menu.
-    pub fn leave_race(&mut self, race: &String) -> bool {
-        if self.is_logined() {
-            let user: RaceLeave = RaceLeave{ token: self.store.user_token.clone(), room: race.clone() };
-            let url = self.store.get_http_url("api/race/leave");
+    pub fn fetch_user_score(&self) {
+        if !self.is_logined() {
+            return;
+        }
+        let store = self.store.read().unwrap();
+        let url = store.get_http_url("api/user/score");
+        let query = UserQuery { token: store.user_token.clone() };
+        let tx = self.tx.clone();
+        tokio::runtime::Runtime::new().unwrap().block_on(async move {
+            let res = reqwest::Client::new().get(&url).json(&query).send().await;
+            if let Ok(res) = res {
+                if res.status() == StatusCode::OK {
+                    let text = res.text().await.unwrap();
+                    let userscore: UserScore = serde_json::from_str(&text).unwrap();
+                    tx.send(InnerMsg::MsgUpdateScore(userscore)).await.unwrap();
+                }
+            }
+        });
+    }
+
+    pub fn keep_alive(&self) {
+        if !self.is_logined() {
+            return;
+        }
+        let store = self.store.read().unwrap();
+        let url = store.get_http_url("api/user/heartbeat");
+        let user = UserHeart { token: store.user_token.clone() };
+        std::thread::spawn(move || {
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().post(url).json(&user).send().await;
-                if let Ok(res) = res {
-                    if res.status() == StatusCode::OK {
-                        AudioPlayer::notification("exit.wav").play();
-                        return true;
-                    }
-                }
-                return false;
-            });
-        }
-        false
-    }
-
-    pub fn fetch_race_news(&mut self) {
-        if self.is_logined() {
-            let url = self.store.get_http_url("api/race/news");
-            let tx = self.tx.clone();
-            tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().get(&url).send().await;
-                if let Ok(res) = res {
-                    if res.status() == StatusCode::OK {
-                        let news = res.text().await.unwrap();
-                        tx.send(InnerMsg::MsgUpdateNews(news)).await.unwrap();
-                    }
+                loop {
+                    let _res = reqwest::Client::new().post(&url).json(&user).send().await;
+                    tokio::time::sleep_until(Instant::now() + tokio::time::Duration::from_secs(10)).await;
                 }
             });
-        }
-    }
-
-    pub fn fetch_user_score(&mut self) {
-        if self.is_logined() {
-            let url = self.store.get_http_url("api/user/score");
-            let query = UserQuery { token: self.store.user_token.clone() };
-            let tx = self.tx.clone();
-            tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let res = reqwest::Client::new().get(&url).json(&query).send().await;
-                if let Ok(res) = res {
-                    if res.status() == StatusCode::OK {
-                        let text = res.text().await.unwrap();
-                        let userscore: UserScore = serde_json::from_str(&text).unwrap();
-                        tx.send(InnerMsg::MsgUpdateScore(userscore)).await.unwrap();
-                    }
-                }
-            });
-        }
-    }
-
-    pub fn keep_alive(&mut self) {
-        if self.is_logined() {
-            let url = self.store.get_http_url("api/user/heartbeat");
-            let user = UserHeart { token: self.store.user_token.clone() };
-            std::thread::spawn(move || {
-                tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                    loop {
-                        let _res = reqwest::Client::new().post(&url).json(&user).send().await;
-                        tokio::time::sleep_until(Instant::now() + tokio::time::Duration::from_secs(10)).await;
-                    }
-                });
-            });
-        }
+        });
     }
 }
