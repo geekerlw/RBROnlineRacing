@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
-use hacker::RBR_ProxyInit;
 
+#[cfg(target_os = "windows")]
 mod hacker;
 pub mod game;
 pub mod plugin;
@@ -8,7 +8,13 @@ pub mod plugin;
 /**
  * Must initialize before any other funciton calls.
  */
+#[cfg(target_os = "windows")]
 pub fn rbrproxy_env_init() {
-    #[cfg(target_os = "windows")]
+    use hacker::RBR_ProxyInit;
     unsafe { RBR_ProxyInit(); }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn rbrproxy_env_init() {
+
 }

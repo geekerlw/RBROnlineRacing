@@ -1,8 +1,6 @@
 use std::ffi::c_char;
-#[cfg(target_os = "windows")]
 use rbnproto::D3DQuaternion;
 
-#[cfg(target_os = "windows")]
 #[link(name = "RBRProxy", kind = "static")]
 unsafe extern "C" {
     /*

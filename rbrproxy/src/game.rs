@@ -1,5 +1,7 @@
 use std::ffi::{c_char, c_int};
 use rbnproto::D3DQuaternion;
+
+#[cfg(target_os = "windows")]
 use super::hacker::*;
 
 #[derive(Default)]
@@ -52,6 +54,7 @@ impl RBRWindow {
 #[derive(Default)]
 pub struct RBRMenu;
 
+#[allow(unused_variables)]
 impl RBRMenu {
     pub fn show_game_message(&self, text: *const c_char, time_to_display: f32, x: f32, y: f32) {
         #[cfg(target_os = "windows")]
@@ -112,6 +115,7 @@ impl RBRMenu {
 #[derive(Default)]
 pub struct RBRGrapher;
 
+#[allow(unused_variables)]
 impl RBRGrapher {
     pub fn begin_draw(&self) {
         #[cfg(target_os = "windows")]
@@ -277,6 +281,7 @@ impl RBRMemReader {
 #[derive(Default)]
 pub struct RBRInput;
 
+#[allow(unused_variables)]
 impl RBRInput {
     #[cfg(target_os = "windows")]
     pub fn is_key_pressed(&self, keycode: c_int) -> bool {
@@ -286,7 +291,7 @@ impl RBRInput {
     }
 
     #[cfg(not(target_os = "windows"))]
-    pub fn is_horn_pressed(&self, keycode: c_int) -> bool {
+    pub fn is_key_pressed(&self, keycode: c_int) -> bool {
         false
     }
 }
@@ -295,6 +300,7 @@ impl RBRInput {
 #[derive(Default)]
 pub struct RBRGame;
 
+#[allow(unused_variables)]
 impl RBRGame {
     pub fn get_user_name(&self) -> String {
         "Lw_Ziye".to_string()
