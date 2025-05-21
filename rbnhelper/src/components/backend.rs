@@ -14,7 +14,6 @@ use tokio::sync::{Mutex, OnceCell};
 
 use rbrproxy::game::{RBRInput, RBRMemReader};
 use crate::components::player::AudioPlayer;
-use crate::components::store::RacingStore;
 use crate::components::utils::{get_race_data, get_race_state};
 use rbrproxy::game::RBRGame;
 use crate::rbnhelper::InnerMsg;
@@ -33,9 +32,9 @@ pub struct RBNBackend {
 }
 
 impl RBNBackend {
-    pub fn init(&mut self, store: &RacingStore) {
-        self.meta_addr = store.get_meta_url();
-        self.user_token = store.user_token.clone();
+    pub fn init(&mut self, addr: &String, token: &String) {
+        self.meta_addr = addr.clone();
+        self.user_token = token.clone();
     }
 
     pub fn run(&mut self, tx: Sender<TaskMsg>, mut rx: Receiver<TaskMsg>, notifier: &Sender<InnerMsg>) {

@@ -108,11 +108,6 @@ impl RBNHelper {
         self.menu.init(Arc::clone(&self.store));
     }
 
-    pub fn is_logined(&self) -> bool {
-        let store = self.store.read().unwrap();
-        !store.user_token.is_empty()
-    }
-
     pub fn draw_overlays(&mut self) {
         self.overlays.iter_mut().for_each(|x| {
             let store = self.store.read().unwrap();
@@ -171,12 +166,12 @@ impl RBNHelper {
                     info!("User Logined RBN Server [{}] success.", store.get_http_uri());
                     store.user_token = token;
                     let (tx, rx) = channel::<TaskMsg>(16);
-                    self.backend.init(&store);
+                    self.backend.init(&store.get_meta_url(), &store.user_token);
                     self.backend.run(tx, rx, &self.tx);
-                    self.keep_alive();
+                    self.keep_alive(&store);
                 }
                 InnerMsg::MsgTriggerBackendStart => {
-                    self.backend.trigger(TaskMsg::MsgStartStage(store.room_name.clone()));
+                    self.backend.trigger(TaskMsg::MsgStartStage(store.get_room_name()));
                 }
                 InnerMsg::MsgTriggerBackendend => {
                     self.backend.trigger(TaskMsg::MsgStopStage);
@@ -204,12 +199,7 @@ impl RBNHelper {
     }
 
 
-    pub fn fetch_race_news(&self) {
-        if !self.is_logined() {
-            return;
-        }
-        let store = self.store.read().unwrap();
-
+    pub fn fetch_race_news(&self, store: &RacingStore) {
         let url = store.get_http_url("api/race/news");
         let tx = self.tx.clone();
         tokio::runtime::Runtime::new().unwrap().block_on(async move {
@@ -223,11 +213,7 @@ impl RBNHelper {
         });
     }
 
-    pub fn fetch_user_score(&self) {
-        if !self.is_logined() {
-            return;
-        }
-        let store = self.store.read().unwrap();
+    pub fn fetch_user_score(&self, store: &RacingStore) {
         let url = store.get_http_url("api/user/score");
         let query = UserQuery { token: store.user_token.clone() };
         let tx = self.tx.clone();
@@ -243,11 +229,7 @@ impl RBNHelper {
         });
     }
 
-    pub fn keep_alive(&self) {
-        if !self.is_logined() {
-            return;
-        }
-        let store = self.store.read().unwrap();
+    pub fn keep_alive(&self, store: &RacingStore) {
         let url = store.get_http_url("api/user/heartbeat");
         let user = UserHeart { token: store.user_token.clone() };
         std::thread::spawn(move || {

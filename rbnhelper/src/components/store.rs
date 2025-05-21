@@ -8,10 +8,11 @@ pub struct RacingStore {
     server_addr: String,
     server_port: u16,
     meta_port: u16,
+    rooms: Vec<String>,
+    pub select_room: usize,
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,
-    pub room_name: String,
     pub brief_news: String,
     pub noticeinfo: String,
     pub scoreinfo: UserScore,
@@ -28,13 +29,15 @@ impl RacingStore {
                 std::fs::create_dir(conf_path).unwrap();
             }
         }
+        self.rooms.push("Live Battle".to_string());
+        self.rooms.push("Daily Challenge".to_string());
+
         self.load_config();
     }
 
     pub fn load_config(&mut self) {
         self.user_name = RBRGame::default().get_user_name();
         self.user_passwd = String::from("simrallycn");
-        self.room_name = String::from("Live Battle");
         info!("Parsed game user [{}] success", self.user_name);
 
         self.scoreinfo.license = "Rookie".to_string();
@@ -76,5 +79,9 @@ impl RacingStore {
     pub fn get_meta_url(&self) -> String {
         let addr = String::from(&self.server_addr) + ":" + self.meta_port.to_string().as_str();
         addr
+    }
+
+    pub fn get_room_name(&self) -> String {
+        self.rooms.get(self.select_room % self.rooms.len()).unwrap().to_string()
     }
 }

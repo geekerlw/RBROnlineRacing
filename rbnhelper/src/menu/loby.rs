@@ -8,9 +8,9 @@ use super::*;
 
 #[derive(Default)]
 pub struct LobyMenu {
+    store: Arc<RwLock<RacingStore>>,
     headstr: CString,
     roomtitle: CString,
-    maptitle: CString,
     copyright: CString,
     op: MenuOp,
     rbr_menu: RBRMenu,
@@ -18,9 +18,9 @@ pub struct LobyMenu {
 
 impl Menu for LobyMenu {
     fn init(&mut self, store: Arc<RwLock<RacingStore>>) {
+        self.store = store.clone();
         self.headstr = CString::new("RBR LIVE BATTLE").expect("failed");
         self.roomtitle = CString::new("Joined Players:").expect("failed");
-        self.maptitle = CString::new("Next Stage:").expect("failed");
         self.copyright = CString::new(format!("Copyright (c) 2023-2025 Lw_Ziye, Plugin Version: {}", std::env!("CARGO_PKG_VERSION"))).expect("failed");
 
         let storecopy = Arc::clone(&store);
@@ -31,6 +31,7 @@ impl Menu for LobyMenu {
             })),
             ..Default::default()
         });
+
         self.op.entries.push(MenuEntry { 
             text: CString::new("Select Car").expect("failed"),
             ..Default::default()
@@ -75,15 +76,18 @@ impl Menu for LobyMenu {
     }
 
     fn draw(&self) {
+        let store = self.store.read().unwrap();
+
         self.rbr_menu.draw_blackout(0.0, 600.0, 800.0, 0.0);
         self.rbr_menu.draw_selection(260.0, 49.0, 2.0, 400.0);
-        self.rbr_menu.draw_selection(638.0, 49.0, 2.0, 400.0);
-        self.rbr_menu.draw_selection(260.0, 210.0, 530.0, 2.0);
+        self.rbr_menu.draw_selection(640.0, 49.0, 2.0, 400.0);
+        self.rbr_menu.draw_selection(260.0, 210.0, 526.0, 2.0);
 
         self.rbr_menu.set_font_size(EFonts::FontBig.into());
         self.rbr_menu.set_menu_color(EMenuColors::MenuHeading.into());
         self.rbr_menu.draw_text(72.0, 49.0, self.headstr.as_ptr());
-        self.rbr_menu.draw_text(270.0, 49.0, self.maptitle.as_ptr());
+        let raceinfo = CString::new(store.get_room_name()).expect("msg");
+        self.rbr_menu.draw_text(270.0, 49.0, raceinfo.as_ptr());
 
         // TODO: draw map and car image
         self.rbr_menu.draw_flatbox(270.0, 72.0, 160.0, 120.0);
@@ -115,7 +119,7 @@ impl Menu for LobyMenu {
 
 fn on_join_race(store: Arc::<RwLock<RacingStore>>) {
     let store = store.read().unwrap();
-    let race_join = RaceJoin {token: store.user_token.clone(), room: store.room_name.clone(), passwd: None};
+    let race_join = RaceJoin {token: store.user_token.clone(), room: store.get_room_name(), passwd: None};
     let join_url = store.get_http_url("api/race/join");
     return tokio::runtime::Runtime::new().unwrap().block_on(async move {
         let res = reqwest::Client::new().post(join_url).json(&race_join).send().await;
@@ -135,7 +139,7 @@ fn on_join_race(store: Arc::<RwLock<RacingStore>>) {
 // need to call by hooking exit hotlap and practice menu.
 fn on_leave_race(store: Arc::<RwLock<RacingStore>>) {
     let store = store.read().unwrap();
-    let user: RaceLeave = RaceLeave{ token: store.user_token.clone(), room: store.room_name.clone() };
+    let user: RaceLeave = RaceLeave{ token: store.user_token.clone(), room: store.get_room_name() };
     let url = store.get_http_url("api/race/leave");
     tokio::runtime::Runtime::new().unwrap().block_on(async move {
         let res = reqwest::Client::new().post(url).json(&user).send().await;

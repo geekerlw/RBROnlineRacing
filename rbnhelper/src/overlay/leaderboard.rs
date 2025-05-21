@@ -1,4 +1,4 @@
-use std::{cell::RefCell, ffi::CString, rc::Rc};
+use std::ffi::CString;
 use rbrproxy::game::{RBRGame, RBRGrapher};
 use crate::components::{store::RacingStore, utils::format_seconds};
 use super::Overlay;
