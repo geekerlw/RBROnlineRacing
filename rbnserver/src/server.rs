@@ -32,6 +32,7 @@ impl RacingServer {
         self.races.insert("Daily Challenge".to_string(), Box::new(Daily::default().init()));
         self.races.insert("Time Trial".to_string(), Box::new(Daily::named("Time Trial").init()));
         self.races.insert("Practice".to_string(), Box::new(Daily::named("Practice").init()));
+        self.races.insert("Live Battle".to_string(), Box::new(Daily::named("Live Battle").init()));
         self
     }
 

@@ -4,6 +4,7 @@ use rbnproto::httpapi::{UserHeart, UserLogin, UserQuery, UserScore};
 use rbnproto::metaapi::{MetaRaceProgress, MetaRaceResult, MetaRaceState, RaceJoin, RaceLeave};
 use rbnproto::API_VERSION_STRING;
 use rbrproxy::plugin::IPlugin;
+use rbrproxy::rbrproxy_env_init;
 use reqwest::StatusCode;
 use simplelog::WriteLogger;
 use tokio::time::Instant;
@@ -32,7 +33,6 @@ pub struct RBNHelper {
     rx: Receiver<InnerMsg>,
     tx: Sender<InnerMsg>,
     store: RacingStore,
-    race_name: String,
     overlays: Vec<Box<dyn Overlay + Send + Sync>>,
     menu: LobyMenu,
 }
@@ -45,7 +45,6 @@ impl Default for RBNHelper {
             rx,
             tx,
             store: RacingStore::default(),
-            race_name: String::from("Daily Challenge"),
             overlays: vec![],
             menu: LobyMenu::default(),
         }
@@ -118,8 +117,11 @@ impl RBNHelper {
     }
 
     fn env_init(&mut self) {
+        rbrproxy_env_init();
         if let Some(game_path) = std::env::current_exe().unwrap().parent() {
-            let log_file = game_path.join("SimrallyCN").join("rbnhelper.log");
+            let log_file = game_path.join("Plugins")
+            .join("RBNHelper")
+            .join("RBNHelper.log");
             WriteLogger::init(log::LevelFilter::Info, 
                 simplelog::Config::default(), std::fs::File::create(log_file).unwrap()).unwrap();
         }

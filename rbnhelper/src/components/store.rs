@@ -11,6 +11,7 @@ pub struct RacingStore {
     pub user_name: String,
     pub user_passwd: String,
     pub user_token: String,
+    pub room_name: String,
     pub brief_news: String,
     pub noticeinfo: String,
     pub scoreinfo: UserScore,
@@ -33,6 +34,7 @@ impl RacingStore {
     pub fn load_config(&mut self) {
         self.user_name = RBRGame::default().get_user_name();
         self.user_passwd = String::from("simrallycn");
+        self.room_name = String::from("Live Battle");
         info!("Parsed game user [{}] success", self.user_name);
 
         self.scoreinfo.license = "Rookie".to_string();

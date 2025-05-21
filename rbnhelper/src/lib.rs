@@ -1,7 +1,6 @@
 use libc::c_char;
 use rbnhelper::RBNHelper;
 use rbrproxy::plugin::IPlugin;
-use rbrproxy::rbrproxy_env_init;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
@@ -17,7 +16,6 @@ lazy_static! {
 
 #[no_mangle]
 extern fn plugin_init() -> *const c_char {
-    rbrproxy_env_init();
     let mut plugin = RBNHELPER.lock().unwrap();
     plugin.plugin_init()
 }
